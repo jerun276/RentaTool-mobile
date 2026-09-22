@@ -24,6 +24,7 @@ class EquipmentCard extends StatelessWidget {
     );
 
     final isLocked = equipment.isWearLocked;
+    final primaryImg = equipment.primaryImageUrl;
 
     return Card(
       margin: const EdgeInsets.only(bottom: 14),
@@ -35,33 +36,39 @@ class EquipmentCard extends StatelessWidget {
           children: [
             // Header Image Placeholder or Network image
             Container(
-              height: 140,
+              height: 150,
               width: double.infinity,
               color: AppColors.surfaceLight,
               child: Stack(
+                fit: StackFit.expand,
                 children: [
-                  Center(
-                    child: Icon(
-                      Icons.precision_manufacturing_outlined,
-                      size: 56,
-                      color: AppColors.textMuted.withOpacity(0.4),
-                    ),
-                  ),
+                  if (primaryImg.isNotEmpty)
+                    Image.network(
+                      primaryImg,
+                      fit: BoxFit.cover,
+                      errorBuilder: (_, __, ___) => _fallbackImagePlaceholder(),
+                    )
+                  else
+                    _fallbackImagePlaceholder(),
+                  // Top Status Badge
                   Positioned(
                     top: 10,
                     right: 10,
                     child: StatusBadge(
-                      label: isLocked ? 'LOCKED (60D+)' : equipment.status,
+                      label: isLocked
+                          ? (equipment.isWearLimitReached ? 'LOCKOUT (60D+)' : 'MAINTENANCE')
+                          : equipment.status,
                       style: isLocked ? BadgeStyle.error : BadgeStyle.success,
                     ),
                   ),
+                  // Category Badge
                   Positioned(
                     bottom: 10,
                     left: 10,
                     child: Container(
                       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                       decoration: BoxDecoration(
-                        color: Colors.black.withOpacity(0.7),
+                        color: const Color(0xCC000000),
                         borderRadius: BorderRadius.circular(4),
                       ),
                       child: Text(
@@ -156,6 +163,16 @@ class EquipmentCard extends StatelessWidget {
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _fallbackImagePlaceholder() {
+    return Center(
+      child: Icon(
+        Icons.precision_manufacturing_outlined,
+        size: 56,
+        color: const Color(0x5594A3B8),
       ),
     );
   }

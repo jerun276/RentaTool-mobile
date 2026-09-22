@@ -15,6 +15,7 @@ import '../../modules/catalog/screens/equipment_catalog_screen.dart';
 import '../../modules/catalog/screens/equipment_detail_screen.dart';
 import '../../modules/catalog/screens/add_equipment_screen.dart';
 import '../../modules/catalog/screens/condition_inspection_screen.dart';
+import '../../modules/catalog/screens/equipment_history_screen.dart';
 
 // Component 3 (Booking)
 import '../../modules/booking/screens/active_bookings_screen.dart';
@@ -77,6 +78,20 @@ final appRouterProvider = Provider<GoRouter>((ref) {
                     builder: (context, state) {
                       final id = state.pathParameters['id'] ?? '';
                       return ConditionInspectionScreen(equipmentId: id);
+                    },
+                  ),
+                  GoRoute(
+                    path: 'history/:id',
+                    builder: (context, state) {
+                      final id = state.pathParameters['id'] ?? '';
+                      return EquipmentHistoryScreen(equipmentId: id);
+                    },
+                  ),
+                  GoRoute(
+                    path: ':id',
+                    builder: (context, state) {
+                      final id = state.pathParameters['id'] ?? '';
+                      return EquipmentDetailScreen(equipmentId: id);
                     },
                   ),
                 ],

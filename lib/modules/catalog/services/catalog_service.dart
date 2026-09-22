@@ -2,6 +2,8 @@ import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/constants/api_constants.dart';
 import '../../../core/network/api_client.dart';
+import '../models/batch_availability_model.dart';
+import '../models/equipment_history_model.dart';
 import '../models/equipment_model.dart';
 import '../models/inspection_log_model.dart';
 
@@ -15,15 +17,22 @@ class CatalogService {
 
   CatalogService(this._dio);
 
+  /// Retrieves equipment feed with search, category filtering, status, and pagination
   Future<List<EquipmentModel>> getEquipment({
     String? search,
     String? categoryId,
+    String? status,
+    int page = 1,
+    int pageSize = 20,
   }) async {
     final response = await _dio.get(
       ApiConstants.equipment,
       queryParameters: {
-        if (search != null && search.isNotEmpty) 'search': search,
-        if (categoryId != null && categoryId.isNotEmpty) 'categoryId': categoryId,
+        if (search != null && search.trim().isNotEmpty) 'searchTerm': search.trim(),
+        if (categoryId != null && categoryId.isNotEmpty && categoryId != 'All') 'categoryId': categoryId,
+        if (status != null && status.isNotEmpty && status != 'All') 'status': status,
+        'page': page,
+        'pageSize': pageSize,
       },
     );
 
@@ -32,14 +41,16 @@ class CatalogService {
         ? (data['items'] ?? [])
         : (data is List ? data : []);
 
-    return items.map((e) => EquipmentModel.fromJson(e)).toList();
+    return items.map((e) => EquipmentModel.fromJson(e as Map<String, dynamic>)).toList();
   }
 
+  /// Retrieves a single equipment listing with full specifications and photos
   Future<EquipmentModel> getEquipmentById(String id) async {
     final response = await _dio.get(ApiConstants.equipmentById(id));
-    return EquipmentModel.fromJson(response.data);
+    return EquipmentModel.fromJson(response.data as Map<String, dynamic>);
   }
 
+  /// Creates a new machinery / equipment listing
   Future<EquipmentModel> createEquipment({
     required String title,
     required String description,
@@ -47,6 +58,8 @@ class CatalogService {
     required double dailyRate,
     required double replacementValue,
     required String location,
+    String specificationsJson = '{}',
+    List<ToolImageModel> images = const [],
   }) async {
     final response = await _dio.post(
       ApiConstants.equipment,
@@ -57,27 +70,55 @@ class CatalogService {
         'dailyRate': dailyRate,
         'replacementValue': replacementValue,
         'location': location,
+        'specificationsJson': specificationsJson,
+        'images': images.map((img) => img.toJson()).toList(),
       },
     );
-    return EquipmentModel.fromJson(response.data);
+    return EquipmentModel.fromJson(response.data as Map<String, dynamic>);
   }
 
-  Future<InspectionLogModel> addInspectionLog({
+  /// Records pre/post-rental condition inspection with multi-angle photographic evidence
+  Future<InspectionLogModel> createInspectionLog({
     required String equipmentId,
-    required String inspectionType,
-    required String notes,
-    required bool passed,
-    List<String> photoUrls = const [],
+    String? bookingId,
+    required String type, // 'PreRental', 'PostRental', 'PeriodicMaintenance', 'DamageAssessment'
+    required String severity, // 'None', 'Minor', 'Moderate', 'Severe', 'Critical'
+    required String conditionNotes,
+    List<InspectionPhotoModel> photos = const [],
   }) async {
     final response = await _dio.post(
       ApiConstants.equipmentInspectionLogs(equipmentId),
       data: {
-        'inspectionType': inspectionType,
-        'notes': notes,
-        'passed': passed,
-        'photoUrls': photoUrls,
+        if (bookingId != null && bookingId.isNotEmpty) 'bookingId': bookingId,
+        'type': type,
+        'severity': severity,
+        'conditionNotes': conditionNotes,
+        'photos': photos.map((p) => p.toJson()).toList(),
       },
     );
-    return InspectionLogModel.fromJson(response.data);
+    return InspectionLogModel.fromJson(response.data as Map<String, dynamic>);
+  }
+
+  /// Retrieves maintenance history and inspection timeline for an equipment item
+  Future<EquipmentHistoryTimelineModel> getEquipmentHistory(String equipmentId) async {
+    final response = await _dio.get(ApiConstants.equipmentHistory(equipmentId));
+    return EquipmentHistoryTimelineModel.fromJson(response.data as Map<String, dynamic>);
+  }
+
+  /// Business-specific check for maintenance wear lockouts and dispatch safety
+  Future<BatchAvailabilityResultModel> checkBatchAvailability({
+    required List<String> equipmentIds,
+    required DateTime desiredStartDate,
+    required DateTime desiredEndDate,
+  }) async {
+    final response = await _dio.post(
+      ApiConstants.batchAvailability,
+      data: {
+        'equipmentIds': equipmentIds,
+        'desiredStartDate': desiredStartDate.toIso8601String(),
+        'desiredEndDate': desiredEndDate.toIso8601String(),
+      },
+    );
+    return BatchAvailabilityResultModel.fromJson(response.data as Map<String, dynamic>);
   }
 }

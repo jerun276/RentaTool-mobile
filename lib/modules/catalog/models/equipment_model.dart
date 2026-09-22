@@ -1,3 +1,37 @@
+class ToolImageModel {
+  final String imageUrl;
+  final String angle; // 'Casing', 'Cord', 'Motor', 'General'
+  final bool isPrimary;
+
+  const ToolImageModel({
+    required this.imageUrl,
+    this.angle = 'General',
+    this.isPrimary = false,
+  });
+
+  factory ToolImageModel.fromJson(dynamic json) {
+    if (json is String) {
+      return ToolImageModel(imageUrl: json);
+    }
+    if (json is Map<String, dynamic>) {
+      return ToolImageModel(
+        imageUrl: json['imageUrl'] ?? '',
+        angle: json['angle'] ?? 'General',
+        isPrimary: json['isPrimary'] ?? false,
+      );
+    }
+    return const ToolImageModel(imageUrl: '');
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'imageUrl': imageUrl,
+      'angle': angle,
+      'isPrimary': isPrimary,
+    };
+  }
+}
+
 class EquipmentModel {
   final String id;
   final String ownerId;
@@ -12,7 +46,8 @@ class EquipmentModel {
   final int totalRentalDaysAccumulated;
   final bool requiresMaintenanceCheck;
   final String? lastMaintenanceDateUtc;
-  final List<String> images;
+  final String specificationsJson;
+  final List<ToolImageModel> images;
 
   const EquipmentModel({
     required this.id,
@@ -28,15 +63,40 @@ class EquipmentModel {
     this.totalRentalDaysAccumulated = 0,
     this.requiresMaintenanceCheck = false,
     this.lastMaintenanceDateUtc,
+    this.specificationsJson = '{}',
     this.images = const [],
   });
 
+  /// True if total rental days reached or exceeded the 60-day policy threshold
+  bool get isWearLimitReached => totalRentalDaysAccumulated >= 60;
+
+  /// True if locked out from booking due to mandatory wear servicing or maintenance
   bool get isWearLocked =>
       requiresMaintenanceCheck ||
-      status == 'UnderMaintenance' ||
-      totalRentalDaysAccumulated >= 60;
+      status.toLowerCase() == 'undermaintenance' ||
+      isWearLimitReached;
+
+  /// Days remaining before mandatory 60-day inspection lockout
+  int get daysUntilLockout =>
+      (60 - totalRentalDaysAccumulated).clamp(0, 60);
+
+  /// Primary image URL or fallback to first image
+  String get primaryImageUrl {
+    if (images.isEmpty) return '';
+    final primary = images.firstWhere(
+      (img) => img.isPrimary,
+      orElse: () => images.first,
+    );
+    return primary.imageUrl;
+  }
 
   factory EquipmentModel.fromJson(Map<String, dynamic> json) {
+    var rawImages = json['images'] as List<dynamic>? ?? [];
+    List<ToolImageModel> parsedImages = rawImages
+        .map((img) => ToolImageModel.fromJson(img))
+        .where((img) => img.imageUrl.isNotEmpty)
+        .toList();
+
     return EquipmentModel(
       id: json['id'] ?? '',
       ownerId: json['ownerId'] ?? '',
@@ -51,10 +111,8 @@ class EquipmentModel {
       totalRentalDaysAccumulated: json['totalRentalDaysAccumulated'] ?? 0,
       requiresMaintenanceCheck: json['requiresMaintenanceCheck'] ?? false,
       lastMaintenanceDateUtc: json['lastMaintenanceDateUtc'],
-      images: (json['images'] as List<dynamic>?)
-              ?.map((e) => e.toString())
-              .toList() ??
-          [],
+      specificationsJson: json['specificationsJson'] ?? '{}',
+      images: parsedImages,
     );
   }
 
@@ -73,7 +131,8 @@ class EquipmentModel {
       'totalRentalDaysAccumulated': totalRentalDaysAccumulated,
       'requiresMaintenanceCheck': requiresMaintenanceCheck,
       'lastMaintenanceDateUtc': lastMaintenanceDateUtc,
-      'images': images,
+      'specificationsJson': specificationsJson,
+      'images': images.map((e) => e.toJson()).toList(),
     };
   }
 }

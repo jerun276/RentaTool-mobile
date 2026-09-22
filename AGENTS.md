@@ -9,7 +9,7 @@
 # ==============================================================================
 # DEVELOPER CONFIGURATION (CHANGE THIS TO YOUR COMPONENT BEFORE PROMPTING)
 # ==============================================================================
-ACTIVE_STUDENT: "Tech Lead" # Options: "Student 1" | "Student 2" | "Student 3" | "Student 4" | "Tech Lead"
+ACTIVE_STUDENT: "Student 2" # Options: "Student 1" | "Student 2" | "Student 3" | "Student 4" | "Tech Lead"
 ACTIVE_COMPONENT_ID: "COMPONENT_2" # Options: "COMPONENT_1" | "COMPONENT_2" | "COMPONENT_3" | "COMPONENT_4" | "SHARED_CORE"
 # ==============================================================================
 ```
