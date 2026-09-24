@@ -38,56 +38,83 @@ class BookingCard extends StatelessWidget {
       case 'completed':
         badgeStyle = BadgeStyle.purple;
         break;
+      case 'cancelled':
+        badgeStyle = BadgeStyle.error;
+        break;
       default:
         badgeStyle = BadgeStyle.warning;
     }
 
     return Card(
       margin: const EdgeInsets.only(bottom: 14),
+      elevation: 2,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(14),
+        side: const BorderSide(color: AppColors.border),
+      ),
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(14),
         child: Padding(
           padding: const EdgeInsets.all(16.0),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Top Bar: ID and Status
+              // Top Bar: Code and Status Badge
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text(
-                    'BKG-${booking.id.isNotEmpty ? booking.id.substring(0, booking.id.length >= 8 ? 8 : booking.id.length).toUpperCase() : 'UNKNOWN'}',
-                    style: const TextStyle(
-                      fontSize: 12,
-                      fontFamily: 'monospace',
-                      fontWeight: FontWeight.bold,
-                      color: AppColors.textSecondary,
-                    ),
+                  Row(
+                    children: [
+                      const Icon(Icons.confirmation_number_outlined, size: 16, color: AppColors.textMuted),
+                      const SizedBox(width: 6),
+                      Text(
+                        booking.displayCode,
+                        style: const TextStyle(
+                          fontSize: 12,
+                          fontFamily: 'monospace',
+                          fontWeight: FontWeight.bold,
+                          color: AppColors.textSecondary,
+                        ),
+                      ),
+                    ],
                   ),
                   StatusBadge(label: booking.status, style: badgeStyle),
                 ],
               ),
               const SizedBox(height: 12),
 
-              // Date Range
+              // Date Range & Duration
               Row(
                 children: [
                   const Icon(Icons.date_range_outlined, size: 16, color: AppColors.primaryLight),
                   const SizedBox(width: 8),
-                  Text(
-                    '${dateFormatter.format(booking.startDate)} → ${dateFormatter.format(booking.endDate)}',
-                    style: const TextStyle(
-                      color: AppColors.textPrimary,
-                      fontWeight: FontWeight.w600,
-                      fontSize: 13,
+                  Expanded(
+                    child: Text(
+                      '${dateFormatter.format(booking.startDate)} → ${dateFormatter.format(booking.endDate)}',
+                      style: const TextStyle(
+                        color: AppColors.textPrimary,
+                        fontWeight: FontWeight.w600,
+                        fontSize: 13,
+                      ),
+                    ),
+                  ),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: AppColors.surfaceElevated,
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                    child: Text(
+                      '${booking.durationInDays}d',
+                      style: const TextStyle(fontSize: 11, color: AppColors.textMuted, fontWeight: FontWeight.bold),
                     ),
                   ),
                 ],
               ),
               const SizedBox(height: 10),
 
-              // Handover verification status
+              // Handover verification status chips
               Row(
                 children: [
                   _verificationChip(
@@ -103,10 +130,10 @@ class BookingCard extends StatelessWidget {
               ),
               const SizedBox(height: 12),
 
-              const Divider(),
-              const SizedBox(height: 8),
+              const Divider(height: 1),
+              const SizedBox(height: 10),
 
-              // Total Fee & Action Buttons
+              // Total Fee & Action Shortcuts
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
@@ -161,12 +188,12 @@ class BookingCard extends StatelessWidget {
 
   Widget _verificationChip({required String label, required bool isVerified}) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
       decoration: BoxDecoration(
         color: isVerified ? AppColors.success.withOpacity(0.12) : AppColors.surfaceElevated,
         borderRadius: BorderRadius.circular(4),
         border: Border.all(
-          color: isVerified ? AppColors.success.withOpacity(0.3) : AppColors.border,
+          color: isVerified ? AppColors.success.withOpacity(0.4) : AppColors.border,
         ),
       ),
       child: Row(
@@ -182,6 +209,7 @@ class BookingCard extends StatelessWidget {
             '$label ${isVerified ? "Verified" : "Pending"}',
             style: TextStyle(
               fontSize: 10,
+              fontWeight: isVerified ? FontWeight.bold : FontWeight.normal,
               color: isVerified ? AppColors.primaryLight : AppColors.textMuted,
             ),
           ),
