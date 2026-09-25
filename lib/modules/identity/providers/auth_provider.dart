@@ -1,6 +1,7 @@
-import 'package:flutter_riverpod/flutter_riverpod.dart';
+﻿import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/services/token_storage_service.dart';
 import '../models/user_model.dart';
+import '../models/trust_score_model.dart';
 import '../services/identity_service.dart';
 
 class AuthState {
@@ -65,6 +66,26 @@ class AuthNotifier extends StateNotifier<AuthState> {
           role: UserRole.fromString(role),
         ),
       );
+      try {
+        final profile = await _identityService.getUserProfile(userId);
+        state = state.copyWith(
+          isLoading: false,
+          isAuthenticated: true,
+          user: profile,
+        );
+      } catch (_) {
+        state = state.copyWith(
+          isLoading: false,
+          isAuthenticated: true,
+          user: UserModel(
+            id: userId,
+            name: name ?? 'User',
+            email: email ?? '',
+            phoneNumber: '',
+            role: UserRole.fromString(role),
+          ),
+        );
+      }
     } else {
       state = state.copyWith(isLoading: false, isAuthenticated: false);
     }
@@ -85,13 +106,18 @@ class AuthNotifier extends StateNotifier<AuthState> {
         email: email,
       );
 
-      final user = UserModel(
-        id: res.userId,
-        name: res.name,
-        email: email,
-        phoneNumber: '',
-        role: UserRole.fromString(res.role),
-      );
+      UserModel user;
+      try {
+        user = await _identityService.getUserProfile(res.userId);
+      } catch (_) {
+        user = UserModel(
+          id: res.userId,
+          name: res.name,
+          email: email,
+          phoneNumber: '',
+          role: UserRole.fromString(res.role),
+        );
+      }
 
       state = state.copyWith(
         isLoading: false,
@@ -160,6 +186,23 @@ class AuthNotifier extends StateNotifier<AuthState> {
     }
   }
 
+  void setVerified(bool isVerified) {
+    if (state.user != null) {
+      state = state.copyWith(
+        user: state.user!.copyWith(isVerified: isVerified),
+      );
+    }
+  }
+
+  Future<void> refreshProfile() async {
+    if (state.user != null) {
+      try {
+        final profile = await _identityService.getUserProfile(state.user!.id);
+        state = state.copyWith(user: profile);
+      } catch (_) {}
+    }
+  }
+
   Future<void> logout() async {
     await _tokenStorage.clearAll();
     state = const AuthState();
@@ -170,4 +213,9 @@ final authProvider = StateNotifierProvider<AuthNotifier, AuthState>((ref) {
   final identityService = ref.watch(identityServiceProvider);
   final tokenStorage = ref.watch(tokenStorageServiceProvider);
   return AuthNotifier(identityService, tokenStorage);
+});
+
+final trustScoreProvider = FutureProvider.autoDispose
+    .family<TrustScoreModel, String>((ref, userId) async {
+  return ref.watch(identityServiceProvider).getTrustScore(userId);
 });
