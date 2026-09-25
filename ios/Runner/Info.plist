@@ -66,5 +66,9 @@
 		<string>UIInterfaceOrientationLandscapeLeft</string>
 		<string>UIInterfaceOrientationLandscapeRight</string>
 	</array>
+	<key>NSCameraUsageDescription</key>
+	<string>Camera access is required to scan QR handover tokens and capture equipment condition evidence.</string>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>Location access is required to verify real-time GPS coordinates during tool pickup and return handover.</string>
 </dict>
 </plist>

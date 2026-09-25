@@ -19,7 +19,7 @@ class LocationService {
       bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
       if (!serviceEnabled) {
         debugPrint('LocationService: Location services are disabled.');
-        return _fallbackPosition();
+        return null;
       }
 
       LocationPermission permission = await Geolocator.checkPermission();
@@ -27,13 +27,13 @@ class LocationService {
         permission = await Geolocator.requestPermission();
         if (permission == LocationPermission.denied) {
           debugPrint('LocationService: Location permission was denied.');
-          return _fallbackPosition();
+          return null;
         }
       }
 
       if (permission == LocationPermission.deniedForever) {
         debugPrint('LocationService: Location permission is denied forever.');
-        return _fallbackPosition();
+        return null;
       }
 
       return await Geolocator.getCurrentPosition(
@@ -42,7 +42,7 @@ class LocationService {
       );
     } catch (e) {
       debugPrint('LocationService error: $e');
-      return _fallbackPosition();
+      return null;
     }
   }
 
@@ -50,20 +50,5 @@ class LocationService {
   double distanceInKm(double startLat, double startLng, double endLat, double endLng) {
     final meters = Geolocator.distanceBetween(startLat, startLng, endLat, endLng);
     return meters / 1000.0;
-  }
-
-  Position _fallbackPosition() {
-    return Position(
-      latitude: defaultLatitude,
-      longitude: defaultLongitude,
-      timestamp: DateTime.now(),
-      accuracy: 50.0,
-      altitude: 0.0,
-      altitudeAccuracy: 0.0,
-      heading: 0.0,
-      headingAccuracy: 0.0,
-      speed: 0.0,
-      speedAccuracy: 0.0,
-    );
   }
 }

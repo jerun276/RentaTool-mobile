@@ -44,23 +44,28 @@ class _BookingMapScreenState extends ConsumerState<BookingMapScreen> {
 
       // 1. Get GPS coordinates
       final position = await locService.getCurrentPosition();
-      _currentPosition = position ??
-          Position(
-            latitude: LocationService.defaultLatitude,
-            longitude: LocationService.defaultLongitude,
-            timestamp: DateTime.now(),
-            accuracy: 50.0,
-            altitude: 0.0,
-            altitudeAccuracy: 0.0,
-            heading: 0.0,
-            headingAccuracy: 0.0,
-            speed: 0.0,
-            speedAccuracy: 0.0,
-          );
+      if (!mounted) return;
 
       // 2. Fetch catalog equipment
       final items = await catalogService.getEquipment();
-      _equipmentList = items;
+      if (!mounted) return;
+
+      setState(() {
+        _currentPosition = position ??
+            Position(
+              latitude: LocationService.defaultLatitude,
+              longitude: LocationService.defaultLongitude,
+              timestamp: DateTime.now(),
+              accuracy: 50.0,
+              altitude: 0.0,
+              altitudeAccuracy: 0.0,
+              heading: 0.0,
+              headingAccuracy: 0.0,
+              speed: 0.0,
+              speedAccuracy: 0.0,
+            );
+        _equipmentList = items;
+      });
 
       _updateMapOverlays();
     } catch (e) {
@@ -68,6 +73,40 @@ class _BookingMapScreenState extends ConsumerState<BookingMapScreen> {
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
+  }
+
+  LatLng? _getEquipmentLatLng(EquipmentModel eq) {
+    if (eq.location.contains(',')) {
+      final parts = eq.location.split(',');
+      if (parts.length == 2) {
+        final lat = double.tryParse(parts[0].trim());
+        final lng = double.tryParse(parts[1].trim());
+        if (lat != null && lng != null && (lat != 0 || lng != 0)) {
+          return LatLng(lat, lng);
+        }
+      }
+    }
+
+    final locLower = eq.location.toLowerCase();
+    if (locLower.contains('colombo 03') || locLower.contains('colombo 3') || locLower.contains('kollupitiya')) {
+      return const LatLng(6.9034, 79.8553);
+    } else if (locLower.contains('colombo')) {
+      return const LatLng(6.9271, 79.8612);
+    } else if (locLower.contains('kandy')) {
+      return const LatLng(7.2906, 80.6337);
+    } else if (locLower.contains('gampaha')) {
+      return const LatLng(7.0840, 79.9943);
+    } else if (locLower.contains('galle')) {
+      return const LatLng(6.0535, 80.2210);
+    } else if (locLower.contains('negombo')) {
+      return const LatLng(7.2008, 79.8736);
+    } else if (locLower.contains('kurunegala')) {
+      return const LatLng(7.4863, 80.3623);
+    } else if (locLower.contains('jaffna')) {
+      return const LatLng(9.6615, 80.0255);
+    }
+
+    return null;
   }
 
   void _updateMapOverlays() {
@@ -100,20 +139,15 @@ class _BookingMapScreenState extends ConsumerState<BookingMapScreen> {
 
     final locService = ref.read(locationServiceProvider);
 
-    for (int i = 0; i < _equipmentList.length; i++) {
-      final eq = _equipmentList[i];
-
-      // Assign deterministic coordinates spread around user position if backend doesn't provide GPS
-      final offsetLat = ((i % 5) - 2) * 0.035;
-      final offsetLng = (((i ~/ 5) % 5) - 2) * 0.035;
-      final eqLat = _currentPosition!.latitude + offsetLat;
-      final eqLng = _currentPosition!.longitude + offsetLng;
+    for (final eq in _equipmentList) {
+      final eqPos = _getEquipmentLatLng(eq);
+      if (eqPos == null) continue; // Skip equipment without valid location data
 
       final dist = locService.distanceInKm(
         _currentPosition!.latitude,
         _currentPosition!.longitude,
-        eqLat,
-        eqLng,
+        eqPos.latitude,
+        eqPos.longitude,
       );
 
       // Filter by radius
@@ -121,7 +155,7 @@ class _BookingMapScreenState extends ConsumerState<BookingMapScreen> {
         markers.add(
           Marker(
             markerId: MarkerId(eq.id),
-            position: LatLng(eqLat, eqLng),
+            position: eqPos,
             icon: BitmapDescriptor.defaultMarkerWithHue(
               eq.isWearLocked ? BitmapDescriptor.hueOrange : BitmapDescriptor.hueCyan,
             ),

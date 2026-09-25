@@ -86,7 +86,7 @@ class BookingTimelineWidget extends StatelessWidget {
                 ? 'Equipment returned. Post-rental condition verified.'
                 : 'Renter generates return token; owner confirms receipt & physical condition.',
             isCompleted: step4Done,
-            isCurrent: booking.isActive && booking.returnVerified,
+            isCurrent: booking.isActive && !booking.returnVerified,
             isLast: true,
           ),
         ],

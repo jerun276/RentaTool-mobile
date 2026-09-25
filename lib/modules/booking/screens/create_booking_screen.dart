@@ -102,6 +102,13 @@ class _CreateBookingScreenState extends ConsumerState<CreateBookingScreen> {
     final ownId = _ownerIdController.text.trim();
     final rate = _dailyRate;
 
+    if (widget.equipment != null && widget.equipment!.isWearLocked) {
+      setState(() {
+        _errorMessage = 'Equipment is currently locked out for mandatory 60-day maintenance overhaul. Bookings are disabled.';
+      });
+      return;
+    }
+
     if (eqId.isEmpty || ownId.isEmpty || rate <= 0) {
       setState(() {
         _errorMessage = 'Please complete all required equipment and pricing fields.';
@@ -141,6 +148,7 @@ class _CreateBookingScreenState extends ConsumerState<CreateBookingScreen> {
         context.go('/bookings/detail/${newBooking.id}');
       }
     } catch (e) {
+      if (!mounted) return;
       setState(() {
         _errorMessage = e.toString().replaceFirst('Exception: ', '');
       });
@@ -414,10 +422,14 @@ class _CreateBookingScreenState extends ConsumerState<CreateBookingScreen> {
 
             // 7. Submit Action
             AppButton(
-              text: 'Confirm & Reserve Equipment',
-              icon: Icons.check_circle_outline,
+              text: (widget.equipment?.isWearLocked ?? false)
+                  ? 'Locked: 60-Day Maintenance Required'
+                  : 'Confirm & Reserve Equipment',
+              icon: (widget.equipment?.isWearLocked ?? false)
+                  ? Icons.lock_outline
+                  : Icons.check_circle_outline,
               isLoading: _isSubmitting,
-              onPressed: _submitBooking,
+              onPressed: (widget.equipment?.isWearLocked ?? false) ? null : _submitBooking,
             ),
           ],
         ),

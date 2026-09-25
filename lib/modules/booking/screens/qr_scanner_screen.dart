@@ -75,11 +75,21 @@ class _QrScannerScreenState extends ConsumerState<QrScannerScreen> {
       return;
     }
 
+    if (_currentGpsPosition == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          backgroundColor: AppColors.error,
+          content: Text('GPS verification required. Please enable location services to verify equipment handover.'),
+        ),
+      );
+      return;
+    }
+
     setState(() => _isProcessing = true);
 
     try {
-      final lat = _currentGpsPosition?.latitude ?? LocationService.defaultLatitude;
-      final lng = _currentGpsPosition?.longitude ?? LocationService.defaultLongitude;
+      final lat = _currentGpsPosition!.latitude;
+      final lng = _currentGpsPosition!.longitude;
 
       final request = VerifyHandoverRequestModel(
         token: rawToken.trim(),
@@ -97,22 +107,29 @@ class _QrScannerScreenState extends ConsumerState<QrScannerScreen> {
         request: request,
       );
 
-      // Refresh active bookings state
-      ref.read(bookingProvider.notifier).fetchActiveBookings();
+      if (!mounted) return;
 
-      if (mounted) {
+      if (result.isSuccess) {
+        // Refresh active bookings state
+        ref.read(bookingProvider.notifier).fetchActiveBookings();
         _showVerificationSuccessModal(result, lat, lng);
-      }
-    } catch (e) {
-      if (mounted) {
-        final errText = e.toString().replaceFirst('Exception: ', '');
+      } else {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             backgroundColor: AppColors.error,
-            content: Text(errText),
+            content: Text(result.message.isNotEmpty ? result.message : 'Handover verification failed.'),
           ),
         );
       }
+    } catch (e) {
+      if (!mounted) return;
+      final errText = e.toString().replaceFirst('Exception: ', '');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          backgroundColor: AppColors.error,
+          content: Text(errText),
+        ),
+      );
     } finally {
       if (mounted) setState(() => _isProcessing = false);
     }

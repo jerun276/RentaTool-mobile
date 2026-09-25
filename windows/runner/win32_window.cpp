@@ -181,7 +181,7 @@ Win32Window::MessageHandler(HWND hwnd,
   switch (message) {
     case WM_DESTROY:
       window_handle_ = nullptr;
-      Destroy();
+      // Do not call Destroy(); the window is already being destroyed by Windows
       if (quit_on_close_) {
         PostQuitMessage(0);
       }

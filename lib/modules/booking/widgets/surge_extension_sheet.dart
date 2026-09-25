@@ -47,7 +47,9 @@ class _SurgeExtensionSheetState extends ConsumerState<SurgeExtensionSheet> {
   }
 
   int get _extendedDays {
-    final diff = _newEndDate.difference(widget.booking.endDate).inDays;
+    final d1 = DateTime(widget.booking.endDate.year, widget.booking.endDate.month, widget.booking.endDate.day);
+    final d2 = DateTime(_newEndDate.year, _newEndDate.month, _newEndDate.day);
+    final diff = d2.difference(d1).inDays;
     return diff <= 0 ? 1 : diff;
   }
 
@@ -149,6 +151,7 @@ class _SurgeExtensionSheetState extends ConsumerState<SurgeExtensionSheet> {
         widget.onSuccess();
       }
     } catch (e) {
+      if (!mounted) return;
       setState(() {
         _errorMessage = e.toString().replaceFirst('Exception: ', '');
       });
