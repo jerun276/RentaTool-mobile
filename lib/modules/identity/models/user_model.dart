@@ -77,6 +77,16 @@ class UserModel {
       'trustScore': trustScore,
     };
   }
+
+  UserModel copyWith({bool? isVerified, bool? isActive, int? trustScore}) {
+    return UserModel(
+      id: id, name: name, email: email, phoneNumber: phoneNumber, role: role,
+      isVerified: isVerified ?? this.isVerified,
+      isActive: isActive ?? this.isActive,
+      suspensionReason: suspensionReason,
+      trustScore: trustScore ?? this.trustScore,
+    );
+  }
 }
 
 class AuthResponse {

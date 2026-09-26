@@ -5,6 +5,8 @@ import '../../../core/theme/app_colors.dart';
 import '../../../core/widgets/app_button.dart';
 import '../../../core/widgets/app_text_field.dart';
 import '../services/booking_service.dart';
+import '../../identity/providers/auth_provider.dart';
+import '../../identity/models/user_model.dart';
 
 class QrScannerScreen extends ConsumerStatefulWidget {
   final String? bookingId;
@@ -43,6 +45,18 @@ class _QrScannerScreenState extends ConsumerState<QrScannerScreen> {
     if (bkgId.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Please enter or select a Booking ID')),
+      );
+      return;
+    }
+
+    final authState = ref.read(authProvider);
+    final user = authState.user;
+    if (user != null && user.role == UserRole.renter && !user.isVerified) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          backgroundColor: AppColors.error,
+          content: Text('NIC verification required before taking possession of equipment.'),
+        ),
       );
       return;
     }

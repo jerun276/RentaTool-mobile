@@ -1,20 +1,41 @@
+# ============================================================
 # Flutter / Dart
+# ============================================================
 .dart_tool/
 .packages
 build/
 .flutter-plugins
 .flutter-plugins-dependencies
+.fvm/
+doc/api/
 
+# Dart generated files
+*.g.dart
+*.freezed.dart
+*.mocks.dart
+
+# ============================================================
 # Android
+# ============================================================
 android/**/gradle-wrapper.jar
-android/.gradle
+android/.gradle/
 android/captures/
 android/gradlew
 android/gradlew.bat
 android/local.properties
 android/**/GeneratedPluginRegistrant.java
+android/key.properties
+android/**/*.keystore
+android/**/*.jks
+**/google-services.json
 
+# Android build outputs
+android/app/build/
+android/build/
+
+# ============================================================
 # iOS / macOS
+# ============================================================
 ios/**/Pods/
 ios/.symlinks/
 ios/Flutter/Flutter.framework
@@ -22,14 +43,79 @@ ios/Flutter/Flutter.podspec
 ios/Flutter/Generated.xcconfig
 ios/Flutter/app.flx
 ios/Flutter/app.zip
+ios/Flutter/ephemeral/
+ios/*.moved-aside
+macos/Flutter/ephemeral/
+macos/Pods/
+macos/.symlinks/
+**/GoogleService-Info.plist
 
+# ============================================================
+# Web
+# ============================================================
+web/
+lib/generated_plugin_registrant.dart
+
+# ============================================================
+# Windows / Linux
+# ============================================================
+windows/flutter/generated_plugin_registrant.cc
+windows/flutter/generated_plugin_registrant.h
+windows/flutter/generated_plugins.cmake
+linux/flutter/generated_plugin_registrant.cc
+linux/flutter/generated_plugin_registrant.h
+linux/flutter/generated_plugins.cmake
+
+# ============================================================
+# Environment & Secrets
+# ============================================================
+.env
+.env.*
+!.env.example
+*.pem
+*.p8
+*.p12
+secrets.json
+
+# ============================================================
 # Local Agent & IDE configs
+# ============================================================
 .agents/
 .agent/
 .idea/
 *.iml
 .vscode/
+.fleet/
 
+# ============================================================
 # OS files
+# ============================================================
 .DS_Store
 Thumbs.db
+Desktop.ini
+*~
+
+# ============================================================
+# Coverage & Testing
+# ============================================================
+coverage/
+*.lcov
+
+# ============================================================
+# Logs & Temp
+# ============================================================
+*.log
+*.tmp
+*.swp
+
+# ============================================================
+# Ignore Unused Platforms (Android Only Project)
+# ============================================================
+ios/
+macos/
+windows/
+linux/
+web/
+.metadata
+AGENTS.md
+
