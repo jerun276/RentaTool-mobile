@@ -12,6 +12,8 @@ import '../models/equipment_model.dart';
 import '../services/catalog_service.dart';
 import '../widgets/batch_availability_dialog.dart';
 import '../widgets/wear_progress_bar.dart';
+import '../../identity/providers/auth_provider.dart';
+import '../../identity/models/user_model.dart';
 
 class EquipmentDetailScreen extends ConsumerStatefulWidget {
   final String equipmentId;
@@ -85,6 +87,10 @@ class _EquipmentDetailScreenState extends ConsumerState<EquipmentDetailScreen> {
     final currencyFormatter = NumberFormat.currency(locale: 'en_LK', symbol: 'LKR ', decimalDigits: 0);
     final isLocked = eq.isWearLocked;
     final specsMap = _parseSpecs(eq.specificationsJson);
+    final authState = ref.watch(authProvider);
+    final currentUser = authState.user;
+    final isRenter = currentUser?.role == UserRole.renter;
+    final isNicVerified = currentUser?.isVerified ?? false;
 
     return Scaffold(
       appBar: AppBar(
@@ -361,14 +367,132 @@ class _EquipmentDetailScreenState extends ConsumerState<EquipmentDetailScreen> {
             ),
             const SizedBox(height: 24),
 
+            // Renter NIC Document Validation Notice
+            if (isRenter && !isNicVerified) ...[
+              Container(
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(
+                  color: AppColors.warning.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(color: AppColors.warning.withOpacity(0.4)),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(Icons.warning_amber_rounded, color: AppColors.warning, size: 24),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            'NIC Document Verification Required',
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 13,
+                              color: AppColors.warning,
+                            ),
+                          ),
+                          const SizedBox(height: 2),
+                          const Text(
+                            'You must validate your Sri Lankan NIC before renting or receiving machinery.',
+                            style: TextStyle(fontSize: 11, color: AppColors.textSecondary),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.warning,
+                        foregroundColor: Colors.black,
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                        textStyle: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold),
+                      ),
+                      onPressed: () => context.push('/kyc-submit'),
+                      child: const Text('Verify NIC'),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 16),
+            ] else if (isRenter && isNicVerified) ...[
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: AppColors.success.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(color: AppColors.success.withOpacity(0.3)),
+                ),
+                child: const Row(
+                  children: [
+                    Icon(Icons.verified_user_outlined, color: AppColors.success, size: 20),
+                    SizedBox(width: 10),
+                    Expanded(
+                      child: Text(
+                        'NIC Verified — You are authorized to rent and receive this equipment.',
+                        style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.success),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 16),
+            ],
+
             // Action Buttons
             AppButton(
-              text: isLocked ? 'Unavailable (Under Maintenance Lockout)' : 'Reserve Equipment Now',
-              variant: isLocked ? AppButtonVariant.secondary : AppButtonVariant.primary,
-              icon: Icons.calendar_month_outlined,
+              text: isLocked
+                  ? 'Unavailable (Under Maintenance Lockout)'
+                  : (isRenter && !isNicVerified)
+                      ? 'Verify NIC to Rent Equipment'
+                      : 'Reserve Equipment Now',
+              variant: (isLocked || (isRenter && !isNicVerified))
+                  ? AppButtonVariant.secondary
+                  : AppButtonVariant.primary,
+              icon: (isRenter && !isNicVerified)
+                  ? Icons.badge_outlined
+                  : Icons.calendar_month_outlined,
               onPressed: isLocked
                   ? null
                   : () {
+                      if (currentUser == null) {
+                        context.push('/login');
+                        return;
+                      }
+                      if (isRenter && !isNicVerified) {
+                        showDialog(
+                          context: context,
+                          builder: (ctx) => AlertDialog(
+                            backgroundColor: AppColors.surfaceElevated,
+                            title: const Row(
+                              children: [
+                                Icon(Icons.shield_outlined, color: AppColors.warning),
+                                SizedBox(width: 8),
+                                Text('NIC Verification Required', style: TextStyle(fontSize: 16)),
+                              ],
+                            ),
+                            content: const Text(
+                              'In accordance with RentaTool LK regulations, renters must submit and validate a valid Sri Lankan NIC document before acquiring or receiving machinery.',
+                              style: TextStyle(fontSize: 13, color: AppColors.textSecondary),
+                            ),
+                            actions: [
+                              TextButton(
+                                onPressed: () => Navigator.of(ctx).pop(),
+                                child: const Text('Cancel'),
+                              ),
+                              ElevatedButton.icon(
+                                icon: const Icon(Icons.upload_file, size: 16),
+                                label: const Text('Validate NIC Now'),
+                                onPressed: () {
+                                  Navigator.of(ctx).pop();
+                                  context.push('/kyc-submit');
+                                },
+                              ),
+                            ],
+                          ),
+                        );
+                        return;
+                      }
                       context.push('/bookings', extra: eq);
                     },
             ),

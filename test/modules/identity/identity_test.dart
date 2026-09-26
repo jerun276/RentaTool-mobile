@@ -1,6 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:rentatool_mobile/modules/identity/models/user_model.dart';
 import 'package:rentatool_mobile/modules/identity/models/kyc_submission_model.dart';
+import 'package:rentatool_mobile/modules/identity/models/trust_score_model.dart';
 
 void main() {
   group('Identity Module - Component 1 Unit Tests', () {
@@ -38,6 +39,31 @@ void main() {
       expect(kyc.userId, '11111111-1111-1111-1111-111111111105');
       expect(kyc.documentNumber, '199310804422');
       expect(kyc.status, 'Pending');
+    });
+
+    test('TrustScoreModel accepts the backend trustScore fallback', () {
+      final score = TrustScoreModel.fromJson({
+        'userId': 'user-1',
+        'trustScore': 76,
+        'tier': 'Tier B',
+      });
+
+      expect(score.userId, 'user-1');
+      expect(score.score, 76);
+      expect(score.tier, 'Tier B');
+    });
+
+    test('UserModel copyWith preserves identity details', () {
+      final user = UserModel.fromJson({
+        'id': 'user-1', 'name': 'Kasun', 'email': 'kasun@example.com',
+        'phoneNumber': '0771234567', 'role': 'Owner',
+      });
+      final verified = user.copyWith(isVerified: true, trustScore: 85);
+
+      expect(verified.name, 'Kasun');
+      expect(verified.role, UserRole.owner);
+      expect(verified.isVerified, isTrue);
+      expect(verified.trustScore, 85);
     });
   });
 }

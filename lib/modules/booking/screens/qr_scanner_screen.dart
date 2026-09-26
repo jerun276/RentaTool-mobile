@@ -12,6 +12,8 @@ import '../models/handover_verification_model.dart';
 import '../providers/booking_provider.dart';
 import '../services/booking_service.dart';
 import '../services/location_service.dart';
+import '../../identity/providers/auth_provider.dart';
+import '../../identity/models/user_model.dart';
 
 class QrScannerScreen extends ConsumerStatefulWidget {
   final String? bookingId;
@@ -80,6 +82,18 @@ class _QrScannerScreenState extends ConsumerState<QrScannerScreen> {
         const SnackBar(
           backgroundColor: AppColors.error,
           content: Text('GPS verification required. Please enable location services to verify equipment handover.'),
+        ),
+      );
+      return;
+    }
+
+    final authState = ref.read(authProvider);
+    final user = authState.user;
+    if (user != null && user.role == UserRole.renter && !user.isVerified) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          backgroundColor: AppColors.error,
+          content: Text('NIC verification required before taking possession of equipment.'),
         ),
       );
       return;

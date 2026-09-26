@@ -5,18 +5,22 @@
 .packages
 .pub/
 .pub-cache/
+.fvm/
 build/
 **/build/
+doc/api/
 **/doc/api/
-coverage/
-test/**/coverage/
-.test_coverage/
 .flutter-plugins
 .flutter-plugins-dependencies
 .metadata
 app.*.symbols
 app.*.js.map
 *.js.deps
+
+# Dart generated files
+*.g.dart
+*.freezed.dart
+*.mocks.dart
 
 # ==============================================================================
 # Android
@@ -25,6 +29,7 @@ android/**/gradle-wrapper.jar
 android/.gradle/
 **/.gradle/
 android/local.properties
+android/key.properties
 android/captures/
 android/**/captures/
 android/gradlew
@@ -35,13 +40,18 @@ android/.cxx/
 android/**/.cxx/
 android/.kotlin/
 android/**/.kotlin/
-android/**/build/
 android/**/intermediates/
 android/**/generated/
 android/**/outputs/
 android/**/tmp/
+android/app/build/
+android/build/
+android/**/build/
 *.keystore
 *.jks
+android/**/*.keystore
+android/**/*.jks
+**/google-services.json
 
 # ==============================================================================
 # iOS / macOS / Xcode / CocoaPods
@@ -66,54 +76,79 @@ ios/**/default.pbxuser
 ios/**/mode1v3
 ios/**/mode2v3
 ios/**/pbxuser
+ios/*.moved-aside
 
 macos/Flutter/ephemeral/
 macos/**/ephemeral/
+macos/Pods/
 macos/**/Pods/
+macos/.symlinks/
 macos/**/xcuserdata/
 macos/**/DerivedData/
 *.ipa
 *.dSYM.zip
 *.dSYM
+**/GoogleService-Info.plist
 
 # ==============================================================================
-# Linux & Windows Desktop Ephemeral
+# Web & Desktop Ephemeral
 # ==============================================================================
+web/
+lib/generated_plugin_registrant.dart
 linux/flutter/ephemeral/
 linux/**/ephemeral/
 linux/flutter/generated_plugins.cmake
+linux/flutter/generated_plugin_registrant.cc
+linux/flutter/generated_plugin_registrant.h
 windows/flutter/ephemeral/
 windows/**/ephemeral/
 windows/flutter/generated_plugins.cmake
+windows/flutter/generated_plugin_registrant.cc
+windows/flutter/generated_plugin_registrant.h
+
+# Note: If this project targets Android ONLY, uncomment the following block:
+# ios/
+# macos/
+# windows/
+# linux/
 
 # ==============================================================================
-# IDEs & Text Editors
+# Environment & Secrets
 # ==============================================================================
-# IntelliJ / Android Studio
+.env
+.env.*
+!.env.example
+*.pem
+*.p8
+*.p12
+secrets.json
+
+# ==============================================================================
+# IDEs, Editors & Tooling
+# ==============================================================================
 .idea/
 android/.idea/
 *.iml
 *.ipr
 *.iws
-
-# Visual Studio Code
 .vscode/
 *.code-workspace
+.fleet/
+.atom/
 
-# ==============================================================================
 # AI Agents & Isolation Docs
-# ==============================================================================
 AGENTS.md
 agents.md
 .agents/
 .agent/
 
 # ==============================================================================
-# Environment Variables & Secrets
+# Testing & Coverage
 # ==============================================================================
-.env
-.env.*
-!.env.example
+coverage/
+test/**/coverage/
+.test_coverage/
+*.lcov
 
 # ==============================================================================
 # OS & Miscellaneous
@@ -125,11 +160,13 @@ agents.md
 .Trashes
 ehthumbs.db
 Thumbs.db
+Desktop.ini
+*~
 *.class
 *.log
+*.tmp
 *.pyc
 *.swp
-.atom/
 .buildlog/
 .history
 .svn/
