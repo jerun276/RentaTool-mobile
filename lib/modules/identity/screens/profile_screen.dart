@@ -66,7 +66,7 @@ class ProfileScreen extends ConsumerWidget {
                 children: [
                   CircleAvatar(
                     radius: 28,
-                    backgroundColor: AppColors.primary.withOpacity(0.2),
+                    backgroundColor: AppColors.primary.withValues(alpha: 0.2),
                     child: Text(
                       user.name.isNotEmpty ? user.name[0].toUpperCase() : 'U',
                       style: const TextStyle(
@@ -188,9 +188,9 @@ class ProfileScreen extends ConsumerWidget {
               Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: AppColors.warning.withOpacity(0.08),
+                  color: AppColors.warning.withValues(alpha: 0.08),
                   borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: AppColors.warning.withOpacity(0.3)),
+                  border: Border.all(color: AppColors.warning.withValues(alpha: 0.3)),
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,

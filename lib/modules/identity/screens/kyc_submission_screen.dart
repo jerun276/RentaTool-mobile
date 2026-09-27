@@ -84,9 +84,9 @@ class _KycSubmissionScreenState extends ConsumerState<KycSubmissionScreen> {
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: AppColors.primary.withOpacity(0.1),
+                color: AppColors.primary.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(10),
-                border: Border.all(color: AppColors.primary.withOpacity(0.3)),
+                border: Border.all(color: AppColors.primary.withValues(alpha: 0.3)),
               ),
               child: const Row(
                 children: [
@@ -134,19 +134,19 @@ class _KycSubmissionScreenState extends ConsumerState<KycSubmissionScreen> {
                         borderRadius: BorderRadius.circular(10),
                         child: Image.file(_selectedImage!, fit: BoxFit.cover),
                       )
-                    : Column(
+                    : const Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          const Icon(Icons.camera_alt_outlined, size: 40, color: AppColors.textMuted),
-                          const SizedBox(height: 8),
-                          const Text(
+                          Icon(Icons.camera_alt_outlined, size: 40, color: AppColors.textMuted),
+                          SizedBox(height: 8),
+                          Text(
                             'Tap to upload NIC photo',
                             style: TextStyle(color: AppColors.textSecondary, fontSize: 13),
                           ),
-                          const SizedBox(height: 4),
-                          Text(
+                          SizedBox(height: 4),
+                          const Text(
                             'JPG or PNG up to 5MB',
-                            style: TextStyle(color: AppColors.textMuted, fontSize: 11),
+                            style: const TextStyle(color: AppColors.textMuted, fontSize: 11),
                           ),
                         ],
                       ),
@@ -181,7 +181,7 @@ class _KycSubmissionScreenState extends ConsumerState<KycSubmissionScreen> {
                 decoration: BoxDecoration(
                   color: AppColors.surfaceLight,
                   borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: AppColors.primary.withOpacity(0.4)),
+                  border: Border.all(color: AppColors.primary.withValues(alpha: 0.4)),
                 ),
                 child: Text(
                   _statusMessage!,

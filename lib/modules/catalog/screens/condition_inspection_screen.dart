@@ -175,7 +175,7 @@ class _ConditionInspectionScreenState extends ConsumerState<ConditionInspectionS
                 child: const Row(
                   children: [
                     Icon(Icons.camera_enhance_outlined, color: AppColors.primaryLight, size: 24),
-                    const SizedBox(width: 12),
+                    SizedBox(width: 12),
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,

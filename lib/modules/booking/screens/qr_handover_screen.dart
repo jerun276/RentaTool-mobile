@@ -107,7 +107,7 @@ class _QrHandoverScreenState extends ConsumerState<QrHandoverScreen> {
                     borderRadius: BorderRadius.circular(16),
                     boxShadow: [
                       BoxShadow(
-                        color: AppColors.primary.withOpacity(0.2),
+                        color: AppColors.primary.withValues(alpha: 0.2),
                         blurRadius: 20,
                         spreadRadius: 2,
                       ),

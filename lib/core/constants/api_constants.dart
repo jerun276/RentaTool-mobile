@@ -5,9 +5,18 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 class ApiConstants {
   ApiConstants._();
 
+  /// May be overridden for a physical device, for example:
+  /// `--dart-define=API_BASE_URL=http://127.0.0.1:5000/api/v1`
+  static const String _configuredBaseUrl = String.fromEnvironment(
+    'API_BASE_URL',
+  );
+
   /// Automatically configures the base URL depending on host platform.
   /// Android emulator maps `10.0.2.2` to host machine `localhost`.
   static String get baseUrl {
+    if (_configuredBaseUrl.isNotEmpty) {
+      return _configuredBaseUrl;
+    }
     if (kIsWeb) {
       return 'http://localhost:5000/api/v1';
     }
@@ -15,7 +24,7 @@ class ApiConstants {
       return 'http://10.0.2.2:5000/api/v1';
     }
     // iOS simulator / Desktop / Physical device over local network
-    return 'http://localhost:5000/api/v1';
+    return 'http://10.20.15.190:5000/api/v1';
   }
 
   // --- Auth & Identity Endpoints (Component 1) ---
