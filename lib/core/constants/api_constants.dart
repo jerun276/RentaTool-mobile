@@ -6,6 +6,12 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 class ApiConstants {
   ApiConstants._();
 
+  /// May be overridden for a physical device or CI/CD via:
+  /// `--dart-define=API_BASE_URL=http://127.0.0.1:5000/api/v1`
+  static const String _configuredBaseUrl = String.fromEnvironment(
+    'API_BASE_URL',
+  );
+
   static String? _getEnv(String key) {
     try {
       if (dotenv.isInitialized) {
@@ -15,10 +21,17 @@ class ApiConstants {
     return null;
   }
 
-  /// Automatically configures the base URL using `.env` settings
-  /// with intelligent fallback defaults based on the target platform.
+  /// Automatically configures the base URL using compile-time defines, `.env` settings,
+  /// or intelligent fallback defaults based on the target platform.
   static String get baseUrl {
-    // 1. Direct Base URL Override from .env
+    // 1. Direct compile-time override via --dart-define
+    if (_configuredBaseUrl.isNotEmpty) {
+      return _configuredBaseUrl.endsWith('/')
+          ? _configuredBaseUrl.substring(0, _configuredBaseUrl.length - 1)
+          : _configuredBaseUrl;
+    }
+
+    // 2. Direct Base URL Override from .env
     final explicitUrl = _getEnv('API_BASE_URL')?.trim();
     if (explicitUrl != null && explicitUrl.isNotEmpty) {
       return explicitUrl.endsWith('/')
@@ -26,12 +39,12 @@ class ApiConstants {
           : explicitUrl;
     }
 
-    // 2. Read Protocol, Port and API Prefix
+    // 3. Read Protocol, Port and API Prefix
     final scheme = _getEnv('API_SCHEME')?.trim() ?? 'http';
     final port = _getEnv('API_PORT')?.trim() ?? '5000';
     final prefix = _getEnv('API_PREFIX')?.trim() ?? 'api/v1';
 
-    // 3. Resolve Host based on platform
+    // 4. Resolve Host based on platform
     String host;
     if (kIsWeb) {
       host = _getEnv('API_HOST_WEB')?.trim() ??
@@ -49,7 +62,7 @@ class ApiConstants {
       host = _getEnv('API_HOST')?.trim() ?? 'localhost';
     }
 
-    // 4. Construct complete URL
+    // 5. Construct complete URL
     final portSuffix = port.isNotEmpty ? ':$port' : '';
     final cleanedPrefix = prefix.startsWith('/') ? prefix.substring(1) : prefix;
     return '$scheme://$host$portSuffix/$cleanedPrefix';

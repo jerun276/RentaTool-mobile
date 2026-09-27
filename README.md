@@ -49,18 +49,28 @@ flutter pub get
 
 ### 3. Backend URL Configuration
 The app automatically detects the runtime platform:
-- **Android Emulator**: Resolves to `http://10.0.2.2:5000/api`
-- **iOS Simulator / Desktop / Web**: Resolves to `http://localhost:5000/api`
-- Custom IP: Override `API_BASE_URL` in `lib/core/constants/api_constants.dart` if testing on a physical mobile device via WiFi.
+- **Android Emulator**: `http://10.0.2.2:5000/api/v1`
+- **iOS Simulator / Desktop / Web**: `http://localhost:5000/api/v1`
+- **Physical Android phone over USB**: use `adb reverse tcp:5000 tcp:5000`, then run with `--dart-define=API_BASE_URL=http://127.0.0.1:5000/api/v1`.
+- **Physical phone over Wi-Fi**: pass your computer's LAN address as `--dart-define=API_BASE_URL=http://<computer-lan-ip>:5000/api/v1` and make sure the firewall allows port 5000.
+
+`API_BASE_URL` is a Dart compile-time setting. The value must include `/api/v1`.
 
 ### 4. Running the App
 ```bash
 # Run on connected device / emulator
 flutter run
 
+# Run on a USB-connected Android phone (enable USB debugging and accept its prompt first)
+adb devices
+adb reverse tcp:5000 tcp:5000
+flutter run -d <device-id> --dart-define=API_BASE_URL=http://127.0.0.1:5000/api/v1
+
 # Run specifically on Chrome (for quick UI testing)
 flutter run -d chrome
 ```
+
+For local development, start PostgreSQL from `../RentaTool` with `docker compose up -d postgres`, then start the API from `../RentaTool/src/backend/Host/RentaTool.API` with `dotnet run --launch-profile http`. Confirm `http://localhost:5000/health` responds before launching the phone app.
 
 ---
 

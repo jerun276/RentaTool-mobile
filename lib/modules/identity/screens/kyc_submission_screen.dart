@@ -1,4 +1,4 @@
-﻿import 'dart:io';
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
@@ -10,6 +10,7 @@ import '../services/identity_service.dart';
 
 class KycSubmissionScreen extends ConsumerStatefulWidget {
   const KycSubmissionScreen({super.key});
+
   @override
   ConsumerState<KycSubmissionScreen> createState() => _KycSubmissionScreenState();
 }
@@ -175,13 +176,34 @@ class _KycSubmissionScreenState extends ConsumerState<KycSubmissionScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: AppColors.primary.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(color: AppColors.primary.withValues(alpha: 0.3)),
+              ),
+              child: const Row(
+                children: [
+                  Icon(Icons.verified_user_outlined, color: AppColors.primaryLight),
+                  SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      'Verified users enjoy zero pre-auth deposit hold restrictions and priority booking approvals.',
+                      style: TextStyle(color: AppColors.textPrimary, fontSize: 12),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 20),
             if (isAlreadyVerified) ...[
               Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: AppColors.success.withOpacity(0.12),
+                  color: AppColors.success.withValues(alpha: 0.12),
                   borderRadius: BorderRadius.circular(10),
-                  border: Border.all(color: AppColors.success.withOpacity(0.4)),
+                  border: Border.all(color: AppColors.success.withValues(alpha: 0.4)),
                 ),
                 child: const Row(
                   children: [
@@ -189,7 +211,7 @@ class _KycSubmissionScreenState extends ConsumerState<KycSubmissionScreen> {
                     SizedBox(width: 12),
                     Expanded(
                       child: Text(
-                        'Your NIC document is verified. You are authorized to rent and receive machinery.',
+                        'Your document is verified. You are authorized to rent and receive machinery.',
                         style: TextStyle(
                           color: AppColors.success,
                           fontWeight: FontWeight.w600,
@@ -205,9 +227,9 @@ class _KycSubmissionScreenState extends ConsumerState<KycSubmissionScreen> {
               Container(
                 padding: const EdgeInsets.all(14),
                 decoration: BoxDecoration(
-                  color: AppColors.primary.withOpacity(.1),
+                  color: AppColors.primary.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(10),
-                  border: Border.all(color: AppColors.primary.withOpacity(0.3)),
+                  border: Border.all(color: AppColors.primary.withValues(alpha: 0.3)),
                 ),
                 child: const Row(
                   children: [
@@ -215,7 +237,7 @@ class _KycSubmissionScreenState extends ConsumerState<KycSubmissionScreen> {
                     SizedBox(width: 12),
                     Expanded(
                       child: Text(
-                        'Renter Verification Rule: You must submit and validate a valid Sri Lankan NIC document before you can rent and receive equipment.',
+                        'Renter Verification Rule: You must submit and validate a valid Sri Lankan NIC or Driving Licence before you can rent and receive equipment.',
                         style: TextStyle(color: AppColors.textPrimary, fontSize: 13),
                       ),
                     ),
