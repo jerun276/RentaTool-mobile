@@ -15,79 +15,136 @@ class EscrowService {
 
   EscrowService(this._dio);
 
+  static final List<DamageClaimModel> _mockClaims = [
+    const DamageClaimModel(
+      claimId: 'c_999001',
+      bookingId: '33333333-3333-3333-3333-333333333301',
+      filedByUserId: 'u_777',
+      damageDescription: 'Initial mock claim for testing UI.',
+      proposedDeduction: 150.0,
+      status: ClaimStatus.filed,
+      rawStatus: 'Filed',
+    )
+  ];
+
   Future<EscrowHoldModel?> getEscrowByBooking(String bookingId) async {
-    try {
-      final response = await _dio.get(ApiConstants.escrowByBooking(bookingId));
-      return EscrowHoldModel.fromJson(response.data);
-    } catch (e) {
-      return null;
-    }
+    await Future.delayed(const Duration(seconds: 1));
+    return EscrowHoldModel(
+      id: 'e_123',
+      bookingId: bookingId,
+      depositAmount: 500.0,
+      preAuthTransactionId: 'txn_999',
+      status: EscrowStatus.held,
+      rawStatus: 'Held',
+    );
   }
 
   Future<EscrowHoldModel> preAuthorizeDeposit({
     required String bookingId,
+    required String renterId,
+    required String ownerId,
     required double depositAmount,
-    required String paymentMethodId,
+    String? paymentMethodToken,
   }) async {
-    final response = await _dio.post(
-      ApiConstants.escrowPreAuthorize,
-      data: {
-        'bookingId': bookingId,
-        'depositAmount': depositAmount,
-        'paymentMethodId': paymentMethodId,
-      },
+    await Future.delayed(const Duration(seconds: 1));
+    return EscrowHoldModel(
+      id: 'e_123',
+      bookingId: bookingId,
+      depositAmount: depositAmount,
+      preAuthTransactionId: 'txn_999',
+      status: EscrowStatus.held,
+      rawStatus: 'Held',
     );
-    return EscrowHoldModel.fromJson(response.data);
   }
 
   Future<List<DamageClaimModel>> getClaims() async {
-    final response = await _dio.get(ApiConstants.claims);
-    final List<dynamic> items = response.data is List ? response.data : [];
-    return items.map((e) => DamageClaimModel.fromJson(e)).toList();
+    await Future.delayed(const Duration(seconds: 1));
+    return [..._mockClaims];
   }
 
   Future<DamageClaimModel> getClaimById(String id) async {
-    final response = await _dio.get(ApiConstants.claimById(id));
-    return DamageClaimModel.fromJson(response.data);
+    await Future.delayed(const Duration(milliseconds: 500));
+    return _mockClaims.firstWhere((c) => c.claimId == id);
   }
 
   Future<DamageClaimModel> fileClaim({
     required String bookingId,
+    required String filedByUserId,
     required String damageDescription,
-    required double proposedDeduction,
     List<String> evidencePhotos = const [],
   }) async {
-    final response = await _dio.post(
-      ApiConstants.claims,
-      data: {
-        'bookingId': bookingId,
-        'damageDescription': damageDescription,
-        'proposedDeduction': proposedDeduction,
-        'evidencePhotos': evidencePhotos,
-      },
+    await Future.delayed(const Duration(seconds: 1));
+    final newClaim = DamageClaimModel(
+      claimId: 'c_${DateTime.now().millisecondsSinceEpoch}',
+      bookingId: bookingId,
+      filedByUserId: filedByUserId,
+      damageDescription: damageDescription,
+      proposedDeduction: 0.0,
+      evidencePhotos: evidencePhotos,
+      status: ClaimStatus.underAIEvaluation,
+      rawStatus: 'UnderAIEvaluation',
     );
-    return DamageClaimModel.fromJson(response.data);
+    _mockClaims.add(newClaim);
+    return newClaim;
   }
 
   Future<DamageClaimModel> adjudicateClaim({
     required String claimId,
-    required String decision, // 'Approved', 'Revised', 'Rejected'
+    required String decision,
     double? revisedDeduction,
-    String? adjudicationNotes,
+    required String adjudicatorId,
+    String? notes,
   }) async {
-    final response = await _dio.post(
-      ApiConstants.claimAdjudicate(claimId),
-      data: {
-        'decision': decision,
-        if (revisedDeduction != null) 'revisedDeduction': revisedDeduction,
-        if (adjudicationNotes != null) 'adjudicationNotes': adjudicationNotes,
-      },
+    await Future.delayed(const Duration(seconds: 1));
+    final index = _mockClaims.indexWhere((c) => c.claimId == claimId);
+    if (index == -1) throw Exception('Claim not found');
+    
+    final old = _mockClaims[index];
+    final status = decision == 'Approve' ? ClaimStatus.approved : (decision == 'Reject' ? ClaimStatus.rejected : ClaimStatus.revised);
+    
+    final updated = DamageClaimModel(
+      claimId: old.claimId,
+      bookingId: old.bookingId,
+      filedByUserId: old.filedByUserId,
+      damageDescription: old.damageDescription,
+      evidencePhotos: old.evidencePhotos,
+      proposedDeduction: old.proposedDeduction,
+      finalDeduction: revisedDeduction ?? old.proposedDeduction,
+      status: status,
+      rawStatus: status.name,
+      adjudicationNotes: notes,
+      adjudicatedByUserId: adjudicatorId,
+      adjudicatedAtUtc: DateTime.now().toIso8601String(),
     );
-    return DamageClaimModel.fromJson(response.data);
+    _mockClaims[index] = updated;
+    return updated;
   }
 
-  Future<bool> processPayout(String claimId) async {
-    final response = await _dio.post(ApiConstants.claimPayout(claimId));
-    return response.statusCode == 200;
+  Future<PayoutClaimResponse> processPayout(String claimId) async {
+    await Future.delayed(const Duration(seconds: 1));
+    final index = _mockClaims.indexWhere((c) => c.claimId == claimId);
+    if (index != -1) {
+      final old = _mockClaims[index];
+      _mockClaims[index] = DamageClaimModel(
+        claimId: old.claimId,
+        bookingId: old.bookingId,
+        filedByUserId: old.filedByUserId,
+        damageDescription: old.damageDescription,
+        proposedDeduction: old.proposedDeduction,
+        finalDeduction: old.finalDeduction,
+        status: ClaimStatus.settled,
+        rawStatus: 'Settled',
+      );
+    }
+    return PayoutClaimResponse(
+      claimId: claimId,
+      bookingId: 'mock_booking',
+      ownerPayoutAmount: 150.0,
+      renterRefundAmount: 350.0,
+      status: 'Settled',
+      settlementReference: 'SET-${DateTime.now().millisecondsSinceEpoch}',
+      settledAtUtc: DateTime.now().toIso8601String(),
+    );
   }
 }
+

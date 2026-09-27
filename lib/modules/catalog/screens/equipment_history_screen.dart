@@ -117,7 +117,7 @@ class EquipmentHistoryScreen extends ConsumerWidget {
                     child: const Row(
                       children: [
                         Icon(Icons.warning_amber_rounded, color: AppColors.wearLockout, size: 20),
-                        const SizedBox(width: 10),
+                        SizedBox(width: 10),
                         Expanded(
                           child: Text(
                             'Mandatory Servicing Required. Machine has accumulated 60+ rental days and is locked out from new bookings.',
@@ -168,7 +168,7 @@ class EquipmentHistoryScreen extends ConsumerWidget {
             child: const Column(
               children: [
                 Icon(Icons.assignment_outlined, size: 40, color: AppColors.textMuted),
-                const SizedBox(height: 12),
+                SizedBox(height: 12),
                 Text(
                   'No condition inspection records logged yet.',
                   style: TextStyle(color: AppColors.textSecondary, fontSize: 14),

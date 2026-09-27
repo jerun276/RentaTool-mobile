@@ -37,9 +37,9 @@ class EscrowOverviewScreen extends ConsumerWidget {
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: AppColors.primary.withOpacity(0.1),
+                color: AppColors.primary.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: AppColors.primary.withOpacity(0.3)),
+                border: Border.all(color: AppColors.primary.withValues(alpha: 0.3)),
               ),
               child: const Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -147,7 +147,7 @@ class EscrowOverviewScreen extends ConsumerWidget {
 
   Widget _claimCard(BuildContext context, DamageClaimModel claim, NumberFormat formatter) {
     BadgeStyle badgeStyle;
-    switch (claim.status.toLowerCase()) {
+    switch (claim.status.name.toLowerCase()) {
       case 'approved':
       case 'settled':
         badgeStyle = BadgeStyle.success;
@@ -183,7 +183,7 @@ class EscrowOverviewScreen extends ConsumerWidget {
                     'CLAIM-${claim.claimId.isNotEmpty ? claim.claimId.substring(0, claim.claimId.length >= 4 ? 4 : claim.claimId.length).toUpperCase() : '0000'}',
                     style: const TextStyle(fontFamily: 'monospace', fontWeight: FontWeight.bold, fontSize: 12),
                   ),
-                  StatusBadge(label: claim.status, style: badgeStyle),
+                  StatusBadge(label: claim.status.displayLabel, style: badgeStyle),
                 ],
               ),
               const SizedBox(height: 8),

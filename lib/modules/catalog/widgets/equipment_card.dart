@@ -168,11 +168,11 @@ class EquipmentCard extends StatelessWidget {
   }
 
   Widget _fallbackImagePlaceholder() {
-    return Center(
+    return const Center(
       child: Icon(
         Icons.precision_manufacturing_outlined,
         size: 56,
-        color: const Color(0x5594A3B8),
+        color: Color(0x5594A3B8),
       ),
     );
   }

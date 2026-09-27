@@ -5,10 +5,19 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 class ApiConstants {
   ApiConstants._();
 
+  /// May be overridden for a physical device, for example:
+  /// `--dart-define=API_BASE_URL=http://127.0.0.1:5000/api/v1`
+  static const String _configuredBaseUrl = String.fromEnvironment(
+    'API_BASE_URL',
+  );
+
   /// Automatically configures the base URL depending on host platform.
   /// Physical Android device uses the PC's Wi-Fi IP (same network required).
   /// Android device uses the USB tunnel via localhost.
   static String get baseUrl {
+    if (_configuredBaseUrl.isNotEmpty) {
+      return _configuredBaseUrl;
+    }
     if (kIsWeb) {
       return 'http://localhost:5000/api/v1';
     }

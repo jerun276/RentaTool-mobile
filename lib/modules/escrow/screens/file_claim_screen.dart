@@ -20,9 +20,10 @@ class FileClaimScreen extends ConsumerStatefulWidget {
 class _FileClaimScreenState extends ConsumerState<FileClaimScreen> {
   final _formKey = GlobalKey<FormState>();
   final _bookingIdController = TextEditingController();
+  final _userIdController = TextEditingController();
   final _descController = TextEditingController();
-  final _deductionController = TextEditingController();
   bool _isSubmitting = false;
+  XFile? _selectedImage;
 
   @override
   void initState() {
@@ -35,8 +36,8 @@ class _FileClaimScreenState extends ConsumerState<FileClaimScreen> {
   @override
   void dispose() {
     _bookingIdController.dispose();
+    _userIdController.dispose();
     _descController.dispose();
-    _deductionController.dispose();
     super.dispose();
   }
 
@@ -48,8 +49,9 @@ class _FileClaimScreenState extends ConsumerState<FileClaimScreen> {
       final service = ref.read(escrowServiceProvider);
       await service.fileClaim(
         bookingId: _bookingIdController.text.trim(),
+        filedByUserId: _userIdController.text.trim(),
         damageDescription: _descController.text.trim(),
-        proposedDeduction: double.parse(_deductionController.text),
+        evidencePhotos: _selectedImage != null ? [_selectedImage!.path] : [],
       );
 
       ref.read(escrowProvider.notifier).fetchClaims();
@@ -92,9 +94,9 @@ class _FileClaimScreenState extends ConsumerState<FileClaimScreen> {
               Container(
                 padding: const EdgeInsets.all(14),
                 decoration: BoxDecoration(
-                  color: AppColors.warning.withOpacity(0.1),
+                  color: AppColors.warning.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(10),
-                  border: Border.all(color: AppColors.warning.withOpacity(0.3)),
+                  border: Border.all(color: AppColors.warning.withValues(alpha: 0.3)),
                 ),
                 child: const Row(
                   children: [
@@ -120,29 +122,54 @@ class _FileClaimScreenState extends ConsumerState<FileClaimScreen> {
               const SizedBox(height: 16),
 
               AppTextField(
+                controller: _userIdController,
+                label: 'Your User ID',
+                hintText: 'e.g. 11111111-1111-1111-1111-111111111101',
+                validator: (v) => v == null || v.isEmpty ? 'User ID is required' : null,
+              ),
+              const SizedBox(height: 16),
+
+              AppTextField(
                 controller: _descController,
                 label: 'Description of Damage & Incident',
                 hintText: 'Describe damaged components, broken hydraulics, fractured housing, stripped chuck teeth...',
                 maxLines: 4,
                 validator: (v) => v == null || v.isEmpty ? 'Damage details are required' : null,
               ),
-              const SizedBox(height: 16),
-
-              AppTextField(
-                controller: _deductionController,
-                label: 'Proposed Repair / Replacement Cost (LKR)',
-                hintText: 'e.g. 18500',
-                keyboardType: TextInputType.number,
-                validator: (v) => v == null || double.tryParse(v) == null ? 'Enter valid deduction amount' : null,
-              ),
               const SizedBox(height: 20),
+
+              if (_selectedImage != null)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 20),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.check_circle, color: AppColors.success, size: 20),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          'Photo attached: ${_selectedImage!.name}',
+                          style: const TextStyle(color: AppColors.success, fontSize: 13),
+                        ),
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.close, size: 18),
+                        onPressed: () => setState(() => _selectedImage = null),
+                      ),
+                    ],
+                  ),
+                ),
 
               OutlinedButton.icon(
                 icon: const Icon(Icons.camera_alt_outlined, size: 18),
                 label: const Text('Attach Damage Evidence Photos'),
                 onPressed: () async {
                   final picker = ImagePicker();
-                  await picker.pickImage(source: ImageSource.camera);
+                  final XFile? image = await picker.pickImage(source: ImageSource.gallery);
+                  if (image != null) {
+                    setState(() {
+                      _selectedImage = image;
+                    });
+                  }
                 },
               ),
               const SizedBox(height: 28),
@@ -159,3 +186,4 @@ class _FileClaimScreenState extends ConsumerState<FileClaimScreen> {
     );
   }
 }
+

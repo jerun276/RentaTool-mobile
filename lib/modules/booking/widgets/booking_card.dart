@@ -190,10 +190,10 @@ class BookingCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
       decoration: BoxDecoration(
-        color: isVerified ? AppColors.success.withOpacity(0.12) : AppColors.surfaceElevated,
+        color: isVerified ? AppColors.success.withValues(alpha: 0.12) : AppColors.surfaceElevated,
         borderRadius: BorderRadius.circular(4),
         border: Border.all(
-          color: isVerified ? AppColors.success.withOpacity(0.4) : AppColors.border,
+          color: isVerified ? AppColors.success.withValues(alpha: 0.3) : AppColors.border,
         ),
       ),
       child: Row(
