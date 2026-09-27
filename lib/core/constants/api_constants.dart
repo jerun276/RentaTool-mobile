@@ -1,36 +1,71 @@
 import 'dart:io' show Platform;
 import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 /// Global API constants and backend endpoints for RentaTool LK.
 class ApiConstants {
   ApiConstants._();
 
-  /// May be overridden for a physical device, for example:
+  /// May be overridden for a physical device or CI/CD via:
   /// `--dart-define=API_BASE_URL=http://127.0.0.1:5000/api/v1`
   static const String _configuredBaseUrl = String.fromEnvironment(
     'API_BASE_URL',
   );
 
-  /// Automatically configures the base URL depending on host platform.
-  /// Physical Android device uses the PC's Wi-Fi IP (same network required).
-  /// Android device uses the USB tunnel via localhost.
+  static String? _getEnv(String key) {
+    try {
+      if (dotenv.isInitialized) {
+        return dotenv.maybeGet(key);
+      }
+    } catch (_) {}
+    return null;
+  }
+
+  /// Automatically configures the base URL using compile-time defines, `.env` settings,
+  /// or intelligent fallback defaults based on the target platform.
   static String get baseUrl {
+    // 1. Direct compile-time override via --dart-define
     if (_configuredBaseUrl.isNotEmpty) {
-      return _configuredBaseUrl;
+      return _configuredBaseUrl.endsWith('/')
+          ? _configuredBaseUrl.substring(0, _configuredBaseUrl.length - 1)
+          : _configuredBaseUrl;
     }
+
+    // 2. Direct Base URL Override from .env
+    final explicitUrl = _getEnv('API_BASE_URL')?.trim();
+    if (explicitUrl != null && explicitUrl.isNotEmpty) {
+      return explicitUrl.endsWith('/')
+          ? explicitUrl.substring(0, explicitUrl.length - 1)
+          : explicitUrl;
+    }
+
+    // 3. Read Protocol, Port and API Prefix
+    final scheme = _getEnv('API_SCHEME')?.trim() ?? 'http';
+    final port = _getEnv('API_PORT')?.trim() ?? '5000';
+    final prefix = _getEnv('API_PREFIX')?.trim() ?? 'api/v1';
+
+    // 4. Resolve Host based on platform
+    String host;
     if (kIsWeb) {
-      return 'http://localhost:5000/api/v1';
+      host = _getEnv('API_HOST_WEB')?.trim() ??
+          _getEnv('API_HOST')?.trim() ??
+          'localhost';
+    } else if (Platform.isAndroid) {
+      host = _getEnv('API_HOST_ANDROID')?.trim() ??
+          _getEnv('API_HOST')?.trim() ??
+          '10.0.2.2';
+    } else if (Platform.isIOS) {
+      host = _getEnv('API_HOST_IOS')?.trim() ??
+          _getEnv('API_HOST')?.trim() ??
+          'localhost';
+    } else {
+      host = _getEnv('API_HOST')?.trim() ?? 'localhost';
     }
-    if (Platform.isAndroid) {
-      // Use your PC's Wi-Fi IP for physical device.
-      // Change to 'http://10.0.2.2:5000/api/v1' if using an emulator.
-      return 'http://172.16.4.24:5000/api/v1';
-      // Use localhost to route through ADB reverse USB tunnel
-      // (adb reverse tcp:5000 tcp:5000)
-      return 'http://127.0.0.1:5000/api/v1';
-    }
-    // iOS simulator / Desktop
-    return 'http://localhost:5000/api/v1';
+
+    // 5. Construct complete URL
+    final portSuffix = port.isNotEmpty ? ':$port' : '';
+    final cleanedPrefix = prefix.startsWith('/') ? prefix.substring(1) : prefix;
+    return '$scheme://$host$portSuffix/$cleanedPrefix';
   }
 
   // --- Auth & Identity Endpoints (Component 1) ---
@@ -67,6 +102,13 @@ class ApiConstants {
   static String claimAdjudicate(String id) => '/claims/$id/adjudicate';
 
   // Request timeouts
-  static const Duration connectTimeout = Duration(seconds: 15);
-  static const Duration receiveTimeout = Duration(seconds: 15);
+  static Duration get connectTimeout {
+    final seconds = int.tryParse(_getEnv('CONNECT_TIMEOUT_SECONDS') ?? '15') ?? 15;
+    return Duration(seconds: seconds);
+  }
+
+  static Duration get receiveTimeout {
+    final seconds = int.tryParse(_getEnv('RECEIVE_TIMEOUT_SECONDS') ?? '15') ?? 15;
+    return Duration(seconds: seconds);
+  }
 }
