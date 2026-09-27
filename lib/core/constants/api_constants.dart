@@ -12,7 +12,8 @@ class ApiConstants {
   );
 
   /// Automatically configures the base URL depending on host platform.
-  /// Android emulator maps `10.0.2.2` to host machine `localhost`.
+  /// Physical Android device uses the PC's Wi-Fi IP (same network required).
+  /// Android device uses the USB tunnel via localhost.
   static String get baseUrl {
     if (_configuredBaseUrl.isNotEmpty) {
       return _configuredBaseUrl;
@@ -21,10 +22,15 @@ class ApiConstants {
       return 'http://localhost:5000/api/v1';
     }
     if (Platform.isAndroid) {
-      return 'http://10.0.2.2:5000/api/v1';
+      // Use your PC's Wi-Fi IP for physical device.
+      // Change to 'http://10.0.2.2:5000/api/v1' if using an emulator.
+      return 'http://172.16.4.24:5000/api/v1';
+      // Use localhost to route through ADB reverse USB tunnel
+      // (adb reverse tcp:5000 tcp:5000)
+      return 'http://127.0.0.1:5000/api/v1';
     }
-    // iOS simulator / Desktop / Physical device over local network
-    return 'http://10.20.15.190:5000/api/v1';
+    // iOS simulator / Desktop
+    return 'http://localhost:5000/api/v1';
   }
 
   // --- Auth & Identity Endpoints (Component 1) ---

@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/theme/app_colors.dart';
@@ -15,8 +15,8 @@ class LoginScreen extends ConsumerStatefulWidget {
 
 class _LoginScreenState extends ConsumerState<LoginScreen> {
   final _formKey = GlobalKey<FormState>();
-  final _emailController = TextEditingController(text: 'renter@rentatool.lk');
-  final _passwordController = TextEditingController(text: 'Renter@123');
+  final _emailController = TextEditingController();
+  final _passwordController = TextEditingController();
   bool _obscurePassword = true;
 
   @override
@@ -24,11 +24,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     _emailController.dispose();
     _passwordController.dispose();
     super.dispose();
-  }
-
-  void _quickFill(String email, String pass) {
-    _emailController.text = email;
-    _passwordController.text = pass;
   }
 
   Future<void> _handleLogin() async {
@@ -96,52 +91,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   ),
                   const SizedBox(height: 32),
 
-                  // Quick fill demo accounts
-                  Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: AppColors.surfaceLight,
-                      borderRadius: BorderRadius.circular(10),
-                      border: Border.all(color: AppColors.border),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text(
-                          'QUICK DEMO ACCOUNTS',
-                          style: TextStyle(
-                            fontSize: 10,
-                            fontWeight: FontWeight.bold,
-                            letterSpacing: 0.8,
-                            color: AppColors.textMuted,
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        Wrap(
-                          spacing: 8,
-                          children: [
-                            ActionChip(
-                              label: const Text('Renter', style: TextStyle(fontSize: 11)),
-                              backgroundColor: AppColors.surfaceElevated,
-                              onPressed: () => _quickFill('renter@rentatool.lk', 'Renter@123'),
-                            ),
-                            ActionChip(
-                              label: const Text('Owner', style: TextStyle(fontSize: 11)),
-                              backgroundColor: AppColors.surfaceElevated,
-                              onPressed: () => _quickFill('owner@rentatool.lk', 'Owner@123'),
-                            ),
-                            ActionChip(
-                              label: const Text('Admin', style: TextStyle(fontSize: 11)),
-                              backgroundColor: AppColors.surfaceElevated,
-                              onPressed: () => _quickFill('admin@rentatool.lk', 'Admin@123'),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 24),
-
                   if (authState.errorMessage != null) ...[
                     Container(
                       padding: const EdgeInsets.all(12),
@@ -161,7 +110,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   AppTextField(
                     controller: _emailController,
                     label: 'Email Address',
-                    hintText: 'e.g. renter@rentatool.lk',
+                    hintText: 'e.g. yourname@example.com',
                     keyboardType: TextInputType.emailAddress,
                     prefixIcon: const Icon(Icons.email_outlined, size: 18),
                     validator: (v) => v == null || !v.contains('@') ? 'Enter a valid email' : null,

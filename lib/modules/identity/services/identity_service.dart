@@ -63,6 +63,7 @@ class IdentityService {
     required String documentNumber,
     required String documentType,
     String? frontImagePath,
+    String? backImagePath,
   }) async {
     final formData = FormData.fromMap({
       'documentType': documentType,
@@ -72,6 +73,11 @@ class IdentityService {
           frontImagePath,
           filename: 'nic_front.jpg',
         ),
+      if (backImagePath != null)
+        'backDocument': await MultipartFile.fromFile(
+          backImagePath,
+          filename: 'document_back.jpg',
+        ),
     });
 
     await _dio.post(
@@ -79,5 +85,17 @@ class IdentityService {
       data: formData,
       options: Options(contentType: 'multipart/form-data'),
     );
+  }
+
+  /// Updates KYC approval state in the authorised verification workflow.
+  Future<UserModel> updateVerificationStatus({
+    required String userId,
+    required bool isVerified,
+  }) async {
+    final response = await _dio.patch(
+      ApiConstants.kycVerificationStatus(userId),
+      data: {'isVerified': isVerified},
+    );
+    return UserModel.fromJson(response.data);
   }
 }
