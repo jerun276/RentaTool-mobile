@@ -54,6 +54,21 @@ class IdentityService {
     return UserModel.fromJson(response.data);
   }
 
+  Future<UserModel> updateProfile({
+    required String userId,
+    required String name,
+    required String phoneNumber,
+  }) async {
+    final response = await _dio.patch(
+      '${ApiConstants.userById(userId)}/profile',
+      data: {
+        'name': name.trim(),
+        'phoneNumber': phoneNumber.replaceAll(RegExp(r'[\s-]'), ''),
+      },
+    );
+    return UserModel.fromJson(response.data);
+  }
+
   Future<TrustScoreModel> getTrustScore(String userId) async {
     final response = await _dio.get(ApiConstants.trustScore(userId));
     return TrustScoreModel.fromJson(response.data);

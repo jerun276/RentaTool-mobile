@@ -1,4 +1,4 @@
-﻿import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/services/token_storage_service.dart';
 import '../models/user_model.dart';
 import '../models/trust_score_model.dart';
@@ -41,6 +41,11 @@ class AuthNotifier extends StateNotifier<AuthState> {
     checkCurrentSession();
   }
 
+  Future<UserModel> _withLocalPhoto(UserModel user) async {
+    final path = await _tokenStorage.getProfilePhoto(user.id);
+    return user.copyWith(profilePhotoPath: path);
+  }
+
   Future<void> checkCurrentSession() async {
     state = state.copyWith(isLoading: true);
     final hasToken = await _tokenStorage.hasToken();
@@ -67,7 +72,9 @@ class AuthNotifier extends StateNotifier<AuthState> {
         ),
       );
       try {
-        final profile = await _identityService.getUserProfile(userId);
+        final profile = await _withLocalPhoto(
+          await _identityService.getUserProfile(userId),
+        );
         state = state.copyWith(
           isLoading: false,
           isAuthenticated: true,
@@ -94,7 +101,8 @@ class AuthNotifier extends StateNotifier<AuthState> {
   Future<bool> login({required String email, required String password}) async {
     state = state.copyWith(isLoading: true, errorMessage: null);
     try {
-      final res = await _identityService.login(email: email, password: password);
+      final res =
+          await _identityService.login(email: email, password: password);
       await _tokenStorage.saveTokens(
         accessToken: res.accessToken,
         refreshToken: res.refreshToken,
@@ -108,7 +116,9 @@ class AuthNotifier extends StateNotifier<AuthState> {
 
       UserModel user;
       try {
-        user = await _identityService.getUserProfile(res.userId);
+        user = await _withLocalPhoto(
+          await _identityService.getUserProfile(res.userId),
+        );
       } catch (_) {
         user = UserModel(
           id: res.userId,
@@ -197,10 +207,55 @@ class AuthNotifier extends StateNotifier<AuthState> {
   Future<void> refreshProfile() async {
     if (state.user != null) {
       try {
-        final profile = await _identityService.getUserProfile(state.user!.id);
+        final profile = await _withLocalPhoto(
+          await _identityService.getUserProfile(state.user!.id),
+        );
         state = state.copyWith(user: profile);
       } catch (_) {}
     }
+  }
+
+  Future<bool> updateProfile({
+    required String name,
+    required String phoneNumber,
+  }) async {
+    final user = state.user;
+    if (user == null) return false;
+
+    state = state.copyWith(isLoading: true, errorMessage: null);
+    try {
+      final updatedUser = await _identityService.updateProfile(
+        userId: user.id,
+        name: name,
+        phoneNumber: phoneNumber,
+      );
+      final photoPath = await _tokenStorage.getProfilePhoto(updatedUser.id);
+      state = state.copyWith(
+        isLoading: false,
+        user: updatedUser.copyWith(profilePhotoPath: photoPath),
+        errorMessage: null,
+      );
+      await _tokenStorage.saveUser(
+        userId: updatedUser.id,
+        role: updatedUser.role.name,
+        name: updatedUser.name,
+        email: updatedUser.email,
+      );
+      return true;
+    } catch (_) {
+      state = state.copyWith(
+        isLoading: false,
+        errorMessage: 'Could not update your profile. Please try again.',
+      );
+      return false;
+    }
+  }
+
+  Future<void> saveLocalProfilePhoto(String path) async {
+    final user = state.user;
+    if (user == null) return;
+    await _tokenStorage.saveProfilePhoto(user.id, path);
+    state = state.copyWith(user: user.copyWith(profilePhotoPath: path));
   }
 
   Future<void> logout() async {
