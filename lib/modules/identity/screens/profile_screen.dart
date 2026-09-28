@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -5,6 +6,7 @@ import '../../../core/theme/app_colors.dart';
 import '../../../core/widgets/app_button.dart';
 import '../../../core/widgets/status_badge.dart';
 import '../providers/auth_provider.dart';
+import 'edit_profile_screen.dart';
 
 class ProfileScreen extends ConsumerWidget {
   const ProfileScreen({super.key});
@@ -35,12 +37,22 @@ class ProfileScreen extends ConsumerWidget {
 
     final trustScoreAsync = ref.watch(trustScoreProvider(user.id));
     final trustScore = trustScoreAsync.valueOrNull?.score ?? user.trustScore;
-    final trustTier = trustScoreAsync.valueOrNull?.tier ?? _tierForScore(trustScore);
+    final trustTier =
+        trustScoreAsync.valueOrNull?.tier ?? _tierForScore(trustScore);
 
     return Scaffold(
       appBar: AppBar(
         title: const Text('User Profile & Trust'),
         actions: [
+          IconButton(
+            icon: const Icon(Icons.edit_outlined, size: 20),
+            tooltip: 'Edit profile',
+            onPressed: () => Navigator.of(context).push(
+              MaterialPageRoute<void>(
+                builder: (_) => EditProfileScreen(user: user),
+              ),
+            ),
+          ),
           IconButton(
             icon: const Icon(Icons.logout, size: 20),
             tooltip: 'Sign Out',
@@ -71,14 +83,21 @@ class ProfileScreen extends ConsumerWidget {
                   CircleAvatar(
                     radius: 28,
                     backgroundColor: AppColors.primary.withValues(alpha: 0.2),
-                    child: Text(
-                      user.name.isNotEmpty ? user.name[0].toUpperCase() : 'U',
-                      style: const TextStyle(
-                        color: AppColors.primaryLight,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 22,
-                      ),
-                    ),
+                    backgroundImage: user.profilePhotoPath == null
+                        ? null
+                        : FileImage(File(user.profilePhotoPath!)),
+                    child: user.profilePhotoPath != null
+                        ? null
+                        : Text(
+                            user.name.isNotEmpty
+                                ? user.name[0].toUpperCase()
+                                : 'U',
+                            style: const TextStyle(
+                              color: AppColors.primaryLight,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 22,
+                            ),
+                          ),
                   ),
                   const SizedBox(width: 16),
                   Expanded(
@@ -110,8 +129,12 @@ class ProfileScreen extends ConsumerWidget {
                             ),
                             const SizedBox(width: 8),
                             StatusBadge(
-                              label: user.isVerified ? 'KYC VERIFIED' : 'PENDING KYC',
-                              style: user.isVerified ? BadgeStyle.success : BadgeStyle.warning,
+                              label: user.isVerified
+                                  ? 'KYC VERIFIED'
+                                  : 'PENDING KYC',
+                              style: user.isVerified
+                                  ? BadgeStyle.success
+                                  : BadgeStyle.warning,
                             ),
                           ],
                         ),
@@ -146,7 +169,9 @@ class ProfileScreen extends ConsumerWidget {
                           color: AppColors.textMuted,
                         ),
                       ),
-                      StatusBadge(label: trustTier.toUpperCase(), style: BadgeStyle.success),
+                      StatusBadge(
+                          label: trustTier.toUpperCase(),
+                          style: BadgeStyle.success),
                     ],
                   ),
                   const SizedBox(height: 12),
@@ -165,7 +190,8 @@ class ProfileScreen extends ConsumerWidget {
                       const SizedBox(width: 6),
                       const Text(
                         '/ 100 Points',
-                        style: TextStyle(fontSize: 14, color: AppColors.textSecondary),
+                        style: TextStyle(
+                            fontSize: 14, color: AppColors.textSecondary),
                       ),
                     ],
                   ),
@@ -173,19 +199,23 @@ class ProfileScreen extends ConsumerWidget {
                   LinearProgressIndicator(
                     value: trustScore.clamp(0, 100).toDouble() / 100,
                     backgroundColor: AppColors.surfaceLight,
-                    valueColor: const AlwaysStoppedAnimation<Color>(AppColors.primary),
+                    valueColor:
+                        const AlwaysStoppedAnimation<Color>(AppColors.primary),
                     minHeight: 8,
                     borderRadius: BorderRadius.circular(4),
                   ),
                   const SizedBox(height: 12),
                   const Text(
                     'Higher trust scores unlock reduced escrow pre-authorizations and automatic booking confirmations across Sri Lanka.',
-                    style: TextStyle(color: AppColors.textSecondary, fontSize: 12),
+                    style:
+                        TextStyle(color: AppColors.textSecondary, fontSize: 12),
                   ),
                   if (trustScoreAsync.isLoading)
                     const Padding(
                       padding: EdgeInsets.only(top: 10),
-                      child: Text('Refreshing trust score...', style: TextStyle(color: AppColors.textMuted, fontSize: 11)),
+                      child: Text('Refreshing trust score...',
+                          style: TextStyle(
+                              color: AppColors.textMuted, fontSize: 11)),
                     ),
                 ],
               ),
@@ -199,7 +229,8 @@ class ProfileScreen extends ConsumerWidget {
                 decoration: BoxDecoration(
                   color: AppColors.warning.withValues(alpha: 0.08),
                   borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: AppColors.warning.withValues(alpha: 0.3)),
+                  border: Border.all(
+                      color: AppColors.warning.withValues(alpha: 0.3)),
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -215,7 +246,8 @@ class ProfileScreen extends ConsumerWidget {
                     const SizedBox(height: 4),
                     const Text(
                       'Upload your Sri Lankan NIC photo to unlock unrestricted equipment rental access.',
-                      style: TextStyle(color: AppColors.textSecondary, fontSize: 12),
+                      style: TextStyle(
+                          color: AppColors.textSecondary, fontSize: 12),
                     ),
                     const SizedBox(height: 12),
                     AppButton(

@@ -65,6 +65,16 @@ class TokenStorageService {
     return await _storage.read(key: _keyUserEmail);
   }
 
+  String _profilePhotoKey(String userId) => 'rentatool_profile_photo_$userId';
+
+  Future<void> saveProfilePhoto(String userId, String path) async {
+    await _storage.write(key: _profilePhotoKey(userId), value: path);
+  }
+
+  Future<String?> getProfilePhoto(String userId) async {
+    return _storage.read(key: _profilePhotoKey(userId));
+  }
+
   Future<bool> hasToken() async {
     final token = await getAccessToken();
     return token != null && token.isNotEmpty;
