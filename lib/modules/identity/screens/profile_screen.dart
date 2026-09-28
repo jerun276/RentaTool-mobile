@@ -297,27 +297,52 @@ class ProfileScreen extends ConsumerWidget {
               Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: AppColors.warning.withValues(alpha: 0.08),
+                  color: isDarkMode
+                      ? const Color(0xFF281417)
+                      : const Color(0xFFFEE2E2),
                   borderRadius: BorderRadius.circular(12),
                   border: Border.all(
-                      color: AppColors.warning.withValues(alpha: 0.3)),
+                    color: isDarkMode
+                        ? const Color(0xFF7F1D1D)
+                        : const Color(0xFFFCA5A5),
+                    width: 1.2,
+                  ),
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
-                      'Complete National Identity Verification',
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        color: Color(0xFFFFB95F),
-                        fontSize: 14,
-                      ),
+                    Row(
+                      children: [
+                        Icon(
+                          Icons.error_outline_rounded,
+                          color: isDarkMode
+                              ? const Color(0xFFF87171)
+                              : const Color(0xFFDC2626),
+                          size: 18,
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          'Complete NIC Verification',
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            color: isDarkMode
+                                ? const Color(0xFFF87171)
+                                : const Color(0xFFDC2626),
+                            fontSize: 14,
+                          ),
+                        ),
+                      ],
                     ),
-                    const SizedBox(height: 4),
+                    const SizedBox(height: 6),
                     Text(
                       'Upload your Sri Lankan NIC photo to unlock unrestricted equipment rental access.',
                       style: TextStyle(
-                          color: AppColors.textSecondary, fontSize: 12),
+                        color: isDarkMode
+                            ? AppColors.darkTextSecondary
+                            : const Color(0xFF4B5563),
+                        fontSize: 12,
+                        height: 1.3,
+                      ),
                     ),
                     const SizedBox(height: 12),
                     AppButton(
