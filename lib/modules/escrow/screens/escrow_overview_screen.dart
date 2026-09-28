@@ -41,10 +41,10 @@ class EscrowOverviewScreen extends ConsumerWidget {
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(color: AppColors.primary.withValues(alpha: 0.3)),
               ),
-              child: const Column(
+              child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Row(
+                  const Row(
                     children: [
                       Icon(Icons.shield_outlined, color: AppColors.primaryLight, size: 22),
                       SizedBox(width: 8),
@@ -54,7 +54,7 @@ class EscrowOverviewScreen extends ConsumerWidget {
                       ),
                     ],
                   ),
-                  SizedBox(height: 6),
+                  const SizedBox(height: 6),
                   Text(
                     'Security deposits are securely held in escrow until mutual handover verification. Any damage claim undergoes AI visual telemetry evaluation and fair human review.',
                     style: TextStyle(color: AppColors.textSecondary, fontSize: 12),
@@ -68,7 +68,7 @@ class EscrowOverviewScreen extends ConsumerWidget {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Text(
+                Text(
                   'ACTIVE DAMAGE CLAIMS',
                   style: TextStyle(
                     fontSize: 11,
@@ -108,16 +108,16 @@ class EscrowOverviewScreen extends ConsumerWidget {
                       borderRadius: BorderRadius.circular(10),
                       border: Border.all(color: AppColors.border),
                     ),
-                    child: const Center(
+                    child: Center(
                       child: Column(
                         children: [
-                          Icon(Icons.verified_outlined, size: 36, color: AppColors.success),
-                          SizedBox(height: 8),
+                          const Icon(Icons.verified_outlined, size: 36, color: AppColors.success),
+                          const SizedBox(height: 8),
                           Text(
                             'Zero Unresolved Disputes',
                             style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: AppColors.textPrimary),
                           ),
-                          SizedBox(height: 4),
+                          const SizedBox(height: 4),
                           Text(
                             'All current rentals are operating with clean handover telemetry.',
                             style: TextStyle(color: AppColors.textSecondary, fontSize: 12),
@@ -191,7 +191,7 @@ class EscrowOverviewScreen extends ConsumerWidget {
                 claim.damageDescription,
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
-                style: const TextStyle(fontSize: 13, color: AppColors.textPrimary),
+                style: TextStyle(fontSize: 13, color: AppColors.textPrimary),
               ),
               const SizedBox(height: 12),
               Row(
@@ -200,7 +200,7 @@ class EscrowOverviewScreen extends ConsumerWidget {
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text(
+                      Text(
                         'PROPOSED DEDUCTION',
                         style: TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: AppColors.textMuted),
                       ),
@@ -210,7 +210,7 @@ class EscrowOverviewScreen extends ConsumerWidget {
                       ),
                     ],
                   ),
-                  const Icon(Icons.arrow_forward_ios, size: 14, color: AppColors.textMuted),
+                  Icon(Icons.arrow_forward_ios, size: 14, color: AppColors.textMuted),
                 ],
               ),
             ],

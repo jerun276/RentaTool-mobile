@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/theme/app_colors.dart';
@@ -70,7 +70,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     ),
                   ),
                   const SizedBox(height: 16),
-                  const Text(
+                  Text(
                     'RentaTool LK',
                     textAlign: TextAlign.center,
                     style: TextStyle(
@@ -81,7 +81,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     ),
                   ),
                   const SizedBox(height: 4),
-                  const Text(
+                  Text(
                     'Heavy Machinery & Tool Rental Portal',
                     textAlign: TextAlign.center,
                     style: TextStyle(
@@ -144,7 +144,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      const Text(
+                      Text(
                         "Don't have an account?",
                         style: TextStyle(color: AppColors.textSecondary, fontSize: 13),
                       ),

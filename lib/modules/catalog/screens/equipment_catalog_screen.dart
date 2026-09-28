@@ -87,10 +87,10 @@ class _EquipmentCatalogScreenState extends ConsumerState<EquipmentCatalogScreen>
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
             child: TextField(
-              decoration: const InputDecoration(
+              decoration: InputDecoration(
                 hintText: 'Search excavators, rollers, generators...',
                 prefixIcon: Icon(Icons.search, size: 20, color: AppColors.textMuted),
-                contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                 filled: true,
                 fillColor: AppColors.surface,
               ),
@@ -186,16 +186,16 @@ class _EquipmentCatalogScreenState extends ConsumerState<EquipmentCatalogScreen>
                         Container(
                           padding: const EdgeInsets.all(48),
                           alignment: Alignment.center,
-                          child: const Column(
+                          child: Column(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
                               Icon(Icons.search_off_outlined, size: 48, color: AppColors.textMuted),
-                              SizedBox(height: 16),
+                              const SizedBox(height: 16),
                               Text(
                                 'No matching machinery found',
                                 style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
                               ),
-                              SizedBox(height: 8),
+                              const SizedBox(height: 8),
                               Text(
                                 'Try clearing filters or publishing a new tool listing.',
                                 textAlign: TextAlign.center,

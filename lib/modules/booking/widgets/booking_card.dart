@@ -50,7 +50,7 @@ class BookingCard extends StatelessWidget {
       elevation: 2,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(14),
-        side: const BorderSide(color: AppColors.border),
+        side: BorderSide(color: AppColors.border),
       ),
       child: InkWell(
         onTap: onTap,
@@ -66,11 +66,11 @@ class BookingCard extends StatelessWidget {
                 children: [
                   Row(
                     children: [
-                      const Icon(Icons.confirmation_number_outlined, size: 16, color: AppColors.textMuted),
+                      Icon(Icons.confirmation_number_outlined, size: 16, color: AppColors.textMuted),
                       const SizedBox(width: 6),
                       Text(
                         booking.displayCode,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 12,
                           fontFamily: 'monospace',
                           fontWeight: FontWeight.bold,
@@ -92,7 +92,7 @@ class BookingCard extends StatelessWidget {
                   Expanded(
                     child: Text(
                       '${dateFormatter.format(booking.startDate)} → ${dateFormatter.format(booking.endDate)}',
-                      style: const TextStyle(
+                      style: TextStyle(
                         color: AppColors.textPrimary,
                         fontWeight: FontWeight.w600,
                         fontSize: 13,
@@ -107,7 +107,7 @@ class BookingCard extends StatelessWidget {
                     ),
                     child: Text(
                       '${booking.durationInDays}d',
-                      style: const TextStyle(fontSize: 11, color: AppColors.textMuted, fontWeight: FontWeight.bold),
+                      style: TextStyle(fontSize: 11, color: AppColors.textMuted, fontWeight: FontWeight.bold),
                     ),
                   ),
                 ],
@@ -140,7 +140,7 @@ class BookingCard extends StatelessWidget {
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text(
+                      Text(
                         'TOTAL RENTAL',
                         style: TextStyle(
                           fontSize: 9,

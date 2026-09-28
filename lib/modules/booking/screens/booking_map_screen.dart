@@ -119,7 +119,7 @@ class _BookingMapScreenState extends ConsumerState<BookingMapScreen> {
       circleId: const CircleId('search_radius'),
       center: userLatLng,
       radius: _radiusKm * 1000.0, // Convert km to meters
-      fillColor: AppColors.primary.withOpacity(0.12),
+      fillColor: AppColors.primary.withValues(alpha: 0.12),
       strokeColor: AppColors.primaryLight,
       strokeWidth: 2,
     );
@@ -259,12 +259,12 @@ class _BookingMapScreenState extends ConsumerState<BookingMapScreen> {
                   child: Container(
                     padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
                     decoration: BoxDecoration(
-                      color: AppColors.surface.withOpacity(0.92),
+                      color: AppColors.surface.withValues(alpha: 0.92),
                       borderRadius: BorderRadius.circular(12),
                       border: Border.all(color: AppColors.border),
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.black.withOpacity(0.3),
+                          color: Colors.black.withValues(alpha: 0.3),
                           blurRadius: 10,
                           offset: const Offset(0, 4),
                         ),
@@ -279,7 +279,7 @@ class _BookingMapScreenState extends ConsumerState<BookingMapScreen> {
                             const SizedBox(width: 8),
                             Text(
                               'Radius: ${_radiusKm.toInt()} km',
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontWeight: FontWeight.bold,
                                 fontSize: 13,
                                 color: AppColors.textPrimary,
@@ -353,7 +353,7 @@ class _BookingMapScreenState extends ConsumerState<BookingMapScreen> {
                                 Expanded(
                                   child: Text(
                                     _selectedEquipment!.title,
-                                    style: const TextStyle(
+                                    style: TextStyle(
                                       fontSize: 16,
                                       fontWeight: FontWeight.bold,
                                       color: AppColors.textPrimary,
@@ -371,7 +371,7 @@ class _BookingMapScreenState extends ConsumerState<BookingMapScreen> {
                             const SizedBox(height: 4),
                             Text(
                               _selectedEquipment!.categoryName,
-                              style: const TextStyle(fontSize: 12, color: AppColors.textMuted),
+                              style: TextStyle(fontSize: 12, color: AppColors.textMuted),
                             ),
                             const SizedBox(height: 12),
                             Row(
@@ -380,7 +380,7 @@ class _BookingMapScreenState extends ConsumerState<BookingMapScreen> {
                                 Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
-                                    const Text(
+                                    Text(
                                       'DAILY RATE',
                                       style: TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: AppColors.textMuted),
                                     ),

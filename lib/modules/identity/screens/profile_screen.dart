@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/theme_provider.dart';
 import '../../../core/widgets/app_button.dart';
 import '../../../core/widgets/status_badge.dart';
 import '../providers/auth_provider.dart';
@@ -15,6 +16,8 @@ class ProfileScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final authState = ref.watch(authProvider);
     final user = authState.user;
+    final currentThemeMode = ref.watch(themeProvider);
+    final isDarkMode = currentThemeMode == ThemeMode.dark;
 
     if (user == null) {
       return Scaffold(
@@ -106,7 +109,7 @@ class ProfileScreen extends ConsumerWidget {
                       children: [
                         Text(
                           user.name,
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 18,
                             fontWeight: FontWeight.bold,
                             color: AppColors.textPrimary,
@@ -115,7 +118,7 @@ class ProfileScreen extends ConsumerWidget {
                         const SizedBox(height: 2),
                         Text(
                           user.email,
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 13,
                             color: AppColors.textSecondary,
                           ),
@@ -160,7 +163,7 @@ class ProfileScreen extends ConsumerWidget {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      const Text(
+                      Text(
                         'ALGORITHMIC TRUST SCORE',
                         style: TextStyle(
                           fontSize: 11,
@@ -188,7 +191,7 @@ class ProfileScreen extends ConsumerWidget {
                         ),
                       ),
                       const SizedBox(width: 6),
-                      const Text(
+                      Text(
                         '/ 100 Points',
                         style: TextStyle(
                             fontSize: 14, color: AppColors.textSecondary),
@@ -205,18 +208,85 @@ class ProfileScreen extends ConsumerWidget {
                     borderRadius: BorderRadius.circular(4),
                   ),
                   const SizedBox(height: 12),
-                  const Text(
+                  Text(
                     'Higher trust scores unlock reduced escrow pre-authorizations and automatic booking confirmations across Sri Lanka.',
                     style:
                         TextStyle(color: AppColors.textSecondary, fontSize: 12),
                   ),
                   if (trustScoreAsync.isLoading)
-                    const Padding(
-                      padding: EdgeInsets.only(top: 10),
+                    Padding(
+                      padding: const EdgeInsets.only(top: 10),
                       child: Text('Refreshing trust score...',
                           style: TextStyle(
                               color: AppColors.textMuted, fontSize: 11)),
                     ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 20),
+
+            // Appearance & Theme Mode Card
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+              decoration: BoxDecoration(
+                color: AppColors.surface,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: AppColors.border),
+              ),
+              child: Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: isDarkMode
+                          ? const Color(0xFF312E81).withValues(alpha: 0.35)
+                          : const Color(0xFFFEF3C7),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: Icon(
+                      isDarkMode
+                          ? Icons.dark_mode_outlined
+                          : Icons.light_mode_outlined,
+                      color: isDarkMode
+                          ? const Color(0xFFA5B4FC)
+                          : const Color(0xFFD97706),
+                      size: 24,
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Dark Mode',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                            color: AppColors.textPrimary,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          isDarkMode
+                              ? 'Dark theme enabled'
+                              : 'Default white theme enabled',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: AppColors.textSecondary,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Switch.adaptive(
+                    value: isDarkMode,
+                    activeThumbColor: AppColors.primary,
+                    activeTrackColor: AppColors.primaryDark,
+                    onChanged: (val) {
+                      ref.read(themeProvider.notifier).toggleTheme();
+                    },
+                  ),
                 ],
               ),
             ),
@@ -244,7 +314,7 @@ class ProfileScreen extends ConsumerWidget {
                       ),
                     ),
                     const SizedBox(height: 4),
-                    const Text(
+                    Text(
                       'Upload your Sri Lankan NIC photo to unlock unrestricted equipment rental access.',
                       style: TextStyle(
                           color: AppColors.textSecondary, fontSize: 12),

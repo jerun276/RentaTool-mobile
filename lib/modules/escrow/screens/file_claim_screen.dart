@@ -98,10 +98,10 @@ class _FileClaimScreenState extends ConsumerState<FileClaimScreen> {
                   borderRadius: BorderRadius.circular(10),
                   border: Border.all(color: AppColors.warning.withValues(alpha: 0.3)),
                 ),
-                child: const Row(
+                child: Row(
                   children: [
-                    Icon(Icons.gavel_outlined, color: Color(0xFFFFB95F), size: 22),
-                    SizedBox(width: 12),
+                    const Icon(Icons.gavel_outlined, color: Color(0xFFFFB95F), size: 22),
+                    const SizedBox(width: 12),
                     Expanded(
                       child: Text(
                         'Claims are assessed against pre-rental inspection baseline images to differentiate normal 60-day wear from operator misuse.',

@@ -128,7 +128,7 @@ class _KycSubmissionScreenState extends ConsumerState<KycSubmissionScreen> {
         children: [
           Text(
             '$label${requiredImage ? ' *' : ' (optional)'}',
-            style: const TextStyle(fontWeight: FontWeight.w600, color: AppColors.textPrimary),
+            style: TextStyle(fontWeight: FontWeight.w600, color: AppColors.textPrimary),
           ),
           const SizedBox(height: 8),
           Container(
@@ -139,7 +139,7 @@ class _KycSubmissionScreenState extends ConsumerState<KycSubmissionScreen> {
               border: Border.all(color: AppColors.border),
             ),
             child: image == null
-                ? const Center(
+                ? Center(
                     child: Icon(Icons.badge_outlined, size: 42, color: AppColors.textMuted),
                   )
                 : ClipRRect(
@@ -183,10 +183,10 @@ class _KycSubmissionScreenState extends ConsumerState<KycSubmissionScreen> {
                 borderRadius: BorderRadius.circular(10),
                 border: Border.all(color: AppColors.primary.withValues(alpha: 0.3)),
               ),
-              child: const Row(
+              child: Row(
                 children: [
-                  Icon(Icons.verified_user_outlined, color: AppColors.primaryLight),
-                  SizedBox(width: 12),
+                  const Icon(Icons.verified_user_outlined, color: AppColors.primaryLight),
+                  const SizedBox(width: 12),
                   Expanded(
                     child: Text(
                       'Verified users enjoy zero pre-auth deposit hold restrictions and priority booking approvals.',
@@ -231,10 +231,10 @@ class _KycSubmissionScreenState extends ConsumerState<KycSubmissionScreen> {
                   borderRadius: BorderRadius.circular(10),
                   border: Border.all(color: AppColors.primary.withValues(alpha: 0.3)),
                 ),
-                child: const Row(
+                child: Row(
                   children: [
-                    Icon(Icons.security_outlined, color: AppColors.primaryLight, size: 24),
-                    SizedBox(width: 12),
+                    const Icon(Icons.security_outlined, color: AppColors.primaryLight, size: 24),
+                    const SizedBox(width: 12),
                     Expanded(
                       child: Text(
                         'Renter Verification Rule: You must submit and validate a valid Sri Lankan NIC or Driving Licence before you can rent and receive equipment.',
@@ -247,7 +247,7 @@ class _KycSubmissionScreenState extends ConsumerState<KycSubmissionScreen> {
               const SizedBox(height: 20),
             ],
             DropdownButtonFormField<String>(
-              value: _documentType,
+              initialValue: _documentType,
               decoration: const InputDecoration(labelText: 'Document type'),
               items: const [
                 DropdownMenuItem(value: 'NIC', child: Text('National Identity Card (NIC)')),

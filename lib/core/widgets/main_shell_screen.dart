@@ -12,7 +12,7 @@ class MainShellScreen extends StatelessWidget {
     return Scaffold(
       body: navigationShell,
       bottomNavigationBar: Container(
-        decoration: const BoxDecoration(
+        decoration: BoxDecoration(
           border: Border(top: BorderSide(color: AppColors.border, width: 1)),
         ),
         child: BottomNavigationBar(

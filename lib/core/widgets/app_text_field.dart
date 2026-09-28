@@ -39,7 +39,7 @@ class AppTextField extends StatelessWidget {
         if (label != null) ...[
           Text(
             label!,
-            style: const TextStyle(
+            style: TextStyle(
               color: AppColors.textPrimary,
               fontWeight: FontWeight.w600,
               fontSize: 13,
@@ -55,7 +55,7 @@ class AppTextField extends StatelessWidget {
           validator: validator,
           maxLines: maxLines,
           readOnly: readOnly,
-          style: const TextStyle(color: AppColors.textPrimary, fontSize: 14),
+          style: TextStyle(color: AppColors.textPrimary, fontSize: 14),
           decoration: InputDecoration(
             hintText: hintText,
             errorText: errorText,

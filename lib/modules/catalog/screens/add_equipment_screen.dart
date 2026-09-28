@@ -204,7 +204,7 @@ class _AddEquipmentScreenState extends ConsumerState<AddEquipmentScreen> {
               const SizedBox(height: 16),
 
               // Category Selector
-              const Text('EQUIPMENT CATEGORY', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 11, letterSpacing: 0.8, color: AppColors.textMuted)),
+              Text('EQUIPMENT CATEGORY', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 11, letterSpacing: 0.8, color: AppColors.textMuted)),
               const SizedBox(height: 8),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 14),
@@ -236,7 +236,7 @@ class _AddEquipmentScreenState extends ConsumerState<AddEquipmentScreen> {
                 controller: _locationController,
                 label: 'Base Depot Location',
                 hintText: 'e.g. Colombo 05, Sri Lanka',
-                prefixIcon: const Icon(Icons.location_on_outlined, size: 20, color: AppColors.textMuted),
+                prefixIcon: Icon(Icons.location_on_outlined, size: 20, color: AppColors.textMuted),
                 validator: (v) => v == null || v.trim().isEmpty ? 'Location is required' : null,
               ),
               const SizedBox(height: 24),
@@ -320,7 +320,7 @@ class _AddEquipmentScreenState extends ConsumerState<AddEquipmentScreen> {
               // Section 4: Multi-Angle Imagery
               _sectionHeader('4. MULTI-ANGLE EQUIPMENT PHOTOS'),
               const SizedBox(height: 4),
-              const Text(
+              Text(
                 'Upload designated angles for initial asset baseline inspection.',
                 style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
               ),
@@ -429,7 +429,7 @@ class _AddEquipmentScreenState extends ConsumerState<AddEquipmentScreen> {
       avatar: const Icon(Icons.add_a_photo_outlined, size: 14, color: AppColors.primaryLight),
       label: Text(angle, style: const TextStyle(fontSize: 12)),
       backgroundColor: AppColors.surface,
-      side: const BorderSide(color: AppColors.border),
+      side: BorderSide(color: AppColors.border),
       onPressed: () => _pickImage(angle),
     );
   }

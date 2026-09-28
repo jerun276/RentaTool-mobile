@@ -73,7 +73,7 @@ class EquipmentCard extends StatelessWidget {
                       ),
                       child: Text(
                         equipment.categoryName,
-                        style: const TextStyle(
+                        style: TextStyle(
                           color: AppColors.textPrimary,
                           fontSize: 10,
                           fontWeight: FontWeight.w600,
@@ -95,7 +95,7 @@ class EquipmentCard extends StatelessWidget {
                     equipment.title,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
                       color: AppColors.textPrimary,
@@ -104,11 +104,11 @@ class EquipmentCard extends StatelessWidget {
                   const SizedBox(height: 4),
                   Row(
                     children: [
-                      const Icon(Icons.location_on_outlined, size: 14, color: AppColors.textMuted),
+                      Icon(Icons.location_on_outlined, size: 14, color: AppColors.textMuted),
                       const SizedBox(width: 4),
                       Text(
                         equipment.location,
-                        style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
+                        style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
                       ),
                     ],
                   ),
@@ -130,7 +130,7 @@ class EquipmentCard extends StatelessWidget {
                       Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Text(
+                          Text(
                             'DAILY RATE',
                             style: TextStyle(
                               fontSize: 9,
@@ -151,7 +151,7 @@ class EquipmentCard extends StatelessWidget {
                       ),
                       Text(
                         'Repl: ${currencyFormatter.format(equipment.replacementValue)}',
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 11,
                           color: AppColors.textMuted,
                         ),

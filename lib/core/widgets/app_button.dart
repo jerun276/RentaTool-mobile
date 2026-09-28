@@ -39,7 +39,7 @@ class AppButton extends StatelessWidget {
       case AppButtonVariant.outline:
         bg = Colors.transparent;
         fg = AppColors.textPrimary;
-        border = const BorderSide(color: AppColors.border);
+        border = BorderSide(color: AppColors.border);
         break;
       case AppButtonVariant.destructive:
         bg = const Color(0xFF991B1B);

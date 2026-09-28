@@ -132,11 +132,11 @@ class _ActiveBookingsScreenState extends ConsumerState<ActiveBookingsScreen> {
                       child: Column(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          const Icon(Icons.calendar_today_outlined, size: 48, color: AppColors.textMuted),
+                          Icon(Icons.calendar_today_outlined, size: 48, color: AppColors.textMuted),
                           const SizedBox(height: 16),
                           Text(
                             bookingState.activeBookings.isEmpty ? 'No Active Bookings' : 'No Matching Bookings',
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 18,
                               fontWeight: FontWeight.bold,
                               color: AppColors.textPrimary,
@@ -148,7 +148,7 @@ class _ActiveBookingsScreenState extends ConsumerState<ActiveBookingsScreen> {
                                 ? 'Browse equipment catalog or locate nearby machinery on the interactive map.'
                                 : 'Try changing your search term or status filter.',
                             textAlign: TextAlign.center,
-                            style: const TextStyle(color: AppColors.textSecondary, fontSize: 13),
+                            style: TextStyle(color: AppColors.textSecondary, fontSize: 13),
                           ),
                           const SizedBox(height: 24),
                           Row(

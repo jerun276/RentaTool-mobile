@@ -90,7 +90,7 @@ class ClaimDetailScreen extends ConsumerWidget {
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text(
+                      Text(
                         'CLAIM STATUS',
                         style: TextStyle(
                             fontSize: 10,
@@ -108,7 +108,7 @@ class ClaimDetailScreen extends ConsumerWidget {
                       if (c.createdAtUtc != null)
                         Text(
                           'Filed: ${_formatDate(c.createdAtUtc)}',
-                          style: const TextStyle(
+                          style: TextStyle(
                               fontSize: 11, color: AppColors.textMuted),
                         ),
                     ],
@@ -126,11 +126,11 @@ class ClaimDetailScreen extends ConsumerWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  _SectionLabel('BOOKING REFERENCE'),
+                  const _SectionLabel('BOOKING REFERENCE'),
                   const SizedBox(height: 6),
                   Text(
                     c.bookingId,
-                    style: const TextStyle(
+                    style: TextStyle(
                         fontFamily: 'monospace',
                         fontSize: 13,
                         color: AppColors.textPrimary),
@@ -145,11 +145,11 @@ class ClaimDetailScreen extends ConsumerWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  _SectionLabel('DAMAGE DESCRIPTION'),
+                  const _SectionLabel('DAMAGE DESCRIPTION'),
                   const SizedBox(height: 8),
                   Text(
                     c.damageDescription,
-                    style: const TextStyle(
+                    style: TextStyle(
                         fontSize: 14,
                         color: AppColors.textPrimary,
                         height: 1.4),
@@ -189,7 +189,7 @@ class ClaimDetailScreen extends ConsumerWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  _SectionLabel('FINANCIAL BREAKDOWN'),
+                  const _SectionLabel('FINANCIAL BREAKDOWN'),
                   const SizedBox(height: 12),
                   _FinancialRow(
                     label: 'Proposed Deduction',
@@ -197,7 +197,7 @@ class ClaimDetailScreen extends ConsumerWidget {
                     valueColor: AppColors.warning,
                   ),
                   if (c.finalDeduction != null) ...[
-                    const Divider(color: AppColors.border, height: 20),
+                    Divider(color: AppColors.border, height: 20),
                     _FinancialRow(
                       label: 'Adjudicated Deduction',
                       value: currency.format(c.finalDeduction!),
@@ -240,7 +240,7 @@ class ClaimDetailScreen extends ConsumerWidget {
                     const SizedBox(height: 6),
                     Text(
                       c.adjudicationNotes!,
-                      style: const TextStyle(
+                      style: TextStyle(
                           color: AppColors.textPrimary,
                           fontSize: 12,
                           height: 1.4),
@@ -249,7 +249,7 @@ class ClaimDetailScreen extends ConsumerWidget {
                       const SizedBox(height: 4),
                       Text(
                         'Adjudicated: ${_formatDate(c.adjudicatedAtUtc)}',
-                        style: const TextStyle(
+                        style: TextStyle(
                             fontSize: 10, color: AppColors.textMuted),
                       ),
                     ],
@@ -298,7 +298,7 @@ class ClaimDetailScreen extends ConsumerWidget {
                     const SizedBox(height: 4),
                     Text(
                       'Ref: ${state.payoutResult!.settlementReference}',
-                      style: const TextStyle(
+                      style: TextStyle(
                           fontSize: 10, color: AppColors.textMuted),
                     ),
                   ],
@@ -309,7 +309,7 @@ class ClaimDetailScreen extends ConsumerWidget {
 
             // ── Actions ──────────────────────────────────────────────────
             if (c.status.canAdjudicate) ...[
-              _SectionLabel('ADJUDICATION CONTROLS'),
+              const _SectionLabel('ADJUDICATION CONTROLS'),
               const SizedBox(height: 10),
               Row(
                 children: [
@@ -376,7 +376,7 @@ class ClaimDetailScreen extends ConsumerWidget {
                   c.status == ClaimStatus.settled
                       ? 'This claim has been fully settled.'
                       : 'This claim has been rejected. No payout will be made.',
-                  style: const TextStyle(
+                  style: TextStyle(
                       color: AppColors.textSecondary, fontSize: 12),
                   textAlign: TextAlign.center,
                 ),
@@ -402,7 +402,7 @@ class ClaimDetailScreen extends ConsumerWidget {
           'Are you sure you want to $decision this damage claim? '
           'This action cannot be undone.',
           style:
-              const TextStyle(color: AppColors.textSecondary, fontSize: 13),
+              TextStyle(color: AppColors.textSecondary, fontSize: 13),
         ),
         actions: [
           TextButton(
@@ -444,8 +444,8 @@ class ClaimDetailScreen extends ConsumerWidget {
               controller: ctrl,
               keyboardType:
                   const TextInputType.numberWithOptions(decimal: true),
-              style: const TextStyle(color: AppColors.textPrimary),
-              decoration: const InputDecoration(
+              style: TextStyle(color: AppColors.textPrimary),
+              decoration: InputDecoration(
                 labelText: 'Revised Deduction (LKR)',
                 labelStyle: TextStyle(color: AppColors.textSecondary),
               ),
@@ -453,8 +453,8 @@ class ClaimDetailScreen extends ConsumerWidget {
             const SizedBox(height: 12),
             TextFormField(
               controller: notesCtrl,
-              style: const TextStyle(color: AppColors.textPrimary),
-              decoration: const InputDecoration(
+              style: TextStyle(color: AppColors.textPrimary),
+              decoration: InputDecoration(
                 labelText: 'Notes (optional)',
                 labelStyle: TextStyle(color: AppColors.textSecondary),
               ),
@@ -492,7 +492,7 @@ class ClaimDetailScreen extends ConsumerWidget {
       builder: (ctx) => AlertDialog(
         backgroundColor: AppColors.surface,
         title: const Text('Confirm Payout'),
-        content: const Text(
+        content: Text(
           'This will disburse the settlement payments to the owner and refund '
           'the remaining deposit to the renter. This action cannot be reversed.',
           style: TextStyle(color: AppColors.textSecondary, fontSize: 13),
@@ -573,7 +573,7 @@ class _SectionLabel extends StatelessWidget {
   Widget build(BuildContext context) {
     return Text(
       text,
-      style: const TextStyle(
+      style: TextStyle(
           fontSize: 10,
           fontWeight: FontWeight.bold,
           letterSpacing: 0.8,
@@ -585,13 +585,13 @@ class _SectionLabel extends StatelessWidget {
 class _FinancialRow extends StatelessWidget {
   final String label;
   final String value;
-  final Color valueColor;
+  final Color? valueColor;
   final bool bold;
 
   const _FinancialRow({
     required this.label,
     required this.value,
-    this.valueColor = AppColors.textPrimary,
+    this.valueColor,
     this.bold = false,
   });
 
@@ -601,11 +601,11 @@ class _FinancialRow extends StatelessWidget {
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
         Text(label,
-            style: const TextStyle(
+            style: TextStyle(
                 color: AppColors.textSecondary, fontSize: 13)),
         Text(value,
             style: TextStyle(
-                color: valueColor,
+                color: valueColor ?? AppColors.textPrimary,
                 fontWeight:
                     bold ? FontWeight.bold : FontWeight.w600,
                 fontSize: 14)),
@@ -650,7 +650,7 @@ class _EvidenceThumbnail extends StatelessWidget {
       width: 80,
       height: 80,
       color: AppColors.surfaceLight,
-      child: const Icon(Icons.image_outlined,
+      child: Icon(Icons.image_outlined,
           color: AppColors.textMuted, size: 28),
     );
   }

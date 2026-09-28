@@ -21,7 +21,8 @@ void main() {
       expect(hold.bookingId, 'book-123');
       expect(hold.depositAmount, 350.0);
       expect(hold.preAuthTransactionId, 'stripe_ch_34892019');
-      expect(hold.status, 'Held');
+      expect(hold.status, EscrowStatus.held);
+      expect(hold.rawStatus, 'Held');
       expect(hold.heldAtUtc, '2026-09-20T08:00:00.000Z');
       expect(hold.settledAtUtc, isNull);
     });
@@ -32,7 +33,8 @@ void main() {
         bookingId: 'book-222',
         depositAmount: 500.0,
         preAuthTransactionId: 'tx-stripe-test',
-        status: 'Released',
+        status: EscrowStatus.disbursed,
+        rawStatus: 'Released',
       );
 
       final json = hold.toJson();
@@ -65,7 +67,7 @@ void main() {
       expect(claim.bookingId, 'book-123');
       expect(claim.proposedDeduction, 150.0);
       expect(claim.evidencePhotos.length, 2);
-      expect(claim.status, 'UnderAIEvaluation');
+      expect(claim.status, ClaimStatus.underAIEvaluation);
       expect(claim.finalDeduction, isNull);
     });
 
@@ -78,7 +80,8 @@ void main() {
         evidencePhotos: ['https://example.com/scratch.png'],
         proposedDeduction: 75.0,
         finalDeduction: 60.0,
-        status: 'Approved',
+        status: ClaimStatus.approved,
+        rawStatus: 'Approved',
         adjudicationNotes: 'Reduced deduction based on prior inspection log.',
       );
 
