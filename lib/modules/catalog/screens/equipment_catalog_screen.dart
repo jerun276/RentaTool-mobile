@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/theme_provider.dart';
 import '../../../core/widgets/error_view.dart';
 import '../../../core/widgets/loading_indicator.dart';
 import '../providers/catalog_provider.dart';
@@ -54,6 +55,9 @@ class _EquipmentCatalogScreenState extends ConsumerState<EquipmentCatalogScreen>
 
   @override
   Widget build(BuildContext context) {
+    ref.watch(themeProvider);
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
     final catalogState = ref.watch(catalogProvider);
 
     return Scaffold(
@@ -87,12 +91,17 @@ class _EquipmentCatalogScreenState extends ConsumerState<EquipmentCatalogScreen>
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
             child: TextField(
+              style: TextStyle(color: theme.colorScheme.onSurface),
               decoration: InputDecoration(
                 hintText: 'Search excavators, rollers, generators...',
-                prefixIcon: Icon(Icons.search, size: 20, color: AppColors.textMuted),
+                prefixIcon: Icon(
+                  Icons.search,
+                  size: 20,
+                  color: isDark ? AppColors.darkTextMuted : AppColors.lightTextMuted,
+                ),
                 contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                 filled: true,
-                fillColor: AppColors.surface,
+                fillColor: isDark ? AppColors.darkSurface : AppColors.lightSurface,
               ),
               onChanged: (val) {
                 ref.read(catalogProvider.notifier).setSearchQuery(val);
@@ -113,13 +122,24 @@ class _EquipmentCatalogScreenState extends ConsumerState<EquipmentCatalogScreen>
                 return Padding(
                   padding: const EdgeInsets.only(right: 8.0),
                   child: FilterChip(
-                    label: Text(category, style: const TextStyle(fontSize: 12)),
+                    label: Text(
+                      category,
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: isSelected
+                            ? (isDark ? AppColors.primaryLight : AppColors.primaryDark)
+                            : (isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary),
+                        fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+                      ),
+                    ),
                     selected: isSelected,
-                    selectedColor: const Color(0x3310B981),
-                    backgroundColor: AppColors.surface,
-                    checkmarkColor: AppColors.primaryLight,
+                    selectedColor: isDark ? const Color(0x3310B981) : const Color(0x2210B981),
+                    backgroundColor: isDark ? AppColors.darkSurface : AppColors.lightSurface,
+                    checkmarkColor: isDark ? AppColors.primaryLight : AppColors.primaryDark,
                     side: BorderSide(
-                      color: isSelected ? AppColors.primaryLight : AppColors.border,
+                      color: isSelected
+                          ? (isDark ? AppColors.primaryLight : AppColors.primary)
+                          : (isDark ? AppColors.darkBorder : AppColors.lightBorder),
                     ),
                     onSelected: (_) {
                       ref.read(catalogProvider.notifier).setCategory(category);
@@ -141,10 +161,21 @@ class _EquipmentCatalogScreenState extends ConsumerState<EquipmentCatalogScreen>
                 return Padding(
                   padding: const EdgeInsets.only(right: 6.0),
                   child: ChoiceChip(
-                    label: Text(label, style: const TextStyle(fontSize: 11)),
+                    label: Text(
+                      label,
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: isSelected
+                            ? (st == 'UnderMaintenance'
+                                ? Colors.white
+                                : (isDark ? Colors.black : Colors.white))
+                            : (isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary),
+                        fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+                      ),
+                    ),
                     selected: isSelected,
                     selectedColor: st == 'UnderMaintenance' ? AppColors.wearLockout : AppColors.primary,
-                    backgroundColor: AppColors.surfaceLight,
+                    backgroundColor: isDark ? AppColors.darkSurfaceLight : AppColors.lightSurfaceLight,
                     onSelected: (val) {
                       if (val) ref.read(catalogProvider.notifier).setStatus(st);
                     },
@@ -209,6 +240,7 @@ class _EquipmentCatalogScreenState extends ConsumerState<EquipmentCatalogScreen>
                   }
 
                   return ListView.builder(
+                    key: ValueKey('catalog_list_${isDark ? 'dark' : 'light'}'),
                     controller: _scrollController,
                     padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                     itemCount: items.length + (catalogState.hasMore ? 1 : 0),
@@ -228,6 +260,7 @@ class _EquipmentCatalogScreenState extends ConsumerState<EquipmentCatalogScreen>
 
                       final equipment = items[index];
                       return EquipmentCard(
+                        key: ValueKey('${equipment.id}_${isDark ? 'dark' : 'light'}'),
                         equipment: equipment,
                         onTap: () => context.push('/catalog/${equipment.id}'),
                       );

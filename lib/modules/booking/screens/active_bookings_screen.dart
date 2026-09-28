@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/theme_provider.dart';
 import '../../../core/widgets/error_view.dart';
 import '../../../core/widgets/loading_indicator.dart';
 import '../providers/booking_provider.dart';
@@ -26,6 +27,9 @@ class _ActiveBookingsScreenState extends ConsumerState<ActiveBookingsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    ref.watch(themeProvider);
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
     final bookingState = ref.watch(bookingProvider);
     final notifier = ref.read(bookingProvider.notifier);
     final filtered = bookingState.filteredBookings;
@@ -54,7 +58,7 @@ class _ActiveBookingsScreenState extends ConsumerState<ActiveBookingsScreen> {
       floatingActionButton: FloatingActionButton.extended(
         heroTag: 'map_radius_fab',
         backgroundColor: AppColors.primary,
-        foregroundColor: Colors.black,
+        foregroundColor: Colors.white,
         icon: const Icon(Icons.radar),
         label: const Text('Nearby Map Search', style: TextStyle(fontWeight: FontWeight.bold)),
         onPressed: () => context.push('/bookings/map'),
@@ -64,7 +68,7 @@ class _ActiveBookingsScreenState extends ConsumerState<ActiveBookingsScreen> {
           // 1. Search Bar & Status Filter Bar
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            color: AppColors.surface,
+            color: isDark ? AppColors.darkSurface : AppColors.lightSurface,
             child: Column(
               children: [
                 TextField(
@@ -175,14 +179,16 @@ class _ActiveBookingsScreenState extends ConsumerState<ActiveBookingsScreen> {
 
                 return RefreshIndicator(
                   color: AppColors.primaryLight,
-                  backgroundColor: AppColors.surface,
+                  backgroundColor: isDark ? AppColors.darkSurface : AppColors.lightSurface,
                   onRefresh: () => notifier.fetchActiveBookings(),
                   child: ListView.builder(
+                    key: ValueKey('bookings_list_${isDark ? 'dark' : 'light'}'),
                     padding: const EdgeInsets.all(16),
                     itemCount: filtered.length,
                     itemBuilder: (context, index) {
                       final item = filtered[index];
                       return BookingCard(
+                        key: ValueKey('${item.id}_${isDark ? 'dark' : 'light'}'),
                         booking: item,
                         onTap: () => context.push('/bookings/detail/${item.id}'),
                         onShowQR: () => context.push('/bookings/qr/${item.id}'),

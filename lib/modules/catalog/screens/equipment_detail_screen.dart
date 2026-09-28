@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/theme_provider.dart';
 import '../../../core/widgets/app_button.dart';
 import '../../../core/widgets/error_view.dart';
 import '../../../core/widgets/loading_indicator.dart';
@@ -66,6 +67,13 @@ class _EquipmentDetailScreenState extends ConsumerState<EquipmentDetailScreen> {
 
   @override
   Widget build(BuildContext context) {
+    ref.watch(themeProvider);
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final textPrimary = theme.colorScheme.onSurface;
+    final textSecondary = isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary;
+    final textMuted = isDark ? AppColors.darkTextMuted : AppColors.lightTextMuted;
+
     if (_isLoading) {
       return Scaffold(
         appBar: AppBar(title: const Text('Equipment Details')),
@@ -117,9 +125,9 @@ class _EquipmentDetailScreenState extends ConsumerState<EquipmentDetailScreen> {
             Container(
               height: 220,
               decoration: BoxDecoration(
-                color: AppColors.surfaceLight,
+                color: isDark ? AppColors.darkSurfaceLight : AppColors.lightSurfaceLight,
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: AppColors.border),
+                border: Border.all(color: isDark ? AppColors.darkBorder : AppColors.lightBorder),
               ),
               clipBehavior: Clip.antiAlias,
               child: Stack(
@@ -179,10 +187,10 @@ class _EquipmentDetailScreenState extends ConsumerState<EquipmentDetailScreen> {
                         width: 60,
                         margin: const EdgeInsets.only(right: 8),
                         decoration: BoxDecoration(
-                          color: AppColors.surfaceLight,
+                          color: isDark ? AppColors.darkSurfaceLight : AppColors.lightSurfaceLight,
                           borderRadius: BorderRadius.circular(6),
                           border: Border.all(
-                            color: isSelected ? AppColors.primaryLight : AppColors.border,
+                            color: isSelected ? AppColors.primaryLight : (isDark ? AppColors.darkBorder : AppColors.lightBorder),
                             width: isSelected ? 2 : 1,
                           ),
                         ),
@@ -190,7 +198,7 @@ class _EquipmentDetailScreenState extends ConsumerState<EquipmentDetailScreen> {
                         child: Image.network(
                           eq.images[idx].imageUrl,
                           fit: BoxFit.cover,
-                          errorBuilder: (_, __, ___) => Icon(Icons.image, size: 20, color: AppColors.textMuted),
+                          errorBuilder: (_, __, ___) => Icon(Icons.image, size: 20, color: textMuted),
                         ),
                       ),
                     );
@@ -203,7 +211,7 @@ class _EquipmentDetailScreenState extends ConsumerState<EquipmentDetailScreen> {
             // Title and Category
             Text(
               eq.title,
-              style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
+              style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: textPrimary),
             ),
             const SizedBox(height: 6),
             Row(
@@ -216,13 +224,17 @@ class _EquipmentDetailScreenState extends ConsumerState<EquipmentDetailScreen> {
                   ),
                   child: Text(
                     eq.categoryName,
-                    style: const TextStyle(fontSize: 11, color: AppColors.primaryLight, fontWeight: FontWeight.bold),
+                    style: TextStyle(
+                      fontSize: 11,
+                      color: isDark ? AppColors.primaryLight : AppColors.primaryDark,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                 ),
                 const SizedBox(width: 12),
-                Icon(Icons.location_on_outlined, size: 16, color: AppColors.textMuted),
+                Icon(Icons.location_on_outlined, size: 16, color: textMuted),
                 const SizedBox(width: 4),
-                Text(eq.location, style: TextStyle(color: AppColors.textSecondary, fontSize: 13)),
+                Text(eq.location, style: TextStyle(color: textSecondary, fontSize: 13)),
               ],
             ),
             const SizedBox(height: 20),
@@ -231,10 +243,10 @@ class _EquipmentDetailScreenState extends ConsumerState<EquipmentDetailScreen> {
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: isLocked ? const Color(0x1AEF4444) : AppColors.surface,
+                color: isLocked ? const Color(0x1AEF4444) : (isDark ? AppColors.darkSurface : AppColors.lightSurface),
                 borderRadius: BorderRadius.circular(10),
                 border: Border.all(
-                  color: isLocked ? AppColors.wearLockout : AppColors.border,
+                  color: isLocked ? AppColors.wearLockout : (isDark ? AppColors.darkBorder : AppColors.lightBorder),
                 ),
               ),
               child: Column(

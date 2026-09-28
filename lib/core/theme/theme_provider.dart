@@ -21,18 +21,18 @@ class ThemeNotifier extends StateNotifier<ThemeMode> {
     try {
       final saved = await _storage.read(key: _themeStorageKey);
       if (saved == 'dark') {
-        state = ThemeMode.dark;
         AppColors.isDark = true;
+        state = ThemeMode.dark;
       } else if (saved == 'light') {
-        state = ThemeMode.light;
         AppColors.isDark = false;
+        state = ThemeMode.light;
       }
     } catch (_) {}
   }
 
   Future<void> setThemeMode(ThemeMode mode) async {
-    state = mode;
     AppColors.isDark = (mode == ThemeMode.dark);
+    state = mode;
     try {
       await _storage.write(
         key: _themeStorageKey,

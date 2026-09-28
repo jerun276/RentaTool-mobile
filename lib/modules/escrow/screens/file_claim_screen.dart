@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/theme_provider.dart';
 import '../../../core/widgets/app_button.dart';
 import '../../../core/widgets/app_text_field.dart';
 import '../providers/escrow_provider.dart';
@@ -80,6 +81,10 @@ class _FileClaimScreenState extends ConsumerState<FileClaimScreen> {
 
   @override
   Widget build(BuildContext context) {
+    ref.watch(themeProvider);
+    final theme = Theme.of(context);
+    final textPrimary = theme.colorScheme.onSurface;
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('File Damage Dispute'),
@@ -105,7 +110,7 @@ class _FileClaimScreenState extends ConsumerState<FileClaimScreen> {
                     Expanded(
                       child: Text(
                         'Claims are assessed against pre-rental inspection baseline images to differentiate normal 60-day wear from operator misuse.',
-                        style: TextStyle(fontSize: 12, color: AppColors.textPrimary),
+                        style: TextStyle(fontSize: 12, color: textPrimary),
                       ),
                     ),
                   ],

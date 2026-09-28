@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/theme_provider.dart';
 import '../../../core/widgets/error_view.dart';
 import '../../../core/widgets/loading_indicator.dart';
 import '../../../core/widgets/status_badge.dart';
@@ -14,6 +15,12 @@ class EscrowOverviewScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    ref.watch(themeProvider);
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final textPrimary = theme.colorScheme.onSurface;
+    final textSecondary = isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary;
+    final textMuted = isDark ? AppColors.darkTextMuted : AppColors.lightTextMuted;
     final escrowState = ref.watch(escrowProvider);
     final currencyFormatter = NumberFormat.currency(locale: 'en_LK', symbol: 'LKR ', decimalDigits: 0);
 
@@ -44,20 +51,24 @@ class EscrowOverviewScreen extends ConsumerWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Row(
+                  Row(
                     children: [
-                      Icon(Icons.shield_outlined, color: AppColors.primaryLight, size: 22),
-                      SizedBox(width: 8),
+                      Icon(Icons.shield_outlined, color: isDark ? AppColors.primaryLight : AppColors.primaryDark, size: 22),
+                      const SizedBox(width: 8),
                       Text(
                         'Automated Pre-Auth Escrow Vault',
-                        style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: AppColors.primaryLight),
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 14,
+                          color: isDark ? AppColors.primaryLight : AppColors.primaryDark,
+                        ),
                       ),
                     ],
                   ),
                   const SizedBox(height: 6),
                   Text(
                     'Security deposits are securely held in escrow until mutual handover verification. Any damage claim undergoes AI visual telemetry evaluation and fair human review.',
-                    style: TextStyle(color: AppColors.textSecondary, fontSize: 12),
+                    style: TextStyle(color: textSecondary, fontSize: 12),
                   ),
                 ],
               ),
@@ -74,7 +85,7 @@ class EscrowOverviewScreen extends ConsumerWidget {
                     fontSize: 11,
                     fontWeight: FontWeight.bold,
                     letterSpacing: 0.8,
-                    color: AppColors.textMuted,
+                    color: textMuted,
                   ),
                 ),
                 TextButton.icon(
@@ -104,9 +115,9 @@ class EscrowOverviewScreen extends ConsumerWidget {
                   return Container(
                     padding: const EdgeInsets.all(24),
                     decoration: BoxDecoration(
-                      color: AppColors.surface,
+                      color: isDark ? AppColors.darkSurface : AppColors.lightSurface,
                       borderRadius: BorderRadius.circular(10),
-                      border: Border.all(color: AppColors.border),
+                      border: Border.all(color: isDark ? AppColors.darkBorder : AppColors.lightBorder),
                     ),
                     child: Center(
                       child: Column(
@@ -115,12 +126,12 @@ class EscrowOverviewScreen extends ConsumerWidget {
                           const SizedBox(height: 8),
                           Text(
                             'Zero Unresolved Disputes',
-                            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: AppColors.textPrimary),
+                            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: textPrimary),
                           ),
                           const SizedBox(height: 4),
                           Text(
                             'All current rentals are operating with clean handover telemetry.',
-                            style: TextStyle(color: AppColors.textSecondary, fontSize: 12),
+                            style: TextStyle(color: textSecondary, fontSize: 12),
                           ),
                         ],
                       ),
@@ -134,7 +145,7 @@ class EscrowOverviewScreen extends ConsumerWidget {
                   itemCount: escrowState.claims.length,
                   itemBuilder: (context, index) {
                     final claim = escrowState.claims[index];
-                    return _claimCard(context, claim, currencyFormatter);
+                    return _claimCard(context, claim, currencyFormatter, textPrimary: textPrimary, textMuted: textMuted);
                   },
                 );
               },
@@ -145,7 +156,7 @@ class EscrowOverviewScreen extends ConsumerWidget {
     );
   }
 
-  Widget _claimCard(BuildContext context, DamageClaimModel claim, NumberFormat formatter) {
+  Widget _claimCard(BuildContext context, DamageClaimModel claim, NumberFormat formatter, {required Color textPrimary, required Color textMuted}) {
     BadgeStyle badgeStyle;
     switch (claim.status.name.toLowerCase()) {
       case 'approved':
@@ -191,7 +202,7 @@ class EscrowOverviewScreen extends ConsumerWidget {
                 claim.damageDescription,
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
-                style: TextStyle(fontSize: 13, color: AppColors.textPrimary),
+                style: TextStyle(fontSize: 13, color: textPrimary),
               ),
               const SizedBox(height: 12),
               Row(
@@ -202,7 +213,7 @@ class EscrowOverviewScreen extends ConsumerWidget {
                     children: [
                       Text(
                         'PROPOSED DEDUCTION',
-                        style: TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: AppColors.textMuted),
+                        style: TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: textMuted),
                       ),
                       Text(
                         formatter.format(claim.proposedDeduction),
@@ -210,7 +221,7 @@ class EscrowOverviewScreen extends ConsumerWidget {
                       ),
                     ],
                   ),
-                  Icon(Icons.arrow_forward_ios, size: 14, color: AppColors.textMuted),
+                  Icon(Icons.arrow_forward_ios, size: 14, color: textMuted),
                 ],
               ),
             ],

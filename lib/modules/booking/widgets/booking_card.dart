@@ -20,6 +20,12 @@ class BookingCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final textPrimary = theme.colorScheme.onSurface;
+    final textSecondary = isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary;
+    final textMuted = isDark ? AppColors.darkTextMuted : AppColors.lightTextMuted;
+
     final currencyFormatter = NumberFormat.currency(
       locale: 'en_LK',
       symbol: 'LKR ',
@@ -50,7 +56,7 @@ class BookingCard extends StatelessWidget {
       elevation: 2,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(14),
-        side: BorderSide(color: AppColors.border),
+        side: BorderSide(color: isDark ? AppColors.darkBorder : AppColors.lightBorder),
       ),
       child: InkWell(
         onTap: onTap,
@@ -66,7 +72,7 @@ class BookingCard extends StatelessWidget {
                 children: [
                   Row(
                     children: [
-                      Icon(Icons.confirmation_number_outlined, size: 16, color: AppColors.textMuted),
+                      Icon(Icons.confirmation_number_outlined, size: 16, color: textMuted),
                       const SizedBox(width: 6),
                       Text(
                         booking.displayCode,
@@ -74,7 +80,7 @@ class BookingCard extends StatelessWidget {
                           fontSize: 12,
                           fontFamily: 'monospace',
                           fontWeight: FontWeight.bold,
-                          color: AppColors.textSecondary,
+                          color: textSecondary,
                         ),
                       ),
                     ],
@@ -93,7 +99,7 @@ class BookingCard extends StatelessWidget {
                     child: Text(
                       '${dateFormatter.format(booking.startDate)} → ${dateFormatter.format(booking.endDate)}',
                       style: TextStyle(
-                        color: AppColors.textPrimary,
+                        color: textPrimary,
                         fontWeight: FontWeight.w600,
                         fontSize: 13,
                       ),
@@ -102,12 +108,12 @@ class BookingCard extends StatelessWidget {
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                     decoration: BoxDecoration(
-                      color: AppColors.surfaceElevated,
+                      color: isDark ? AppColors.darkSurfaceElevated : AppColors.lightSurfaceLight,
                       borderRadius: BorderRadius.circular(4),
                     ),
                     child: Text(
                       '${booking.durationInDays}d',
-                      style: TextStyle(fontSize: 11, color: AppColors.textMuted, fontWeight: FontWeight.bold),
+                      style: TextStyle(fontSize: 11, color: textMuted, fontWeight: FontWeight.bold),
                     ),
                   ),
                 ],
