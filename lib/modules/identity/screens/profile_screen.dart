@@ -147,6 +147,65 @@ class ProfileScreen extends ConsumerWidget {
                 ],
               ),
             ),
+            if (!user.isVerified) ...[
+              const SizedBox(height: 16),
+              // KYC Action Card
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: isDarkMode ? AppColors.darkSurface : AppColors.lightSurface,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: isDarkMode ? AppColors.darkBorder : AppColors.lightBorder,
+                  ),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Icon(
+                          Icons.assignment_ind_outlined,
+                          color: isDarkMode
+                              ? const Color(0xFFF87171)
+                              : const Color(0xFFDC2626),
+                          size: 18,
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          'Complete NIC Verification',
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            color: isDarkMode
+                                ? const Color(0xFFF87171)
+                                : const Color(0xFFDC2626),
+                            fontSize: 14,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      'Upload your Sri Lankan NIC photo to unlock unrestricted equipment rental access.',
+                      style: TextStyle(
+                        color: isDarkMode
+                            ? AppColors.darkTextSecondary
+                            : AppColors.lightTextSecondary,
+                        fontSize: 12,
+                        height: 1.3,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    AppButton(
+                      text: 'Submit NIC Documents',
+                      variant: AppButtonVariant.primary,
+                      icon: Icons.upload_file_outlined,
+                      onPressed: () => context.push('/kyc-submit'),
+                    ),
+                  ],
+                ),
+              ),
+            ],
             const SizedBox(height: 20),
 
             // Algorithmic Trust Score Card (Component 1 requirement)
@@ -290,70 +349,6 @@ class ProfileScreen extends ConsumerWidget {
                 ],
               ),
             ),
-            const SizedBox(height: 20),
-
-            // KYC Action Card
-            if (!user.isVerified)
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: isDarkMode
-                      ? const Color(0xFF281417)
-                      : const Color(0xFFFEE2E2),
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(
-                    color: isDarkMode
-                        ? const Color(0xFF7F1D1D)
-                        : const Color(0xFFFCA5A5),
-                    width: 1.2,
-                  ),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Icon(
-                          Icons.error_outline_rounded,
-                          color: isDarkMode
-                              ? const Color(0xFFF87171)
-                              : const Color(0xFFDC2626),
-                          size: 18,
-                        ),
-                        const SizedBox(width: 8),
-                        Text(
-                          'Complete NIC Verification',
-                          style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                            color: isDarkMode
-                                ? const Color(0xFFF87171)
-                                : const Color(0xFFDC2626),
-                            fontSize: 14,
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 6),
-                    Text(
-                      'Upload your Sri Lankan NIC photo to unlock unrestricted equipment rental access.',
-                      style: TextStyle(
-                        color: isDarkMode
-                            ? AppColors.darkTextSecondary
-                            : const Color(0xFF4B5563),
-                        fontSize: 12,
-                        height: 1.3,
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    AppButton(
-                      text: 'Submit NIC Documents',
-                      variant: AppButtonVariant.primary,
-                      icon: Icons.upload_file_outlined,
-                      onPressed: () => context.push('/kyc-submit'),
-                    ),
-                  ],
-                ),
-              ),
           ],
         ),
       ),
