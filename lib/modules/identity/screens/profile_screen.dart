@@ -43,19 +43,14 @@ class ProfileScreen extends ConsumerWidget {
     final trustTier =
         trustScoreAsync.valueOrNull?.tier ?? _tierForScore(trustScore);
 
+    final theme = Theme.of(context);
+    final textPrimary = theme.colorScheme.onSurface;
+    final textSecondary = isDarkMode ? AppColors.darkTextSecondary : AppColors.lightTextSecondary;
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('User Profile & Trust'),
         actions: [
-          IconButton(
-            icon: const Icon(Icons.edit_outlined, size: 20),
-            tooltip: 'Edit profile',
-            onPressed: () => Navigator.of(context).push(
-              MaterialPageRoute<void>(
-                builder: (_) => EditProfileScreen(user: user),
-              ),
-            ),
-          ),
           IconButton(
             icon: const Icon(Icons.logout, size: 20),
             tooltip: 'Sign Out',
@@ -75,13 +70,16 @@ class ProfileScreen extends ConsumerWidget {
           children: [
             // User Header Card
             Container(
-              padding: const EdgeInsets.all(20),
+              padding: const EdgeInsets.all(18),
               decoration: BoxDecoration(
-                color: AppColors.surface,
+                color: isDarkMode ? AppColors.darkSurface : AppColors.lightSurface,
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: AppColors.border),
+                border: Border.all(
+                  color: isDarkMode ? AppColors.darkBorder : AppColors.lightBorder,
+                ),
               ),
               child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   CircleAvatar(
                     radius: 28,
@@ -95,35 +93,83 @@ class ProfileScreen extends ConsumerWidget {
                             user.name.isNotEmpty
                                 ? user.name[0].toUpperCase()
                                 : 'U',
-                            style: const TextStyle(
-                              color: AppColors.primaryLight,
+                            style: TextStyle(
+                              color: isDarkMode ? AppColors.primaryLight : AppColors.primaryDark,
                               fontWeight: FontWeight.bold,
                               fontSize: 22,
                             ),
                           ),
                   ),
-                  const SizedBox(width: 16),
+                  const SizedBox(width: 14),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
-                          user.name,
-                          style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                            color: AppColors.textPrimary,
-                          ),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: Text(
+                                user.name,
+                                style: TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold,
+                                  color: textPrimary,
+                                ),
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                            InkWell(
+                              onTap: () => Navigator.of(context).push(
+                                MaterialPageRoute<void>(
+                                  builder: (_) => EditProfileScreen(user: user),
+                                ),
+                              ),
+                              borderRadius: BorderRadius.circular(20),
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                                decoration: BoxDecoration(
+                                  color: isDarkMode
+                                      ? AppColors.darkSurfaceLight
+                                      : const Color(0xFFF1F5F9),
+                                  borderRadius: BorderRadius.circular(20),
+                                  border: Border.all(
+                                    color: isDarkMode
+                                        ? AppColors.darkBorder
+                                        : AppColors.lightBorder,
+                                  ),
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(
+                                      Icons.edit_outlined,
+                                      size: 13,
+                                      color: textSecondary,
+                                    ),
+                                    const SizedBox(width: 4),
+                                    Text(
+                                      'Edit',
+                                      style: TextStyle(
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.w600,
+                                        color: textPrimary,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
-                        const SizedBox(height: 2),
+                        const SizedBox(height: 3),
                         Text(
                           user.email,
                           style: TextStyle(
                             fontSize: 13,
-                            color: AppColors.textSecondary,
+                            color: textSecondary,
                           ),
                         ),
-                        const SizedBox(height: 8),
+                        const SizedBox(height: 10),
                         Row(
                           children: [
                             StatusBadge(
