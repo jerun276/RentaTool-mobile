@@ -111,23 +111,23 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
               const SizedBox(height: 8),
               const Text('Account type',
                   style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
-              RadioGroup<String>(
-                groupValue: _role,
-                onChanged: (value) => setState(() => _role = value!),
-                child: const Column(
-                  children: [
-                    RadioListTile<String>(
-                      contentPadding: EdgeInsets.zero,
-                      title: Text('Machinery renter'),
-                      value: 'Renter',
-                    ),
-                    RadioListTile<String>(
-                      contentPadding: EdgeInsets.zero,
-                      title: Text('Equipment owner'),
-                      value: 'Owner',
-                    ),
-                  ],
-                ),
+              Column(
+                children: [
+                  RadioListTile<String>(
+                    contentPadding: EdgeInsets.zero,
+                    title: const Text('Machinery renter'),
+                    value: 'Renter',
+                    groupValue: _role,
+                    onChanged: (value) => setState(() => _role = value!),
+                  ),
+                  RadioListTile<String>(
+                    contentPadding: EdgeInsets.zero,
+                    title: const Text('Equipment owner'),
+                    value: 'Owner',
+                    groupValue: _role,
+                    onChanged: (value) => setState(() => _role = value!),
+                  ),
+                ],
               ),
               const SizedBox(height: 8),
               AppTextField(
