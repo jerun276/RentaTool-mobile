@@ -34,6 +34,7 @@ void main() {
         depositAmount: 500.0,
         preAuthTransactionId: 'tx-stripe-test',
         status: EscrowStatus.disbursed,
+        status: EscrowStatus.refunded,
         rawStatus: 'Released',
       );
 
@@ -68,6 +69,7 @@ void main() {
       expect(claim.proposedDeduction, 150.0);
       expect(claim.evidencePhotos.length, 2);
       expect(claim.status, ClaimStatus.underAIEvaluation);
+      expect(claim.rawStatus, 'UnderAIEvaluation');
       expect(claim.finalDeduction, isNull);
     });
 
