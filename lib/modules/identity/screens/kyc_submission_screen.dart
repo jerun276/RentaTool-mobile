@@ -247,7 +247,7 @@ class _KycSubmissionScreenState extends ConsumerState<KycSubmissionScreen> {
               const SizedBox(height: 20),
             ],
             DropdownButtonFormField<String>(
-              initialValue: _documentType,
+              value: _documentType,
               decoration: const InputDecoration(labelText: 'Document type'),
               items: const [
                 DropdownMenuItem(value: 'NIC', child: Text('National Identity Card (NIC)')),
