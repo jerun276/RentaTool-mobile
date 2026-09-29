@@ -76,7 +76,7 @@ class EquipmentHistoryScreen extends ConsumerWidget {
                     Expanded(
                       child: Text(
                         history.title,
-                        style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
+                        style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
                       ),
                     ),
                     StatusBadge(
@@ -100,7 +100,7 @@ class EquipmentHistoryScreen extends ConsumerWidget {
                       history.lastServicingDateUtc != null
                           ? 'Last Serviced: ${dateFormatter.format(DateTime.tryParse(history.lastServicingDateUtc!) ?? DateTime.now())}'
                           : 'No documented prior servicing',
-                      style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
+                      style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
                     ),
                   ],
                 ),
@@ -138,7 +138,7 @@ class EquipmentHistoryScreen extends ConsumerWidget {
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            const Text(
+            Text(
               'INSPECTION & CONDITION AUDIT LOGS',
               style: TextStyle(
                 fontSize: 11,
@@ -149,7 +149,7 @@ class EquipmentHistoryScreen extends ConsumerWidget {
             ),
             Text(
               '${history.inspectionTimeline.length} records',
-              style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
+              style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
             ),
           ],
         ),
@@ -165,10 +165,10 @@ class EquipmentHistoryScreen extends ConsumerWidget {
               borderRadius: BorderRadius.circular(12),
               border: Border.all(color: AppColors.border),
             ),
-            child: const Column(
+            child: Column(
               children: [
                 Icon(Icons.assignment_outlined, size: 40, color: AppColors.textMuted),
-                SizedBox(height: 12),
+                const SizedBox(height: 12),
                 Text(
                   'No condition inspection records logged yet.',
                   style: TextStyle(color: AppColors.textSecondary, fontSize: 14),
@@ -221,19 +221,19 @@ class EquipmentHistoryScreen extends ConsumerWidget {
             ],
           ),
           const SizedBox(height: 6),
-          Text(dateStr, style: const TextStyle(fontSize: 11, color: AppColors.textMuted)),
+          Text(dateStr, style: TextStyle(fontSize: 11, color: AppColors.textMuted)),
           const SizedBox(height: 10),
 
           // Condition Notes
           Text(
             log.conditionNotes,
-            style: const TextStyle(fontSize: 13, color: AppColors.textPrimary, height: 1.4),
+            style: TextStyle(fontSize: 13, color: AppColors.textPrimary, height: 1.4),
           ),
           const SizedBox(height: 12),
 
           // Multi-Angle Photos
           if (log.photos.isNotEmpty) ...[
-            const Text(
+            Text(
               'PHOTOGRAPHIC EVIDENCE BY ANGLE',
               style: TextStyle(fontSize: 9, fontWeight: FontWeight.bold, letterSpacing: 0.8, color: AppColors.textMuted),
             ),
@@ -261,12 +261,12 @@ class EquipmentHistoryScreen extends ConsumerWidget {
                           Image.network(
                             photo.photoUrl,
                             fit: BoxFit.cover,
-                            errorBuilder: (_, __, ___) => const Center(
+                            errorBuilder: (_, __, ___) => Center(
                               child: Icon(Icons.image_not_supported_outlined, size: 24, color: AppColors.textMuted),
                             ),
                           )
                         else
-                          const Center(
+                          Center(
                             child: Icon(Icons.camera_alt_outlined, size: 24, color: AppColors.textMuted),
                           ),
                         Positioned(

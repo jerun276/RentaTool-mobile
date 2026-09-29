@@ -33,6 +33,7 @@ void main() {
         bookingId: 'book-222',
         depositAmount: 500.0,
         preAuthTransactionId: 'tx-stripe-test',
+        status: EscrowStatus.disbursed,
         status: EscrowStatus.refunded,
         rawStatus: 'Released',
       );

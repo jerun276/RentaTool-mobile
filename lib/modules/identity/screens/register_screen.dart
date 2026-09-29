@@ -89,7 +89,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                           ? null
                           : FileImage(File(_photoPath!)),
                       child: _photoPath == null
-                          ? const Icon(Icons.person_outline,
+                          ? Icon(Icons.person_outline,
                               size: 44, color: AppColors.textSecondary)
                           : null,
                     ),

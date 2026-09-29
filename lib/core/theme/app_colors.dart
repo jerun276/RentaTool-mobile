@@ -1,29 +1,55 @@
 import 'package:flutter/material.dart';
 
 /// Design tokens and brand color palette for RentaTool LK.
-/// Matches the high-contrast dark aesthetic of the web operations portal.
+/// Supports both default White (Light) mode and Dark mode.
 class AppColors {
   AppColors._();
+
+  /// Global toggle reflecting the current active theme mode.
+  /// Defaults to false (White Theme).
+  static bool isDark = false;
 
   // Primary Brand Accents (Emerald)
   static const Color primary = Color(0xFF10B981);
   static const Color primaryLight = Color(0xFF4EDEA3);
   static const Color primaryDark = Color(0xFF047857);
 
-  // Backgrounds (Dark Mode Slate / Charcoal)
-  static const Color background = Color(0xFF0F131C);
-  static const Color surface = Color(0xFF181C24);
-  static const Color surfaceLight = Color(0xFF222834);
-  static const Color surfaceElevated = Color(0xFF2B3242);
+  // Static constants for explicit Light Mode
+  static const Color lightBackground = Color(0xFFF8FAFC);
+  static const Color lightSurface = Colors.white;
+  static const Color lightSurfaceLight = Color(0xFFF1F5F9);
+  static const Color lightSurfaceElevated = Colors.white;
+  static const Color lightBorder = Color(0xFFE2E8F0);
+  static const Color lightBorderSubtle = Color(0xFFCBD5E1);
+  static const Color lightTextPrimary = Color(0xFF0F172A);
+  static const Color lightTextSecondary = Color(0xFF64748B);
+  static const Color lightTextMuted = Color(0xFF94A3B8);
 
-  // Borders & Dividers
-  static const Color border = Color(0xFF1F2937);
-  static const Color borderSubtle = Color(0xFF374151);
+  // Static constants for explicit Dark Mode
+  static const Color darkBackground = Color(0xFF0F131C);
+  static const Color darkSurface = Color(0xFF181C24);
+  static const Color darkSurfaceLight = Color(0xFF222834);
+  static const Color darkSurfaceElevated = Color(0xFF2B3242);
+  static const Color darkBorder = Color(0xFF1F2937);
+  static const Color darkBorderSubtle = Color(0xFF374151);
+  static const Color darkTextPrimary = Color(0xFFDFE2EE);
+  static const Color darkTextSecondary = Color(0xFF9CA3AF);
+  static const Color darkTextMuted = Color(0xFF6B7280);
 
-  // Typography
-  static const Color textPrimary = Color(0xFFDFE2EE);
-  static const Color textSecondary = Color(0xFF9CA3AF);
-  static const Color textMuted = Color(0xFF6B7280);
+  // Dynamic Backgrounds (Default: White / Light)
+  static Color get background => isDark ? darkBackground : lightBackground;
+  static Color get surface => isDark ? darkSurface : lightSurface;
+  static Color get surfaceLight => isDark ? darkSurfaceLight : lightSurfaceLight;
+  static Color get surfaceElevated => isDark ? darkSurfaceElevated : lightSurfaceElevated;
+
+  // Dynamic Borders & Dividers
+  static Color get border => isDark ? darkBorder : lightBorder;
+  static Color get borderSubtle => isDark ? darkBorderSubtle : lightBorderSubtle;
+
+  // Dynamic Typography
+  static Color get textPrimary => isDark ? darkTextPrimary : lightTextPrimary;
+  static Color get textSecondary => isDark ? darkTextSecondary : lightTextSecondary;
+  static Color get textMuted => isDark ? darkTextMuted : lightTextMuted;
 
   // Component Status Badges
   static const Color success = Color(0xFF10B981);

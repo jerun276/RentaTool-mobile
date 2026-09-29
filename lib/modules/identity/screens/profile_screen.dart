@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/theme_provider.dart';
 import '../../../core/widgets/app_button.dart';
 import '../../../core/widgets/status_badge.dart';
 import '../providers/auth_provider.dart';
@@ -15,6 +16,8 @@ class ProfileScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final authState = ref.watch(authProvider);
     final user = authState.user;
+    final currentThemeMode = ref.watch(themeProvider);
+    final isDarkMode = currentThemeMode == ThemeMode.dark;
 
     if (user == null) {
       return Scaffold(
@@ -40,19 +43,14 @@ class ProfileScreen extends ConsumerWidget {
     final trustTier =
         trustScoreAsync.valueOrNull?.tier ?? _tierForScore(trustScore);
 
+    final theme = Theme.of(context);
+    final textPrimary = theme.colorScheme.onSurface;
+    final textSecondary = isDarkMode ? AppColors.darkTextSecondary : AppColors.lightTextSecondary;
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('User Profile & Trust'),
         actions: [
-          IconButton(
-            icon: const Icon(Icons.edit_outlined, size: 20),
-            tooltip: 'Edit profile',
-            onPressed: () => Navigator.of(context).push(
-              MaterialPageRoute<void>(
-                builder: (_) => EditProfileScreen(user: user),
-              ),
-            ),
-          ),
           IconButton(
             icon: const Icon(Icons.logout, size: 20),
             tooltip: 'Sign Out',
@@ -72,13 +70,16 @@ class ProfileScreen extends ConsumerWidget {
           children: [
             // User Header Card
             Container(
-              padding: const EdgeInsets.all(20),
+              padding: const EdgeInsets.all(18),
               decoration: BoxDecoration(
-                color: AppColors.surface,
+                color: isDarkMode ? AppColors.darkSurface : AppColors.lightSurface,
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: AppColors.border),
+                border: Border.all(
+                  color: isDarkMode ? AppColors.darkBorder : AppColors.lightBorder,
+                ),
               ),
               child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   CircleAvatar(
                     radius: 28,
@@ -92,35 +93,83 @@ class ProfileScreen extends ConsumerWidget {
                             user.name.isNotEmpty
                                 ? user.name[0].toUpperCase()
                                 : 'U',
-                            style: const TextStyle(
-                              color: AppColors.primaryLight,
+                            style: TextStyle(
+                              color: isDarkMode ? AppColors.primaryLight : AppColors.primaryDark,
                               fontWeight: FontWeight.bold,
                               fontSize: 22,
                             ),
                           ),
                   ),
-                  const SizedBox(width: 16),
+                  const SizedBox(width: 14),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
-                          user.name,
-                          style: const TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                            color: AppColors.textPrimary,
-                          ),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: Text(
+                                user.name,
+                                style: TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold,
+                                  color: textPrimary,
+                                ),
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                            InkWell(
+                              onTap: () => Navigator.of(context).push(
+                                MaterialPageRoute<void>(
+                                  builder: (_) => EditProfileScreen(user: user),
+                                ),
+                              ),
+                              borderRadius: BorderRadius.circular(20),
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                                decoration: BoxDecoration(
+                                  color: isDarkMode
+                                      ? AppColors.darkSurfaceLight
+                                      : const Color(0xFFF1F5F9),
+                                  borderRadius: BorderRadius.circular(20),
+                                  border: Border.all(
+                                    color: isDarkMode
+                                        ? AppColors.darkBorder
+                                        : AppColors.lightBorder,
+                                  ),
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(
+                                      Icons.edit_outlined,
+                                      size: 13,
+                                      color: textSecondary,
+                                    ),
+                                    const SizedBox(width: 4),
+                                    Text(
+                                      'Edit',
+                                      style: TextStyle(
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.w600,
+                                        color: textPrimary,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
-                        const SizedBox(height: 2),
+                        const SizedBox(height: 3),
                         Text(
                           user.email,
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 13,
-                            color: AppColors.textSecondary,
+                            color: textSecondary,
                           ),
                         ),
-                        const SizedBox(height: 8),
+                        const SizedBox(height: 10),
                         Row(
                           children: [
                             StatusBadge(
@@ -144,6 +193,65 @@ class ProfileScreen extends ConsumerWidget {
                 ],
               ),
             ),
+            if (!user.isVerified) ...[
+              const SizedBox(height: 16),
+              // KYC Action Card
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: isDarkMode ? AppColors.darkSurface : AppColors.lightSurface,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: isDarkMode ? AppColors.darkBorder : AppColors.lightBorder,
+                  ),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Icon(
+                          Icons.assignment_ind_outlined,
+                          color: isDarkMode
+                              ? const Color(0xFFF87171)
+                              : const Color(0xFFDC2626),
+                          size: 18,
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          'Complete NIC Verification',
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            color: isDarkMode
+                                ? const Color(0xFFF87171)
+                                : const Color(0xFFDC2626),
+                            fontSize: 14,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      'Upload your Sri Lankan NIC photo to unlock unrestricted equipment rental access.',
+                      style: TextStyle(
+                        color: isDarkMode
+                            ? AppColors.darkTextSecondary
+                            : AppColors.lightTextSecondary,
+                        fontSize: 12,
+                        height: 1.3,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    AppButton(
+                      text: 'Submit NIC Documents',
+                      variant: AppButtonVariant.primary,
+                      icon: Icons.upload_file_outlined,
+                      onPressed: () => context.push('/kyc-submit'),
+                    ),
+                  ],
+                ),
+              ),
+            ],
             const SizedBox(height: 20),
 
             // Algorithmic Trust Score Card (Component 1 requirement)
@@ -160,7 +268,7 @@ class ProfileScreen extends ConsumerWidget {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      const Text(
+                      Text(
                         'ALGORITHMIC TRUST SCORE',
                         style: TextStyle(
                           fontSize: 11,
@@ -188,7 +296,7 @@ class ProfileScreen extends ConsumerWidget {
                         ),
                       ),
                       const SizedBox(width: 6),
-                      const Text(
+                      Text(
                         '/ 100 Points',
                         style: TextStyle(
                             fontSize: 14, color: AppColors.textSecondary),
@@ -205,14 +313,14 @@ class ProfileScreen extends ConsumerWidget {
                     borderRadius: BorderRadius.circular(4),
                   ),
                   const SizedBox(height: 12),
-                  const Text(
+                  Text(
                     'Higher trust scores unlock reduced escrow pre-authorizations and automatic booking confirmations across Sri Lanka.',
                     style:
                         TextStyle(color: AppColors.textSecondary, fontSize: 12),
                   ),
                   if (trustScoreAsync.isLoading)
-                    const Padding(
-                      padding: EdgeInsets.only(top: 10),
+                    Padding(
+                      padding: const EdgeInsets.only(top: 10),
                       child: Text('Refreshing trust score...',
                           style: TextStyle(
                               color: AppColors.textMuted, fontSize: 11)),
@@ -222,43 +330,71 @@ class ProfileScreen extends ConsumerWidget {
             ),
             const SizedBox(height: 20),
 
-            // KYC Action Card
-            if (!user.isVerified)
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: AppColors.warning.withValues(alpha: 0.08),
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(
-                      color: AppColors.warning.withValues(alpha: 0.3)),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      'Complete National Identity Verification',
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        color: Color(0xFFFFB95F),
-                        fontSize: 14,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    const Text(
-                      'Upload your Sri Lankan NIC photo to unlock unrestricted equipment rental access.',
-                      style: TextStyle(
-                          color: AppColors.textSecondary, fontSize: 12),
-                    ),
-                    const SizedBox(height: 12),
-                    AppButton(
-                      text: 'Submit NIC Documents',
-                      variant: AppButtonVariant.primary,
-                      icon: Icons.upload_file_outlined,
-                      onPressed: () => context.push('/kyc-submit'),
-                    ),
-                  ],
-                ),
+            // Appearance & Theme Mode Card
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+              decoration: BoxDecoration(
+                color: AppColors.surface,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: AppColors.border),
               ),
+              child: Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: isDarkMode
+                          ? const Color(0xFF312E81).withValues(alpha: 0.35)
+                          : const Color(0xFFFEF3C7),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: Icon(
+                      isDarkMode
+                          ? Icons.dark_mode_outlined
+                          : Icons.light_mode_outlined,
+                      color: isDarkMode
+                          ? const Color(0xFFA5B4FC)
+                          : const Color(0xFFD97706),
+                      size: 24,
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Dark Mode',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                            color: AppColors.textPrimary,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          isDarkMode
+                              ? 'Dark theme enabled'
+                              : 'Default white theme enabled',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: AppColors.textSecondary,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Switch.adaptive(
+                    value: isDarkMode,
+                    activeThumbColor: AppColors.primary,
+                    activeTrackColor: AppColors.primaryDark,
+                    onChanged: (val) {
+                      ref.read(themeProvider.notifier).toggleTheme();
+                    },
+                  ),
+                ],
+              ),
+            ),
           ],
         ),
       ),

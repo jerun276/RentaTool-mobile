@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/theme_provider.dart';
 import '../../../core/widgets/app_button.dart';
 import '../../../core/widgets/error_view.dart';
 import '../../../core/widgets/loading_indicator.dart';
@@ -66,6 +67,13 @@ class _EquipmentDetailScreenState extends ConsumerState<EquipmentDetailScreen> {
 
   @override
   Widget build(BuildContext context) {
+    ref.watch(themeProvider);
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final textPrimary = theme.colorScheme.onSurface;
+    final textSecondary = isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary;
+    final textMuted = isDark ? AppColors.darkTextMuted : AppColors.lightTextMuted;
+
     if (_isLoading) {
       return Scaffold(
         appBar: AppBar(title: const Text('Equipment Details')),
@@ -117,9 +125,9 @@ class _EquipmentDetailScreenState extends ConsumerState<EquipmentDetailScreen> {
             Container(
               height: 220,
               decoration: BoxDecoration(
-                color: AppColors.surfaceLight,
+                color: isDark ? AppColors.darkSurfaceLight : AppColors.lightSurfaceLight,
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: AppColors.border),
+                border: Border.all(color: isDark ? AppColors.darkBorder : AppColors.lightBorder),
               ),
               clipBehavior: Clip.antiAlias,
               child: Stack(
@@ -179,10 +187,10 @@ class _EquipmentDetailScreenState extends ConsumerState<EquipmentDetailScreen> {
                         width: 60,
                         margin: const EdgeInsets.only(right: 8),
                         decoration: BoxDecoration(
-                          color: AppColors.surfaceLight,
+                          color: isDark ? AppColors.darkSurfaceLight : AppColors.lightSurfaceLight,
                           borderRadius: BorderRadius.circular(6),
                           border: Border.all(
-                            color: isSelected ? AppColors.primaryLight : AppColors.border,
+                            color: isSelected ? AppColors.primaryLight : (isDark ? AppColors.darkBorder : AppColors.lightBorder),
                             width: isSelected ? 2 : 1,
                           ),
                         ),
@@ -190,7 +198,7 @@ class _EquipmentDetailScreenState extends ConsumerState<EquipmentDetailScreen> {
                         child: Image.network(
                           eq.images[idx].imageUrl,
                           fit: BoxFit.cover,
-                          errorBuilder: (_, __, ___) => const Icon(Icons.image, size: 20, color: AppColors.textMuted),
+                          errorBuilder: (_, __, ___) => Icon(Icons.image, size: 20, color: textMuted),
                         ),
                       ),
                     );
@@ -203,7 +211,7 @@ class _EquipmentDetailScreenState extends ConsumerState<EquipmentDetailScreen> {
             // Title and Category
             Text(
               eq.title,
-              style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
+              style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: textPrimary),
             ),
             const SizedBox(height: 6),
             Row(
@@ -216,13 +224,17 @@ class _EquipmentDetailScreenState extends ConsumerState<EquipmentDetailScreen> {
                   ),
                   child: Text(
                     eq.categoryName,
-                    style: const TextStyle(fontSize: 11, color: AppColors.primaryLight, fontWeight: FontWeight.bold),
+                    style: TextStyle(
+                      fontSize: 11,
+                      color: isDark ? AppColors.primaryLight : AppColors.primaryDark,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                 ),
                 const SizedBox(width: 12),
-                const Icon(Icons.location_on_outlined, size: 16, color: AppColors.textMuted),
+                Icon(Icons.location_on_outlined, size: 16, color: textMuted),
                 const SizedBox(width: 4),
-                Text(eq.location, style: const TextStyle(color: AppColors.textSecondary, fontSize: 13)),
+                Text(eq.location, style: TextStyle(color: textSecondary, fontSize: 13)),
               ],
             ),
             const SizedBox(height: 20),
@@ -231,10 +243,10 @@ class _EquipmentDetailScreenState extends ConsumerState<EquipmentDetailScreen> {
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: isLocked ? const Color(0x1AEF4444) : AppColors.surface,
+                color: isLocked ? const Color(0x1AEF4444) : (isDark ? AppColors.darkSurface : AppColors.lightSurface),
                 borderRadius: BorderRadius.circular(10),
                 border: Border.all(
-                  color: isLocked ? AppColors.wearLockout : AppColors.border,
+                  color: isLocked ? AppColors.wearLockout : (isDark ? AppColors.darkBorder : AppColors.lightBorder),
                 ),
               ),
               child: Column(
@@ -243,7 +255,7 @@ class _EquipmentDetailScreenState extends ConsumerState<EquipmentDetailScreen> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      const Text(
+                      Text(
                         'WEAR & MAINTENANCE TELEMETRY',
                         style: TextStyle(
                           fontSize: 10,
@@ -280,20 +292,20 @@ class _EquipmentDetailScreenState extends ConsumerState<EquipmentDetailScreen> {
             const SizedBox(height: 20),
 
             // Description
-            const Text(
+            Text(
               'Equipment Description',
               style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: AppColors.textPrimary),
             ),
             const SizedBox(height: 6),
             Text(
               eq.description.isNotEmpty ? eq.description : 'No additional description provided.',
-              style: const TextStyle(color: AppColors.textSecondary, fontSize: 13, height: 1.4),
+              style: TextStyle(color: AppColors.textSecondary, fontSize: 13, height: 1.4),
             ),
             const SizedBox(height: 20),
 
             // Technical Specifications List (if present)
             if (specsMap.isNotEmpty) ...[
-              const Text(
+              Text(
                 'Technical Specifications',
                 style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: AppColors.textPrimary),
               ),
@@ -312,8 +324,8 @@ class _EquipmentDetailScreenState extends ConsumerState<EquipmentDetailScreen> {
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          Text(e.key, style: const TextStyle(fontSize: 12, color: AppColors.textMuted)),
-                          Text(e.value.toString(), style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.textPrimary)),
+                          Text(e.key, style: TextStyle(fontSize: 12, color: AppColors.textMuted)),
+                          Text(e.value.toString(), style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.textPrimary)),
                         ],
                       ),
                     );
@@ -337,7 +349,7 @@ class _EquipmentDetailScreenState extends ConsumerState<EquipmentDetailScreen> {
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text(
+                      Text(
                         'RENTAL RATE',
                         style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: AppColors.textMuted),
                       ),
@@ -345,21 +357,21 @@ class _EquipmentDetailScreenState extends ConsumerState<EquipmentDetailScreen> {
                         currencyFormatter.format(eq.dailyRate),
                         style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w800, color: AppColors.primaryLight),
                       ),
-                      const Text('per 24-hour day', style: TextStyle(fontSize: 11, color: AppColors.textMuted)),
+                      Text('per 24-hour day', style: TextStyle(fontSize: 11, color: AppColors.textMuted)),
                     ],
                   ),
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.end,
                     children: [
-                      const Text(
+                      Text(
                         'ESTIMATED VALUE',
                         style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: AppColors.textMuted),
                       ),
                       Text(
                         currencyFormatter.format(eq.replacementValue),
-                        style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
+                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
                       ),
-                      const Text('Deposit Pre-Auth Base', style: TextStyle(fontSize: 11, color: AppColors.textMuted)),
+                      Text('Deposit Pre-Auth Base', style: TextStyle(fontSize: 11, color: AppColors.textMuted)),
                     ],
                   ),
                 ],
@@ -372,9 +384,9 @@ class _EquipmentDetailScreenState extends ConsumerState<EquipmentDetailScreen> {
               Container(
                 padding: const EdgeInsets.all(14),
                 decoration: BoxDecoration(
-                  color: AppColors.warning.withOpacity(0.1),
+                  color: AppColors.warning.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(10),
-                  border: Border.all(color: AppColors.warning.withOpacity(0.4)),
+                  border: Border.all(color: AppColors.warning.withValues(alpha: 0.4)),
                 ),
                 child: Row(
                   children: [
@@ -393,7 +405,7 @@ class _EquipmentDetailScreenState extends ConsumerState<EquipmentDetailScreen> {
                             ),
                           ),
                           const SizedBox(height: 2),
-                          const Text(
+                          Text(
                             'You must validate your Sri Lankan NIC before renting or receiving machinery.',
                             style: TextStyle(fontSize: 11, color: AppColors.textSecondary),
                           ),
@@ -419,9 +431,9 @@ class _EquipmentDetailScreenState extends ConsumerState<EquipmentDetailScreen> {
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: AppColors.success.withOpacity(0.1),
+                  color: AppColors.success.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(10),
-                  border: Border.all(color: AppColors.success.withOpacity(0.3)),
+                  border: Border.all(color: AppColors.success.withValues(alpha: 0.3)),
                 ),
                 child: const Row(
                   children: [
@@ -471,7 +483,7 @@ class _EquipmentDetailScreenState extends ConsumerState<EquipmentDetailScreen> {
                                 Text('NIC Verification Required', style: TextStyle(fontSize: 16)),
                               ],
                             ),
-                            content: const Text(
+                            content: Text(
                               'In accordance with RentaTool LK regulations, renters must submit and validate a valid Sri Lankan NIC document before acquiring or receiving machinery.',
                               style: TextStyle(fontSize: 13, color: AppColors.textSecondary),
                             ),
@@ -520,7 +532,7 @@ class _EquipmentDetailScreenState extends ConsumerState<EquipmentDetailScreen> {
   }
 
   Widget _fallbackCenterIcon() {
-    return const Center(
+    return Center(
       child: Icon(Icons.precision_manufacturing_outlined, size: 80, color: AppColors.textMuted),
     );
   }

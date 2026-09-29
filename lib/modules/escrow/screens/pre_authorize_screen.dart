@@ -76,7 +76,7 @@ class _PreAuthorizeScreenState extends ConsumerState<PreAuthorizeScreen> {
           'A security deposit of ${_formatter.format(amount)} will be pre-authorised '
           'and held against your payment method. No funds will be permanently '
           'charged until the rental is settled.',
-          style: const TextStyle(
+          style: TextStyle(
               color: AppColors.textSecondary, fontSize: 13),
         ),
         actions: [
@@ -152,17 +152,17 @@ class _PreAuthorizeScreenState extends ConsumerState<PreAuthorizeScreen> {
                   border: Border.all(
                       color: AppColors.escrowHeld.withValues(alpha: 0.3)),
                 ),
-                child: const Row(
+                child: Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Icon(Icons.lock_outline,
+                    const Icon(Icons.lock_outline,
                         color: AppColors.escrowHeld, size: 22),
-                    SizedBox(width: 12),
+                    const SizedBox(width: 12),
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(
+                          const Text(
                             'Escrow Pre-Authorization',
                             style: TextStyle(
                               fontWeight: FontWeight.bold,
@@ -170,7 +170,7 @@ class _PreAuthorizeScreenState extends ConsumerState<PreAuthorizeScreen> {
                               fontSize: 13,
                             ),
                           ),
-                          SizedBox(height: 4),
+                          const SizedBox(height: 4),
                           Text(
                             'A temporary hold will be placed on your payment method '
                             'for the security deposit amount. No funds are permanently '
@@ -189,7 +189,7 @@ class _PreAuthorizeScreenState extends ConsumerState<PreAuthorizeScreen> {
               const SizedBox(height: 24),
 
               // ── Booking Details ──────────────────────────────────────
-              _SectionHeader(label: 'Rental Details'),
+              const _SectionHeader(label: 'Rental Details'),
               const SizedBox(height: 12),
               AppTextField(
                 controller: _bookingIdCtrl,
@@ -223,7 +223,7 @@ class _PreAuthorizeScreenState extends ConsumerState<PreAuthorizeScreen> {
               const SizedBox(height: 24),
 
               // ── Deposit Amount ───────────────────────────────────────
-              _SectionHeader(label: 'Security Deposit'),
+              const _SectionHeader(label: 'Security Deposit'),
               const SizedBox(height: 12),
               AppTextField(
                 controller: _depositAmountCtrl,
@@ -231,7 +231,7 @@ class _PreAuthorizeScreenState extends ConsumerState<PreAuthorizeScreen> {
                 hintText: 'e.g. 15000.00',
                 keyboardType: const TextInputType.numberWithOptions(
                     decimal: true),
-                prefixIcon: const Icon(Icons.payments_outlined,
+                prefixIcon: Icon(Icons.payments_outlined,
                     color: AppColors.textMuted, size: 18),
                 validator: (v) {
                   if (v == null || v.trim().isEmpty) {
@@ -318,7 +318,7 @@ class _SuccessView extends StatelessWidget {
             const Icon(Icons.check_circle_outline,
                 color: AppColors.success, size: 64),
             const SizedBox(height: 20),
-            const Text(
+            Text(
               'Security Deposit Held',
               textAlign: TextAlign.center,
               style: TextStyle(
@@ -331,7 +331,7 @@ class _SuccessView extends StatelessWidget {
               'Your deposit of ${formatter.format(escrow.depositAmount)} has been '
               'pre-authorised and placed in escrow.',
               textAlign: TextAlign.center,
-              style: const TextStyle(
+              style: TextStyle(
                   color: AppColors.textSecondary, fontSize: 13),
             ),
             const SizedBox(height: 28),
@@ -366,13 +366,13 @@ class _InfoRow extends StatelessWidget {
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           Text(label,
-              style: const TextStyle(
+              style: TextStyle(
                   color: AppColors.textSecondary, fontSize: 13)),
           Flexible(
             child: Text(
               value,
               textAlign: TextAlign.right,
-              style: const TextStyle(
+              style: TextStyle(
                   color: AppColors.textPrimary,
                   fontWeight: FontWeight.w600,
                   fontSize: 13),
@@ -392,7 +392,7 @@ class _SectionHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     return Text(
       label.toUpperCase(),
-      style: const TextStyle(
+      style: TextStyle(
         fontSize: 10,
         fontWeight: FontWeight.bold,
         letterSpacing: 0.8,

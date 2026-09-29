@@ -76,7 +76,7 @@ class _CreateBookingScreenState extends ConsumerState<CreateBookingScreen> {
       builder: (context, child) {
         return Theme(
           data: Theme.of(context).copyWith(
-            colorScheme: const ColorScheme.dark(
+            colorScheme: ColorScheme.dark(
               primary: AppColors.primaryLight,
               onPrimary: Colors.black,
               surface: AppColors.surface,
@@ -206,7 +206,7 @@ class _CreateBookingScreenState extends ConsumerState<CreateBookingScreen> {
                         children: [
                           Text(
                             widget.equipment!.title,
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 16,
                               fontWeight: FontWeight.bold,
                               color: AppColors.textPrimary,
@@ -215,7 +215,7 @@ class _CreateBookingScreenState extends ConsumerState<CreateBookingScreen> {
                           const SizedBox(height: 4),
                           Text(
                             widget.equipment!.categoryName,
-                            style: const TextStyle(fontSize: 12, color: AppColors.textMuted),
+                            style: TextStyle(fontSize: 12, color: AppColors.textMuted),
                           ),
                           const SizedBox(height: 4),
                           Text(
@@ -246,7 +246,7 @@ class _CreateBookingScreenState extends ConsumerState<CreateBookingScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text(
+                  Text(
                     'SELECT RENTAL SCHEDULE',
                     style: TextStyle(
                       fontSize: 10,
@@ -264,7 +264,7 @@ class _CreateBookingScreenState extends ConsumerState<CreateBookingScreen> {
                       decoration: BoxDecoration(
                         color: AppColors.surfaceElevated,
                         borderRadius: BorderRadius.circular(8),
-                        border: Border.all(color: AppColors.primaryLight.withOpacity(0.5)),
+                        border: Border.all(color: AppColors.primaryLight.withValues(alpha: 0.5)),
                       ),
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -272,15 +272,15 @@ class _CreateBookingScreenState extends ConsumerState<CreateBookingScreen> {
                           Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              const Text('Start Date', style: TextStyle(fontSize: 11, color: AppColors.textMuted)),
+                              Text('Start Date', style: TextStyle(fontSize: 11, color: AppColors.textMuted)),
                               Text(dateFormatter.format(_startDate), style: const TextStyle(fontWeight: FontWeight.bold)),
                             ],
                           ),
-                          const Icon(Icons.arrow_forward, size: 16, color: AppColors.textMuted),
+                          Icon(Icons.arrow_forward, size: 16, color: AppColors.textMuted),
                           Column(
                             crossAxisAlignment: CrossAxisAlignment.end,
                             children: [
-                              const Text('End Date', style: TextStyle(fontSize: 11, color: AppColors.textMuted)),
+                              Text('End Date', style: TextStyle(fontSize: 11, color: AppColors.textMuted)),
                               Text(dateFormatter.format(_endDate), style: const TextStyle(fontWeight: FontWeight.bold)),
                             ],
                           ),
@@ -344,7 +344,7 @@ class _CreateBookingScreenState extends ConsumerState<CreateBookingScreen> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text('Daily Rate ($_rentalDays days)', style: const TextStyle(color: AppColors.textSecondary, fontSize: 13)),
+                      Text('Daily Rate ($_rentalDays days)', style: TextStyle(color: AppColors.textSecondary, fontSize: 13)),
                       Text('${currencyFormatter.format(_dailyRate)} / day', style: const TextStyle(fontWeight: FontWeight.w600)),
                     ],
                   ),
@@ -352,7 +352,7 @@ class _CreateBookingScreenState extends ConsumerState<CreateBookingScreen> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      const Text(
+                      Text(
                         'TOTAL ESTIMATED RENTAL FEE',
                         style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
                       ),
@@ -375,15 +375,15 @@ class _CreateBookingScreenState extends ConsumerState<CreateBookingScreen> {
             Container(
               padding: const EdgeInsets.all(14),
               decoration: BoxDecoration(
-                color: AppColors.primary.withOpacity(0.08),
+                color: AppColors.primary.withValues(alpha: 0.08),
                 borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: AppColors.primaryLight.withOpacity(0.2)),
+                border: Border.all(color: AppColors.primaryLight.withValues(alpha: 0.2)),
               ),
-              child: const Row(
+              child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Icon(Icons.shield_outlined, color: AppColors.primaryLight, size: 20),
-                  SizedBox(width: 10),
+                  const Icon(Icons.shield_outlined, color: AppColors.primaryLight, size: 20),
+                  const SizedBox(width: 10),
                   Expanded(
                     child: Text(
                       'Escrow Pre-Authorization: A refundable security deposit hold will be authorized upon booking. Funds are protected in escrow and released after return inspection.',
@@ -400,7 +400,7 @@ class _CreateBookingScreenState extends ConsumerState<CreateBookingScreen> {
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: AppColors.error.withOpacity(0.12),
+                  color: AppColors.error.withValues(alpha: 0.12),
                   borderRadius: BorderRadius.circular(8),
                   border: Border.all(color: AppColors.error),
                 ),

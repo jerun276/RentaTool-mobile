@@ -110,7 +110,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                                 _photoPath ?? widget.user.profilePhotoPath!)),
                         child:
                             (_photoPath ?? widget.user.profilePhotoPath) == null
-                                ? const Icon(Icons.person_outline,
+                                ? Icon(Icons.person_outline,
                                     size: 44, color: AppColors.textSecondary)
                                 : null,
                       ),
@@ -128,7 +128,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                   ]),
                 ),
                 const SizedBox(height: 12),
-                const Text(
+                Text(
                   'Update your contact details. Your role and verified email stay unchanged.',
                   style: TextStyle(color: AppColors.textSecondary),
                 ),

@@ -178,7 +178,7 @@ class _QrScannerScreenState extends ConsumerState<QrScannerScreen> {
               Center(
                 child: Text(
                   '${result.eventType.toUpperCase()} VERIFIED',
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.w800,
                     color: AppColors.textPrimary,
@@ -190,7 +190,7 @@ class _QrScannerScreenState extends ConsumerState<QrScannerScreen> {
                 child: Text(
                   result.message,
                   textAlign: TextAlign.center,
-                  style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
+                  style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
                 ),
               ),
               const SizedBox(height: 20),
@@ -237,7 +237,7 @@ class _QrScannerScreenState extends ConsumerState<QrScannerScreen> {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Text(label, style: const TextStyle(fontSize: 12, color: AppColors.textMuted)),
+        Text(label, style: TextStyle(fontSize: 12, color: AppColors.textMuted)),
         Text(
           value,
           style: TextStyle(
@@ -343,7 +343,7 @@ class _QrScannerScreenState extends ConsumerState<QrScannerScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    const Text(
+                    Text(
                       'OR VERIFY MANUALLY VIA TOKEN CODE',
                       style: TextStyle(
                         fontSize: 10,

@@ -133,7 +133,7 @@ class _BookingDetailScreenState extends ConsumerState<BookingDetailScreen> {
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text(
+                      Text(
                         'BOOKING STATUS',
                         style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: AppColors.textMuted),
                       ),
@@ -168,7 +168,7 @@ class _BookingDetailScreenState extends ConsumerState<BookingDetailScreen> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      const Text(
+                      Text(
                         'RENTAL DURATION & SCHEDULE',
                         style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: AppColors.textMuted),
                       ),
@@ -219,7 +219,7 @@ class _BookingDetailScreenState extends ConsumerState<BookingDetailScreen> {
                       Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Text(
+                          Text(
                             'TOTAL RENTAL FEE',
                             style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: AppColors.textMuted),
                           ),
@@ -241,7 +241,7 @@ class _BookingDetailScreenState extends ConsumerState<BookingDetailScreen> {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        const Text('Calculated Daily Rate', style: TextStyle(fontSize: 11, color: AppColors.textMuted)),
+                        Text('Calculated Daily Rate', style: TextStyle(fontSize: 11, color: AppColors.textMuted)),
                         Text('${currencyFormatter.format(b.dailyRate)} / day', style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
                       ],
                     ),
@@ -281,7 +281,7 @@ class _BookingDetailScreenState extends ConsumerState<BookingDetailScreen> {
                 label: const Text('Extend Schedule (Dynamic Surge Preview)'),
                 style: OutlinedButton.styleFrom(
                   padding: const EdgeInsets.symmetric(vertical: 12),
-                  side: const BorderSide(color: AppColors.border),
+                  side: BorderSide(color: AppColors.border),
                 ),
                 onPressed: _openExtensionSheet,
               ),

@@ -172,10 +172,10 @@ class _ConditionInspectionScreenState extends ConsumerState<ConditionInspectionS
                   borderRadius: BorderRadius.circular(10),
                   border: Border.all(color: AppColors.border),
                 ),
-                child: const Row(
+                child: Row(
                   children: [
-                    Icon(Icons.camera_enhance_outlined, color: AppColors.primaryLight, size: 24),
-                    SizedBox(width: 12),
+                    const Icon(Icons.camera_enhance_outlined, color: AppColors.primaryLight, size: 24),
+                    const SizedBox(width: 12),
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -184,7 +184,7 @@ class _ConditionInspectionScreenState extends ConsumerState<ConditionInspectionS
                             'MULTI-ANGLE AUDIT RECORDING',
                             style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, letterSpacing: 0.8, color: AppColors.textMuted),
                           ),
-                          SizedBox(height: 2),
+                          const SizedBox(height: 2),
                           Text(
                             'Capture high-resolution evidence with tamper-proof timestamp verification.',
                             style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
@@ -198,7 +198,7 @@ class _ConditionInspectionScreenState extends ConsumerState<ConditionInspectionS
               const SizedBox(height: 20),
 
               // Inspection Type Selector
-              const Text(
+              Text(
                 'INSPECTION TYPE',
                 style: TextStyle(fontWeight: FontWeight.bold, fontSize: 11, letterSpacing: 0.8, color: AppColors.textMuted),
               ),
@@ -215,7 +215,7 @@ class _ConditionInspectionScreenState extends ConsumerState<ConditionInspectionS
               const SizedBox(height: 18),
 
               // Severity Selector
-              const Text(
+              Text(
                 'WEAR & DEFECT SEVERITY RATING',
                 style: TextStyle(fontWeight: FontWeight.bold, fontSize: 11, letterSpacing: 0.8, color: AppColors.textMuted),
               ),
@@ -233,12 +233,12 @@ class _ConditionInspectionScreenState extends ConsumerState<ConditionInspectionS
               const SizedBox(height: 20),
 
               // Multi-Angle Photographic Evidence Grid
-              const Text(
+              Text(
                 'MULTI-ANGLE CAMERA EVIDENCE',
                 style: TextStyle(fontWeight: FontWeight.bold, fontSize: 11, letterSpacing: 0.8, color: AppColors.textMuted),
               ),
               const SizedBox(height: 4),
-              const Text(
+              Text(
                 'Capture designated angles to satisfy dispute and wear-lockout compliance.',
                 style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
               ),
@@ -326,7 +326,7 @@ class _ConditionInspectionScreenState extends ConsumerState<ConditionInspectionS
                   const SizedBox(width: 8),
                   Text(
                     angle,
-                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: AppColors.textPrimary),
+                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: AppColors.textPrimary),
                   ),
                 ],
               ),
@@ -388,7 +388,7 @@ class _ConditionInspectionScreenState extends ConsumerState<ConditionInspectionS
               initialValue: photo.observation,
               decoration: InputDecoration(
                 hintText: 'Add note for $angle (optional)...',
-                hintStyle: const TextStyle(fontSize: 12, color: AppColors.textMuted),
+                hintStyle: TextStyle(fontSize: 12, color: AppColors.textMuted),
                 contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                 fillColor: AppColors.surfaceLight,
                 filled: true,

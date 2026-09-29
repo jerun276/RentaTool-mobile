@@ -10,6 +10,7 @@ final escrowServiceProvider = Provider<EscrowService>((ref) {
 });
 
 class EscrowService {
+  // ignore: unused_field
   final Dio _dio;
 
   EscrowService(this._dio);

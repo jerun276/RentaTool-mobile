@@ -171,10 +171,10 @@ class _QrHandoverScreenState extends ConsumerState<QrHandoverScreen> {
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
                   decoration: BoxDecoration(
-                    color: isExpired ? AppColors.error.withOpacity(0.15) : AppColors.primary.withOpacity(0.12),
+                    color: isExpired ? AppColors.error.withValues(alpha: 0.15) : AppColors.primary.withValues(alpha: 0.12),
                     borderRadius: BorderRadius.circular(20),
                     border: Border.all(
-                      color: isExpired ? AppColors.error : AppColors.primaryLight.withOpacity(0.4),
+                      color: isExpired ? AppColors.error : AppColors.primaryLight.withValues(alpha: 0.4),
                     ),
                   ),
                   child: Row(
@@ -208,7 +208,7 @@ class _QrHandoverScreenState extends ConsumerState<QrHandoverScreen> {
                     borderRadius: BorderRadius.circular(18),
                     boxShadow: [
                       BoxShadow(
-                        color: (isExpired ? Colors.grey : AppColors.primary).withOpacity(0.25),
+                        color: (isExpired ? Colors.grey : AppColors.primary).withValues(alpha: 0.25),
                         blurRadius: 24,
                         spreadRadius: 2,
                       ),
@@ -236,7 +236,7 @@ class _QrHandoverScreenState extends ConsumerState<QrHandoverScreen> {
                 // Token Hex Representation with Copy Action
                 Text(
                   '${_eventType.toUpperCase()} CRYPTOGRAPHIC TOKEN',
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 10,
                     fontWeight: FontWeight.bold,
                     letterSpacing: 0.8,
@@ -268,7 +268,7 @@ class _QrHandoverScreenState extends ConsumerState<QrHandoverScreen> {
                           ),
                         ),
                         const SizedBox(width: 8),
-                        const Icon(Icons.copy, size: 16, color: AppColors.textMuted),
+                        Icon(Icons.copy, size: 16, color: AppColors.textMuted),
                       ],
                     ),
                   ),

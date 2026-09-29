@@ -17,6 +17,12 @@ class EquipmentCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final textPrimary = theme.colorScheme.onSurface;
+    final textSecondary = isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary;
+    final textMuted = isDark ? AppColors.darkTextMuted : AppColors.lightTextMuted;
+
     final currencyFormatter = NumberFormat.currency(
       locale: 'en_LK',
       symbol: 'LKR ',
@@ -38,7 +44,7 @@ class EquipmentCard extends StatelessWidget {
             Container(
               height: 150,
               width: double.infinity,
-              color: AppColors.surfaceLight,
+              color: isDark ? AppColors.darkSurfaceLight : AppColors.lightSurfaceLight,
               child: Stack(
                 fit: StackFit.expand,
                 children: [
@@ -61,7 +67,7 @@ class EquipmentCard extends StatelessWidget {
                       style: isLocked ? BadgeStyle.error : BadgeStyle.success,
                     ),
                   ),
-                  // Category Badge
+                  // Category Badge (always dark semi-transparent pill, white text)
                   Positioned(
                     bottom: 10,
                     left: 10,
@@ -74,7 +80,7 @@ class EquipmentCard extends StatelessWidget {
                       child: Text(
                         equipment.categoryName,
                         style: const TextStyle(
-                          color: AppColors.textPrimary,
+                          color: Colors.white,
                           fontSize: 10,
                           fontWeight: FontWeight.w600,
                         ),
@@ -95,20 +101,20 @@ class EquipmentCard extends StatelessWidget {
                     equipment.title,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
-                      color: AppColors.textPrimary,
+                      color: textPrimary,
                     ),
                   ),
                   const SizedBox(height: 4),
                   Row(
                     children: [
-                      const Icon(Icons.location_on_outlined, size: 14, color: AppColors.textMuted),
+                      Icon(Icons.location_on_outlined, size: 14, color: textMuted),
                       const SizedBox(width: 4),
                       Text(
                         equipment.location,
-                        style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
+                        style: TextStyle(fontSize: 12, color: textSecondary),
                       ),
                     ],
                   ),
@@ -130,30 +136,30 @@ class EquipmentCard extends StatelessWidget {
                       Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Text(
+                          Text(
                             'DAILY RATE',
                             style: TextStyle(
                               fontSize: 9,
                               fontWeight: FontWeight.bold,
                               letterSpacing: 0.8,
-                              color: AppColors.textMuted,
+                              color: textMuted,
                             ),
                           ),
                           Text(
                             currencyFormatter.format(equipment.dailyRate),
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 16,
                               fontWeight: FontWeight.w800,
-                              color: AppColors.primaryLight,
+                              color: isDark ? AppColors.primaryLight : AppColors.primaryDark,
                             ),
                           ),
                         ],
                       ),
                       Text(
                         'Repl: ${currencyFormatter.format(equipment.replacementValue)}',
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 11,
-                          color: AppColors.textMuted,
+                          color: textMuted,
                         ),
                       ),
                     ],
