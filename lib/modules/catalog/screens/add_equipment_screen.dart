@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
+import '../../../core/services/cloudinary_service.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/widgets/app_button.dart';
 import '../../../core/widgets/app_text_field.dart';
@@ -128,13 +129,18 @@ class _AddEquipmentScreenState extends ConsumerState<AddEquipmentScreen> {
       if (_fuelTypeController.text.isNotEmpty) specsMap['FuelType'] = _fuelTypeController.text.trim();
       final specsJson = jsonEncode(specsMap);
 
-      final toolImages = _photos.map((p) {
+      final cloudinary = ref.read(cloudinaryServiceProvider);
+      final toolImages = await Future.wait(_photos.map((p) async {
+        final uploadedUrl = await cloudinary.uploadImage(
+          p.path,
+          folder: 'rentatool/equipment',
+        );
         return ToolImageModel(
-          imageUrl: p.path,
+          imageUrl: uploadedUrl,
           angle: p.angle,
           isPrimary: p.isPrimary,
         );
-      }).toList();
+      }));
 
       await service.createEquipment(
         title: _titleController.text.trim(),

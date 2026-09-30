@@ -2,18 +2,22 @@ import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/constants/api_constants.dart';
 import '../../../core/network/api_client.dart';
+import '../../../core/services/cloudinary_service.dart';
 import '../models/user_model.dart';
 import '../models/trust_score_model.dart';
 
 final identityServiceProvider = Provider<IdentityService>((ref) {
   final dio = ref.watch(apiClientProvider);
-  return IdentityService(dio);
+  final cloudinary = ref.watch(cloudinaryServiceProvider);
+  return IdentityService(dio, cloudinary: cloudinary);
 });
 
 class IdentityService {
   final Dio _dio;
+  final CloudinaryService _cloudinary;
 
-  IdentityService(this._dio);
+  IdentityService(this._dio, {CloudinaryService? cloudinary})
+      : _cloudinary = cloudinary ?? CloudinaryService();
 
   Future<AuthResponse> login({
     required String email,
@@ -80,25 +84,24 @@ class IdentityService {
     String? frontImagePath,
     String? backImagePath,
   }) async {
-    final formData = FormData.fromMap({
-      'documentType': documentType,
-      'documentNumber': documentNumber,
-      if (frontImagePath != null)
-        'nicDocument': await MultipartFile.fromFile(
-          frontImagePath,
-          filename: 'nic_front.jpg',
-        ),
-      if (backImagePath != null)
-        'backDocument': await MultipartFile.fromFile(
-          backImagePath,
-          filename: 'document_back.jpg',
-        ),
-    });
+    String frontUrl = 'https://res.cloudinary.com/rentatool-demo/image/upload/v1/kyc/front.jpg';
+    String? backUrl;
+
+    if (frontImagePath != null && frontImagePath.isNotEmpty) {
+      frontUrl = await _cloudinary.uploadImage(frontImagePath, folder: 'rentatool/kyc');
+    }
+    if (backImagePath != null && backImagePath.isNotEmpty) {
+      backUrl = await _cloudinary.uploadImage(backImagePath, folder: 'rentatool/kyc');
+    }
 
     await _dio.post(
       ApiConstants.kycSubmission,
-      data: formData,
-      options: Options(contentType: 'multipart/form-data'),
+      data: {
+        'documentType': documentType,
+        'documentNumber': documentNumber,
+        'frontImageUrl': frontUrl,
+        if (backUrl != null) 'backImageUrl': backUrl,
+      },
     );
   }
 

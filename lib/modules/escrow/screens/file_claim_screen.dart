@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
+import '../../../core/services/cloudinary_service.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/theme_provider.dart';
 import '../../../core/widgets/app_button.dart';
@@ -48,11 +49,20 @@ class _FileClaimScreenState extends ConsumerState<FileClaimScreen> {
     setState(() => _isSubmitting = true);
     try {
       final service = ref.read(escrowServiceProvider);
+      List<String> evidencePhotos = [];
+      if (_selectedImage != null) {
+        final uploadedUrl = await ref.read(cloudinaryServiceProvider).uploadImage(
+          _selectedImage!.path,
+          folder: 'rentatool/claims',
+        );
+        evidencePhotos = [uploadedUrl];
+      }
+
       await service.fileClaim(
         bookingId: _bookingIdController.text.trim(),
         filedByUserId: _userIdController.text.trim(),
         damageDescription: _descController.text.trim(),
-        evidencePhotos: _selectedImage != null ? [_selectedImage!.path] : [],
+        evidencePhotos: evidencePhotos,
       );
 
       ref.read(escrowProvider.notifier).fetchClaims();

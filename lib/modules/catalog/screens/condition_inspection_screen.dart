@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
+import '../../../core/services/cloudinary_service.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/widgets/app_button.dart';
 import '../../../core/widgets/app_text_field.dart';
@@ -109,14 +110,19 @@ class _ConditionInspectionScreenState extends ConsumerState<ConditionInspectionS
     try {
       final service = ref.read(catalogServiceProvider);
 
-      final photoDtos = capturedList.map((photo) {
+      final cloudinary = ref.read(cloudinaryServiceProvider);
+      final photoDtos = await Future.wait(capturedList.map((photo) async {
+        final uploadedUrl = await cloudinary.uploadImage(
+          photo.path,
+          folder: 'rentatool/inspections',
+        );
         return InspectionPhotoModel(
           angle: photo.angle,
-          photoUrl: photo.path, // In full production, this is uploaded via multipart/signed URL
+          photoUrl: uploadedUrl,
           observationNote: photo.observation.isNotEmpty ? photo.observation : null,
           capturedAtUtc: photo.capturedAt,
         );
-      }).toList();
+      }));
 
       await service.createInspectionLog(
         equipmentId: widget.equipmentId,
