@@ -44,22 +44,24 @@ class ApiConstants {
     final port = _getEnv('API_PORT')?.trim() ?? '5000';
     final prefix = _getEnv('API_PREFIX')?.trim() ?? 'api/v1';
 
+    const defaultCloudHost = '18.139.3.242';
+
     // 4. Resolve Host based on platform
     String host;
     if (kIsWeb) {
       host = _getEnv('API_HOST_WEB')?.trim() ??
           _getEnv('API_HOST')?.trim() ??
-          'localhost';
+          defaultCloudHost;
     } else if (Platform.isAndroid) {
       host = _getEnv('API_HOST_ANDROID')?.trim() ??
           _getEnv('API_HOST')?.trim() ??
-          '10.0.2.2';
+          defaultCloudHost;
     } else if (Platform.isIOS) {
       host = _getEnv('API_HOST_IOS')?.trim() ??
           _getEnv('API_HOST')?.trim() ??
-          'localhost';
+          defaultCloudHost;
     } else {
-      host = _getEnv('API_HOST')?.trim() ?? 'localhost';
+      host = _getEnv('API_HOST')?.trim() ?? defaultCloudHost;
     }
 
     // 5. Construct complete URL

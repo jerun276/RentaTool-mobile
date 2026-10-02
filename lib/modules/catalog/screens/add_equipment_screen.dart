@@ -48,12 +48,12 @@ class _AddEquipmentScreenState extends ConsumerState<AddEquipmentScreen> {
   final _picker = ImagePicker();
   final List<_AddEquipmentPhoto> _photos = [];
 
-  // Known categories from backend seed
+  // Known categories from backend seed & deployed database
   final Map<String, String> _categories = {
-    '352ea07e-bd97-481b-a287-027036658902': 'Heavy Machinery',
-    'b25c3bf2-9d33-4df4-b3c9-02660a92d244': 'Power Tools',
-    '64949df2-eb06-4447-920a-f0fbf1fa000a': 'Generators & Power',
-    '8ca549e3-2fc5-48b3-aa2d-aa5d15a7cf93': 'Cleaning Equipment',
+    'c15d534b-8707-4d21-b04d-d5d3c1914c46': 'Heavy Machinery',
+    '030da95c-0141-4f12-adf9-28793e5d3c6d': 'Power Tools',
+    '641349d0-2a8d-4ca4-b896-2fd239cd283f': 'Generators & Power',
+    '7436c584-29c1-4e02-993f-f4af41fb2c9d': 'Cleaning Equipment',
   };
 
   late String _selectedCategoryId;
