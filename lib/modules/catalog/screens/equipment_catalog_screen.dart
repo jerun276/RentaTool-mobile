@@ -94,25 +94,110 @@ class _EquipmentCatalogScreenState extends ConsumerState<EquipmentCatalogScreen>
       ),
       body: Column(
         children: [
-          // Search Bar
+          // Modern Search Bar with Integrated Filter Trigger
           Padding(
-            padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
-            child: TextField(
-              style: TextStyle(color: theme.colorScheme.onSurface),
-              decoration: InputDecoration(
-                hintText: 'Search excavators, rollers, generators...',
-                prefixIcon: Icon(
-                  Icons.search,
-                  size: 20,
-                  color: isDark ? AppColors.darkTextMuted : AppColors.lightTextMuted,
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 10),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: isDark ? AppColors.darkSurface : AppColors.lightSurface,
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(
+                        color: isDark ? AppColors.darkBorder : AppColors.lightBorder,
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: isDark ? 0.2 : 0.04),
+                          blurRadius: 8,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
+                    ),
+                    child: TextField(
+                      style: TextStyle(color: theme.colorScheme.onSurface, fontSize: 14),
+                      decoration: InputDecoration(
+                        hintText: 'Search excavators, tools, fleet...',
+                        hintStyle: TextStyle(
+                          color: isDark ? AppColors.darkTextMuted : AppColors.lightTextMuted,
+                          fontSize: 13,
+                        ),
+                        prefixIcon: Icon(
+                          Icons.search_rounded,
+                          size: 20,
+                          color: isDark ? AppColors.darkTextMuted : AppColors.lightTextMuted,
+                        ),
+                        border: InputBorder.none,
+                        enabledBorder: InputBorder.none,
+                        focusedBorder: InputBorder.none,
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                      ),
+                      onChanged: (val) {
+                        ref.read(catalogProvider.notifier).setSearchQuery(val);
+                      },
+                    ),
+                  ),
                 ),
-                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                filled: true,
-                fillColor: isDark ? AppColors.darkSurface : AppColors.lightSurface,
-              ),
-              onChanged: (val) {
-                ref.read(catalogProvider.notifier).setSearchQuery(val);
-              },
+                const SizedBox(width: 10),
+                Material(
+                  color: Colors.transparent,
+                  child: InkWell(
+                    onTap: () => _showFilterBottomSheet(context, catalogState),
+                    borderRadius: BorderRadius.circular(14),
+                    child: Container(
+                      height: 48,
+                      width: 48,
+                      decoration: BoxDecoration(
+                        color: catalogState.selectedStatus != 'All'
+                            ? (isDark ? AppColors.primary.withValues(alpha: 0.2) : AppColors.primary.withValues(alpha: 0.12))
+                            : (isDark ? AppColors.darkSurface : AppColors.lightSurface),
+                        borderRadius: BorderRadius.circular(14),
+                        border: Border.all(
+                          color: catalogState.selectedStatus != 'All'
+                              ? AppColors.primary
+                              : (isDark ? AppColors.darkBorder : AppColors.lightBorder),
+                          width: catalogState.selectedStatus != 'All' ? 1.5 : 1.0,
+                        ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: catalogState.selectedStatus != 'All'
+                                ? AppColors.primary.withValues(alpha: 0.25)
+                                : Colors.black.withValues(alpha: isDark ? 0.2 : 0.04),
+                            blurRadius: 8,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
+                      ),
+                      child: Stack(
+                        alignment: Alignment.center,
+                        children: [
+                          Icon(
+                            Icons.tune_rounded,
+                            size: 20,
+                            color: catalogState.selectedStatus != 'All'
+                                ? AppColors.primary
+                                : (isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary),
+                          ),
+                          if (catalogState.selectedStatus != 'All')
+                            Positioned(
+                              top: 9,
+                              right: 9,
+                              child: Container(
+                                width: 7,
+                                height: 7,
+                                decoration: const BoxDecoration(
+                                  color: AppColors.primary,
+                                  shape: BoxShape.circle,
+                                ),
+                              ),
+                            ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ],
             ),
           ),
 
@@ -166,7 +251,7 @@ class _EquipmentCatalogScreenState extends ConsumerState<EquipmentCatalogScreen>
               ),
             ),
 
-          // Category Chips Bar
+          // Modern Category Carousel (Replaces dual stacked filter chips)
           Builder(
             builder: (context) {
               final categoriesAsync = ref.watch(categoryListProvider);
@@ -176,81 +261,151 @@ class _EquipmentCatalogScreenState extends ConsumerState<EquipmentCatalogScreen>
                   : _defaultCategories;
 
               return SizedBox(
-                height: 44,
-                child: ListView.builder(
+                height: 38,
+                child: ListView.separated(
                   scrollDirection: Axis.horizontal,
                   padding: const EdgeInsets.symmetric(horizontal: 16),
                   itemCount: categoriesList.length,
+                  separatorBuilder: (_, __) => const SizedBox(width: 8),
                   itemBuilder: (context, index) {
                     final category = categoriesList[index];
                     final isSelected = catalogState.selectedCategory == category;
-                return Padding(
-                  padding: const EdgeInsets.only(right: 8.0),
-                  child: FilterChip(
-                    label: Text(
-                      category,
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: isSelected
-                            ? (isDark ? AppColors.primaryLight : AppColors.primaryDark)
-                            : (isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary),
-                        fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
-                      ),
-                    ),
-                    selected: isSelected,
-                    selectedColor: isDark ? const Color(0x3310B981) : const Color(0x2210B981),
-                    backgroundColor: isDark ? AppColors.darkSurface : AppColors.lightSurface,
-                    checkmarkColor: isDark ? AppColors.primaryLight : AppColors.primaryDark,
-                    side: BorderSide(
-                      color: isSelected
-                          ? (isDark ? AppColors.primaryLight : AppColors.primary)
-                          : (isDark ? AppColors.darkBorder : AppColors.lightBorder),
-                    ),
-                    onSelected: (_) {
-                      ref.read(catalogProvider.notifier).setCategory(category);
-                    },
-                  ),
-                );
-              },
-            ),
-          );
-        },
-      ),
-          const SizedBox(height: 6),
+                    final iconData = _getCategoryIcon(category);
 
-          // Status Filters (All, Available, Under Maintenance)
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: Row(
-              children: _statusFilters.map((st) {
-                final isSelected = catalogState.selectedStatus == st;
-                final label = st == 'UnderMaintenance' ? 'Maintenance' : st;
-                return Padding(
-                  padding: const EdgeInsets.only(right: 6.0),
-                  child: ChoiceChip(
-                    label: Text(
-                      label,
-                      style: TextStyle(
-                        fontSize: 11,
-                        color: isSelected
-                            ? (st == 'UnderMaintenance'
-                                ? Colors.white
-                                : (isDark ? Colors.black : Colors.white))
-                            : (isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary),
-                        fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+                    return InkWell(
+                      onTap: () {
+                        ref.read(catalogProvider.notifier).setCategory(category);
+                      },
+                      borderRadius: BorderRadius.circular(20),
+                      child: AnimatedContainer(
+                        duration: const Duration(milliseconds: 200),
+                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                        decoration: BoxDecoration(
+                          color: isSelected
+                              ? AppColors.primary
+                              : (isDark ? AppColors.darkSurface : AppColors.lightSurface),
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(
+                            color: isSelected
+                                ? AppColors.primary
+                                : (isDark ? AppColors.darkBorder : AppColors.lightBorder),
+                            width: isSelected ? 1.5 : 1.0,
+                          ),
+                          boxShadow: isSelected
+                              ? [
+                                  BoxShadow(
+                                    color: AppColors.primary.withValues(alpha: 0.25),
+                                    blurRadius: 6,
+                                    offset: const Offset(0, 2),
+                                  ),
+                                ]
+                              : null,
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              iconData,
+                              size: 15,
+                              color: isSelected
+                                  ? Colors.white
+                                  : (isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary),
+                            ),
+                            const SizedBox(width: 6),
+                            Text(
+                              category,
+                              style: TextStyle(
+                                fontSize: 12,
+                                fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                                color: isSelected
+                                    ? Colors.white
+                                    : (isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              );
+            },
+          ),
+
+          // Active Status Filter Pill (Shown only when non-default filter is applied)
+          if (catalogState.selectedStatus != 'All') ...[
+            const SizedBox(height: 8),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: catalogState.selectedStatus == 'UnderMaintenance'
+                          ? (isDark ? const Color(0x33EF4444) : const Color(0x15EF4444))
+                          : (isDark ? const Color(0x3310B981) : const Color(0x1510B981)),
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(
+                        color: catalogState.selectedStatus == 'UnderMaintenance'
+                            ? const Color(0xFFEF4444)
+                            : AppColors.primary,
                       ),
                     ),
-                    selected: isSelected,
-                    selectedColor: st == 'UnderMaintenance' ? AppColors.wearLockout : AppColors.primary,
-                    backgroundColor: isDark ? AppColors.darkSurfaceLight : AppColors.lightSurfaceLight,
-                    onSelected: (val) {
-                      if (val) ref.read(catalogProvider.notifier).setStatus(st);
-                    },
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          catalogState.selectedStatus == 'UnderMaintenance'
+                              ? Icons.build_circle_outlined
+                              : Icons.check_circle_outline,
+                          size: 13,
+                          color: catalogState.selectedStatus == 'UnderMaintenance'
+                              ? const Color(0xFFEF4444)
+                              : AppColors.primary,
+                        ),
+                        const SizedBox(width: 5),
+                        Text(
+                          'Filter: ${catalogState.selectedStatus == 'UnderMaintenance' ? 'Under Maintenance' : catalogState.selectedStatus}',
+                          style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.bold,
+                            color: catalogState.selectedStatus == 'UnderMaintenance'
+                                ? const Color(0xFFEF4444)
+                                : (isDark ? AppColors.primaryLight : AppColors.primaryDark),
+                          ),
+                        ),
+                        const SizedBox(width: 6),
+                        InkWell(
+                          onTap: () => ref.read(catalogProvider.notifier).setStatus('All'),
+                          borderRadius: BorderRadius.circular(12),
+                          child: Icon(
+                            Icons.close_rounded,
+                            size: 14,
+                            color: catalogState.selectedStatus == 'UnderMaintenance'
+                                ? const Color(0xFFEF4444)
+                                : (isDark ? AppColors.primaryLight : AppColors.primaryDark),
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
-                );
-              }).toList(),
+                  const Spacer(),
+                  TextButton(
+                    onPressed: () {
+                      ref.read(catalogProvider.notifier).setStatus('All');
+                      ref.read(catalogProvider.notifier).setCategory('All');
+                    },
+                    style: TextButton.styleFrom(
+                      padding: EdgeInsets.zero,
+                      visualDensity: VisualDensity.compact,
+                    ),
+                    child: const Text('Reset All', style: TextStyle(fontSize: 11)),
+                  ),
+                ],
+              ),
             ),
-          ),
+          ],
           const SizedBox(height: 8),
 
           // Equipment List Feed
@@ -339,6 +494,195 @@ class _EquipmentCatalogScreenState extends ConsumerState<EquipmentCatalogScreen>
           ),
         ],
       ),
+    );
+  }
+
+  IconData _getCategoryIcon(String category) {
+    switch (category.toLowerCase()) {
+      case 'heavy machinery':
+        return Icons.precision_manufacturing_rounded;
+      case 'power tools':
+        return Icons.handyman_rounded;
+      case 'generators & power':
+        return Icons.bolt_rounded;
+      case 'cleaning equipment':
+        return Icons.cleaning_services_rounded;
+      case 'all':
+        return Icons.grid_view_rounded;
+      default:
+        return Icons.category_rounded;
+    }
+  }
+
+  void _showFilterBottomSheet(BuildContext context, CatalogState state) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: isDark ? AppColors.darkSurfaceElevated : Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (ctx) {
+        final currentStatus = state.selectedStatus;
+
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Handle Bar
+                Center(
+                  child: Container(
+                    width: 40,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: isDark ? AppColors.darkBorder : AppColors.lightBorder,
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 16),
+
+                // Header
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      'Filter Fleet Machinery',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: theme.colorScheme.onSurface,
+                      ),
+                    ),
+                    if (currentStatus != 'All' || state.selectedCategory != 'All')
+                      TextButton(
+                        onPressed: () {
+                          ref.read(catalogProvider.notifier).setStatus('All');
+                          ref.read(catalogProvider.notifier).setCategory('All');
+                          Navigator.pop(ctx);
+                        },
+                        child: const Text('Reset', style: TextStyle(fontWeight: FontWeight.bold)),
+                      ),
+                  ],
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  'Select equipment availability and operational status',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary,
+                  ),
+                ),
+                const SizedBox(height: 18),
+
+                // Status Options List
+                ..._statusFilters.map((st) {
+                  final isSelected = currentStatus == st;
+                  String title;
+                  String subtitle;
+                  IconData icon;
+                  Color accentColor;
+
+                  switch (st) {
+                    case 'Available':
+                      title = 'Available for Rent';
+                      subtitle = 'Ready for immediate dispatch and job-site reservations';
+                      icon = Icons.check_circle_outline_rounded;
+                      accentColor = const Color(0xFF10B981);
+                      break;
+                    case 'UnderMaintenance':
+                      title = 'Under Maintenance';
+                      subtitle = 'Equipment undergoing scheduled wear service or lockout';
+                      icon = Icons.build_circle_outlined;
+                      accentColor = const Color(0xFFEF4444);
+                      break;
+                    case 'Rented':
+                      title = 'Currently Rented';
+                      subtitle = 'Machinery currently deployed on active contractor sites';
+                      icon = Icons.timelapse_rounded;
+                      accentColor = const Color(0xFFF59E0B);
+                      break;
+                    default:
+                      title = 'All Machinery';
+                      subtitle = 'Show all equipment across the entire Sri Lanka fleet';
+                      icon = Icons.apps_rounded;
+                      accentColor = AppColors.primary;
+                  }
+
+                  return Padding(
+                    padding: const EdgeInsets.only(bottom: 10),
+                    child: InkWell(
+                      onTap: () {
+                        ref.read(catalogProvider.notifier).setStatus(st);
+                        Navigator.pop(ctx);
+                      },
+                      borderRadius: BorderRadius.circular(12),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                        decoration: BoxDecoration(
+                          color: isSelected
+                              ? accentColor.withValues(alpha: isDark ? 0.2 : 0.1)
+                              : (isDark ? AppColors.darkSurface : AppColors.lightSurface),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                            color: isSelected
+                                ? accentColor
+                                : (isDark ? AppColors.darkBorder : AppColors.lightBorder),
+                            width: isSelected ? 1.5 : 1.0,
+                          ),
+                        ),
+                        child: Row(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(8),
+                              decoration: BoxDecoration(
+                                color: accentColor.withValues(alpha: isDark ? 0.2 : 0.12),
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: Icon(icon, color: accentColor, size: 20),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    title,
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 13,
+                                      color: theme.colorScheme.onSurface,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 2),
+                                  Text(
+                                    subtitle,
+                                    style: TextStyle(
+                                      fontSize: 11,
+                                      color: isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            if (isSelected)
+                              Icon(Icons.check_rounded, color: accentColor, size: 20),
+                          ],
+                        ),
+                      ),
+                    ),
+                  );
+                }),
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 }
