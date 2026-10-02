@@ -62,12 +62,14 @@ class IdentityService {
     required String userId,
     required String name,
     required String phoneNumber,
+    String? profilePhotoUrl,
   }) async {
     final response = await _dio.patch(
       '${ApiConstants.userById(userId)}/profile',
       data: {
         'name': name.trim(),
         'phoneNumber': phoneNumber.replaceAll(RegExp(r'[\s-]'), ''),
+        if (profilePhotoUrl != null) 'profilePhotoUrl': profilePhotoUrl,
       },
     );
     return UserModel.fromJson(response.data);

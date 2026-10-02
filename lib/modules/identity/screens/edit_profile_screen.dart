@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../core/services/cloudinary_service.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/widgets/app_button.dart';
 import '../../../core/widgets/app_text_field.dart';
@@ -23,6 +24,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
   late final TextEditingController _phoneController;
   final _photoService = LocalProfilePhotoService();
   String? _photoPath;
+  bool _isUploadingPhoto = false;
 
   @override
   void initState() {
@@ -38,12 +40,43 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
     super.dispose();
   }
 
+  ImageProvider? _resolveImage(String? path) {
+    if (path == null || path.isEmpty) return null;
+    if (path.startsWith('http://') || path.startsWith('https://')) {
+      return NetworkImage(path);
+    }
+    return FileImage(File(path));
+  }
+
   Future<void> _save() async {
     if (!_formKey.currentState!.validate()) return;
+
+    String? photoUrl = widget.user.profilePhotoPath;
+
+    if (_photoPath != null && !_photoPath!.startsWith('http')) {
+      setState(() => _isUploadingPhoto = true);
+      try {
+        final cloudinary = ref.read(cloudinaryServiceProvider);
+        photoUrl = await cloudinary.uploadImage(
+          _photoPath!,
+          folder: 'rentatool/profiles',
+        );
+      } catch (e) {
+        if (!mounted) return;
+        setState(() => _isUploadingPhoto = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to upload photo to Cloudinary: $e')),
+        );
+        return;
+      }
+      if (!mounted) return;
+      setState(() => _isUploadingPhoto = false);
+    }
 
     final saved = await ref.read(authProvider.notifier).updateProfile(
           name: _nameController.text.trim(),
           phoneNumber: _phoneController.text.trim(),
+          profilePhotoUrl: photoUrl,
         );
     if (!mounted) return;
 
@@ -84,6 +117,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
   @override
   Widget build(BuildContext context) {
     final auth = ref.watch(authProvider);
+    final displayPhoto = _photoPath ?? widget.user.profilePhotoPath;
 
     return Scaffold(
       appBar: AppBar(title: const Text('Edit profile')),
@@ -102,17 +136,11 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                       CircleAvatar(
                         radius: 48,
                         backgroundColor: AppColors.surfaceLight,
-                        backgroundImage: (_photoPath ??
-                                    widget.user.profilePhotoPath) ==
-                                null
-                            ? null
-                            : FileImage(File(
-                                _photoPath ?? widget.user.profilePhotoPath!)),
-                        child:
-                            (_photoPath ?? widget.user.profilePhotoPath) == null
-                                ? Icon(Icons.person_outline,
-                                    size: 44, color: AppColors.textSecondary)
-                                : null,
+                        backgroundImage: _resolveImage(displayPhoto),
+                        child: displayPhoto == null
+                            ? Icon(Icons.person_outline,
+                                size: 44, color: AppColors.textSecondary)
+                            : null,
                       ),
                       IconButton.filled(
                         tooltip: 'Choose profile photo',
@@ -184,9 +212,9 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                 ),
                 const SizedBox(height: 20),
                 AppButton(
-                  text: 'Save changes',
+                  text: _isUploadingPhoto ? 'Uploading photo...' : 'Save changes',
                   icon: Icons.check,
-                  isLoading: auth.isLoading,
+                  isLoading: auth.isLoading || _isUploadingPhoto,
                   onPressed: _save,
                 ),
               ],

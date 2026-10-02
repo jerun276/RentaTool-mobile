@@ -42,6 +42,9 @@ class AuthNotifier extends StateNotifier<AuthState> {
   }
 
   Future<UserModel> _withLocalPhoto(UserModel user) async {
+    if (user.profilePhotoPath != null && user.profilePhotoPath!.isNotEmpty) {
+      return user;
+    }
     final path = await _tokenStorage.getProfilePhoto(user.id);
     return user.copyWith(profilePhotoPath: path);
   }
@@ -218,6 +221,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
   Future<bool> updateProfile({
     required String name,
     required String phoneNumber,
+    String? profilePhotoUrl,
   }) async {
     final user = state.user;
     if (user == null) return false;
@@ -228,8 +232,10 @@ class AuthNotifier extends StateNotifier<AuthState> {
         userId: user.id,
         name: name,
         phoneNumber: phoneNumber,
+        profilePhotoUrl: profilePhotoUrl,
       );
-      final photoPath = await _tokenStorage.getProfilePhoto(updatedUser.id);
+      final photoPath = updatedUser.profilePhotoPath ??
+          await _tokenStorage.getProfilePhoto(updatedUser.id);
       state = state.copyWith(
         isLoading: false,
         user: updatedUser.copyWith(profilePhotoPath: photoPath),

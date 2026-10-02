@@ -12,6 +12,14 @@ import 'edit_profile_screen.dart';
 class ProfileScreen extends ConsumerWidget {
   const ProfileScreen({super.key});
 
+  ImageProvider? _resolveAvatarImage(String? path) {
+    if (path == null || path.isEmpty) return null;
+    if (path.startsWith('http://') || path.startsWith('https://')) {
+      return NetworkImage(path);
+    }
+    return FileImage(File(path));
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final authState = ref.watch(authProvider);
@@ -84,10 +92,8 @@ class ProfileScreen extends ConsumerWidget {
                   CircleAvatar(
                     radius: 28,
                     backgroundColor: AppColors.primary.withValues(alpha: 0.2),
-                    backgroundImage: user.profilePhotoPath == null
-                        ? null
-                        : FileImage(File(user.profilePhotoPath!)),
-                    child: user.profilePhotoPath != null
+                    backgroundImage: _resolveAvatarImage(user.profilePhotoPath),
+                    child: user.profilePhotoPath != null && user.profilePhotoPath!.isNotEmpty
                         ? null
                         : Text(
                             user.name.isNotEmpty
