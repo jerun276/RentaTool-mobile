@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/constants/api_constants.dart';
 import '../../../core/network/api_client.dart';
 import '../models/batch_availability_model.dart';
+import '../models/category_model.dart';
 import '../models/equipment_history_model.dart';
 import '../models/equipment_model.dart';
 import '../models/inspection_log_model.dart';
@@ -120,5 +121,63 @@ class CatalogService {
       },
     );
     return BatchAvailabilityResultModel.fromJson(response.data as Map<String, dynamic>);
+  }
+
+  /// Retrieves list of equipment categories and their technical specification schemas
+  Future<List<CategoryModel>> getCategories({bool activeOnly = true}) async {
+    final response = await _dio.get(
+      ApiConstants.categories,
+      queryParameters: {'activeOnly': activeOnly},
+    );
+    final data = response.data;
+    final List<dynamic> items = data is List ? data : (data['items'] ?? []);
+    return items.map((e) => CategoryModel.fromJson(e as Map<String, dynamic>)).toList();
+  }
+
+  /// Retrieves a specific category by ID with its specification schema
+  Future<CategoryModel> getCategoryById(String id) async {
+    final response = await _dio.get(ApiConstants.categoryById(id));
+    return CategoryModel.fromJson(response.data as Map<String, dynamic>);
+  }
+
+  /// Creates a new category with dynamic specification schema (Admin only)
+  Future<CategoryModel> createCategory({
+    required String name,
+    String description = '',
+    String iconUrl = '',
+    List<CategorySpecFieldModel> specificationSchema = const [],
+  }) async {
+    final response = await _dio.post(
+      ApiConstants.categories,
+      data: {
+        'name': name.trim(),
+        'description': description.trim(),
+        'iconUrl': iconUrl.trim(),
+        'specificationSchema': specificationSchema.map((s) => s.toJson()).toList(),
+      },
+    );
+    return CategoryModel.fromJson(response.data as Map<String, dynamic>);
+  }
+
+  /// Updates an existing category and its specification schema (Admin only)
+  Future<CategoryModel> updateCategory({
+    required String id,
+    required String name,
+    String description = '',
+    String iconUrl = '',
+    bool isActive = true,
+    List<CategorySpecFieldModel> specificationSchema = const [],
+  }) async {
+    final response = await _dio.put(
+      ApiConstants.categoryById(id),
+      data: {
+        'name': name.trim(),
+        'description': description.trim(),
+        'iconUrl': iconUrl.trim(),
+        'isActive': isActive,
+        'specificationSchema': specificationSchema.map((s) => s.toJson()).toList(),
+      },
+    );
+    return CategoryModel.fromJson(response.data as Map<String, dynamic>);
   }
 }
