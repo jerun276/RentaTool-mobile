@@ -8,6 +8,8 @@ import '../../../core/widgets/loading_indicator.dart';
 import '../providers/catalog_provider.dart';
 import '../widgets/batch_availability_dialog.dart';
 import '../widgets/equipment_card.dart';
+import '../../identity/providers/auth_provider.dart';
+import '../../identity/models/user_model.dart';
 
 class EquipmentCatalogScreen extends ConsumerStatefulWidget {
   const EquipmentCatalogScreen({super.key});
@@ -59,10 +61,14 @@ class _EquipmentCatalogScreenState extends ConsumerState<EquipmentCatalogScreen>
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
     final catalogState = ref.watch(catalogProvider);
+    final authState = ref.watch(authProvider);
+    final currentUser = authState.user;
+    final isOwnerOrAdmin = currentUser?.role == UserRole.owner || currentUser?.role == UserRole.admin;
+    final isRenter = currentUser?.role == UserRole.renter;
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Fleet Machinery Catalog'),
+        title: Text(isOwnerOrAdmin ? 'Fleet Machinery Catalog' : 'Rent Machinery & Tools'),
         actions: [
           // Fleet Wear & Dispatch Safety Dialog Button
           IconButton(
@@ -78,11 +84,12 @@ class _EquipmentCatalogScreenState extends ConsumerState<EquipmentCatalogScreen>
               }
             },
           ),
-          IconButton(
-            icon: const Icon(Icons.add, size: 22),
-            tooltip: 'Add Machinery',
-            onPressed: () => context.push('/catalog/add'),
-          ),
+          if (isOwnerOrAdmin)
+            IconButton(
+              icon: const Icon(Icons.add, size: 22),
+              tooltip: 'Add Machinery',
+              onPressed: () => context.push('/catalog/add'),
+            ),
         ],
       ),
       body: Column(
@@ -108,6 +115,56 @@ class _EquipmentCatalogScreenState extends ConsumerState<EquipmentCatalogScreen>
               },
             ),
           ),
+
+          // Renter KYC Verification Alert Banner (if unverified)
+          if (isRenter && !(currentUser?.isVerified ?? false))
+            Container(
+              margin: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+              decoration: BoxDecoration(
+                color: isDark ? const Color(0x22F59E0B) : const Color(0x15F59E0B),
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(
+                  color: const Color(0xFFF59E0B).withValues(alpha: 0.4),
+                ),
+              ),
+              child: Row(
+                children: [
+                  const Icon(Icons.shield_outlined, color: Color(0xFFF59E0B), size: 20),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'NIC Identity Verification Required',
+                          style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Color(0xFFF59E0B)),
+                        ),
+                        const SizedBox(height: 1),
+                        Text(
+                          'Submit your NIC to reserve equipment and initiate escrow deposits.',
+                          style: TextStyle(
+                            fontSize: 11,
+                            color: isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  TextButton(
+                    onPressed: () => context.push('/kyc-submit'),
+                    style: TextButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                      visualDensity: VisualDensity.compact,
+                      foregroundColor: const Color(0xFFF59E0B),
+                      textStyle: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold),
+                    ),
+                    child: const Text('Verify Now'),
+                  ),
+                ],
+              ),
+            ),
 
           // Category Chips Bar
           Builder(

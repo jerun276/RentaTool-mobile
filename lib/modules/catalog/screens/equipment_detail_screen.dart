@@ -97,6 +97,7 @@ class _EquipmentDetailScreenState extends ConsumerState<EquipmentDetailScreen> {
     final specsMap = _parseSpecs(eq.specificationsJson);
     final authState = ref.watch(authProvider);
     final currentUser = authState.user;
+    final isAssetOwner = currentUser != null && currentUser.id == eq.ownerId;
     final isRenter = currentUser?.role == UserRole.renter;
     final isNicVerified = currentUser?.isVerified ?? false;
 
@@ -379,8 +380,44 @@ class _EquipmentDetailScreenState extends ConsumerState<EquipmentDetailScreen> {
             ),
             const SizedBox(height: 24),
 
-            // Renter NIC Document Validation Notice
-            if (isRenter && !isNicVerified) ...[
+            // Asset Owner vs Renter Notice Banner
+            if (isAssetOwner) ...[
+              Container(
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(
+                  color: isDark ? const Color(0x223B82F6) : const Color(0x153B82F6),
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(color: const Color(0xFF3B82F6).withValues(alpha: 0.4)),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(Icons.verified_outlined, color: Color(0xFF3B82F6), size: 24),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            'Your Listed Fleet Asset',
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 13,
+                              color: Color(0xFF3B82F6),
+                            ),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            'You are the registered owner of this machinery unit. You can log condition inspections and track wear telemetry.',
+                            style: TextStyle(fontSize: 11, color: isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 16),
+            ] else if (isRenter && !isNicVerified) ...[
               Container(
                 padding: const EdgeInsets.all(14),
                 decoration: BoxDecoration(
@@ -451,63 +488,72 @@ class _EquipmentDetailScreenState extends ConsumerState<EquipmentDetailScreen> {
               const SizedBox(height: 16),
             ],
 
-            // Action Buttons
-            AppButton(
-              text: isLocked
-                  ? 'Unavailable (Under Maintenance Lockout)'
-                  : (isRenter && !isNicVerified)
-                      ? 'Verify NIC to Rent Equipment'
-                      : 'Reserve Equipment Now',
-              variant: (isLocked || (isRenter && !isNicVerified))
-                  ? AppButtonVariant.secondary
-                  : AppButtonVariant.primary,
-              icon: (isRenter && !isNicVerified)
-                  ? Icons.badge_outlined
-                  : Icons.calendar_month_outlined,
-              onPressed: isLocked
-                  ? null
-                  : () {
-                      if (currentUser == null) {
-                        context.push('/login');
-                        return;
-                      }
-                      if (isRenter && !isNicVerified) {
-                        showDialog(
-                          context: context,
-                          builder: (ctx) => AlertDialog(
-                            backgroundColor: AppColors.surfaceElevated,
-                            title: const Row(
-                              children: [
-                                Icon(Icons.shield_outlined, color: AppColors.warning),
-                                SizedBox(width: 8),
-                                Text('NIC Verification Required', style: TextStyle(fontSize: 16)),
+            // Action Buttons (Tailored for Owner vs Renter)
+            if (isAssetOwner) ...[
+              AppButton(
+                text: 'Log Pre-Dispatch Inspection',
+                variant: AppButtonVariant.primary,
+                icon: Icons.document_scanner_outlined,
+                onPressed: () => context.push('/catalog/inspection/${eq.id}'),
+              ),
+            ] else ...[
+              AppButton(
+                text: isLocked
+                    ? 'Unavailable (Under Maintenance Lockout)'
+                    : (isRenter && !isNicVerified)
+                        ? 'Verify NIC to Rent Equipment'
+                        : 'Reserve Equipment Now',
+                variant: (isLocked || (isRenter && !isNicVerified))
+                    ? AppButtonVariant.secondary
+                    : AppButtonVariant.primary,
+                icon: (isRenter && !isNicVerified)
+                    ? Icons.badge_outlined
+                    : Icons.calendar_month_outlined,
+                onPressed: isLocked
+                    ? null
+                    : () {
+                        if (currentUser == null) {
+                          context.push('/login');
+                          return;
+                        }
+                        if (isRenter && !isNicVerified) {
+                          showDialog(
+                            context: context,
+                            builder: (ctx) => AlertDialog(
+                              backgroundColor: AppColors.surfaceElevated,
+                              title: const Row(
+                                children: [
+                                  Icon(Icons.shield_outlined, color: AppColors.warning),
+                                  SizedBox(width: 8),
+                                  Text('NIC Verification Required', style: TextStyle(fontSize: 16)),
+                                ],
+                              ),
+                              content: Text(
+                                'In accordance with RentaTool LK regulations, renters must submit and validate a valid Sri Lankan NIC document before acquiring or receiving machinery.',
+                                style: TextStyle(fontSize: 13, color: AppColors.textSecondary),
+                              ),
+                              actions: [
+                                TextButton(
+                                  onPressed: () => Navigator.of(ctx).pop(),
+                                  child: const Text('Cancel'),
+                                ),
+                                ElevatedButton.icon(
+                                  icon: const Icon(Icons.upload_file, size: 16),
+                                  label: const Text('Validate NIC Now'),
+                                  onPressed: () {
+                                    Navigator.of(ctx).pop();
+                                    context.push('/kyc-submit');
+                                  },
+                                ),
                               ],
                             ),
-                            content: Text(
-                              'In accordance with RentaTool LK regulations, renters must submit and validate a valid Sri Lankan NIC document before acquiring or receiving machinery.',
-                              style: TextStyle(fontSize: 13, color: AppColors.textSecondary),
-                            ),
-                            actions: [
-                              TextButton(
-                                onPressed: () => Navigator.of(ctx).pop(),
-                                child: const Text('Cancel'),
-                              ),
-                              ElevatedButton.icon(
-                                icon: const Icon(Icons.upload_file, size: 16),
-                                label: const Text('Validate NIC Now'),
-                                onPressed: () {
-                                  Navigator.of(ctx).pop();
-                                  context.push('/kyc-submit');
-                                },
-                              ),
-                            ],
-                          ),
-                        );
-                        return;
-                      }
-                      context.push('/bookings', extra: eq);
-                    },
-            ),
+                          );
+                          return;
+                        }
+                        context.push('/bookings', extra: eq);
+                      },
+              ),
+            ],
             const SizedBox(height: 10),
 
             // Check Date Range Availability & Lockout Action

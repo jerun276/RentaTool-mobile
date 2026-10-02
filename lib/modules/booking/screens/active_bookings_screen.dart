@@ -8,6 +8,8 @@ import '../../../core/widgets/error_view.dart';
 import '../../../core/widgets/loading_indicator.dart';
 import '../providers/booking_provider.dart';
 import '../widgets/booking_card.dart';
+import '../../identity/providers/auth_provider.dart';
+import '../../identity/models/user_model.dart';
 
 class ActiveBookingsScreen extends ConsumerStatefulWidget {
   const ActiveBookingsScreen({super.key});
@@ -33,10 +35,18 @@ class _ActiveBookingsScreenState extends ConsumerState<ActiveBookingsScreen> {
     final bookingState = ref.watch(bookingProvider);
     final notifier = ref.read(bookingProvider.notifier);
     final filtered = bookingState.filteredBookings;
+    final authState = ref.watch(authProvider);
+    final currentUser = authState.user;
+    final isOwner = currentUser?.role == UserRole.owner;
+    final isRenter = currentUser?.role == UserRole.renter;
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Rental Tracker & Bookings'),
+        title: Text(
+          isOwner
+              ? 'Fleet Dispatches & Returns'
+              : (isRenter ? 'My Equipment Rentals' : 'Rental Tracker & Bookings'),
+        ),
         actions: [
           IconButton(
             icon: const Icon(Icons.map_outlined, size: 22),
@@ -65,6 +75,77 @@ class _ActiveBookingsScreenState extends ConsumerState<ActiveBookingsScreen> {
       ),
       body: Column(
         children: [
+          // Contextual Role Subheader Banner
+          if (isOwner)
+            Container(
+              margin: const EdgeInsets.fromLTRB(16, 8, 16, 4),
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+              decoration: BoxDecoration(
+                color: isDark ? const Color(0x223B82F6) : const Color(0x153B82F6),
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(color: const Color(0xFF3B82F6).withValues(alpha: 0.35)),
+              ),
+              child: Row(
+                children: [
+                  const Icon(Icons.outbox_outlined, color: Color(0xFF3B82F6), size: 22),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'Owner Fleet Dispatches',
+                          style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Color(0xFF3B82F6)),
+                        ),
+                        const SizedBox(height: 1),
+                        Text(
+                          'Oversee incoming contractor rentals, scan pickup handover QR codes, and log return condition checks.',
+                          style: TextStyle(
+                            fontSize: 11,
+                            color: isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            )
+          else if (isRenter)
+            Container(
+              margin: const EdgeInsets.fromLTRB(16, 8, 16, 4),
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+              decoration: BoxDecoration(
+                color: isDark ? const Color(0x2210B981) : const Color(0x1510B981),
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(color: const Color(0xFF10B981).withValues(alpha: 0.35)),
+              ),
+              child: Row(
+                children: [
+                  const Icon(Icons.handyman_outlined, color: Color(0xFF10B981), size: 22),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'Active Job-Site Rentals',
+                          style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Color(0xFF10B981)),
+                        ),
+                        const SizedBox(height: 1),
+                        Text(
+                          'Track your reserved machinery, present pickup verification QR tokens, and review return deadlines.',
+                          style: TextStyle(
+                            fontSize: 11,
+                            color: isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
           // 1. Search Bar & Status Filter Bar
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -139,7 +220,13 @@ class _ActiveBookingsScreenState extends ConsumerState<ActiveBookingsScreen> {
                           Icon(Icons.calendar_today_outlined, size: 48, color: AppColors.textMuted),
                           const SizedBox(height: 16),
                           Text(
-                            bookingState.activeBookings.isEmpty ? 'No Active Bookings' : 'No Matching Bookings',
+                            bookingState.activeBookings.isEmpty
+                                ? (isOwner
+                                    ? 'No Fleet Dispatches Found'
+                                    : (isRenter
+                                        ? 'No Active Equipment Rentals'
+                                        : 'No Active Bookings'))
+                                : 'No Matching Bookings',
                             style: TextStyle(
                               fontSize: 18,
                               fontWeight: FontWeight.bold,
@@ -149,7 +236,9 @@ class _ActiveBookingsScreenState extends ConsumerState<ActiveBookingsScreen> {
                           const SizedBox(height: 8),
                           Text(
                             bookingState.activeBookings.isEmpty
-                                ? 'Browse equipment catalog or locate nearby machinery on the interactive map.'
+                                ? (isOwner
+                                    ? 'No contractors have currently reserved your machinery. List more equipment or check back soon.'
+                                    : 'Browse the equipment catalog or locate nearby machinery on the interactive map.')
                                 : 'Try changing your search term or status filter.',
                             textAlign: TextAlign.center,
                             style: TextStyle(color: AppColors.textSecondary, fontSize: 13),
@@ -158,11 +247,18 @@ class _ActiveBookingsScreenState extends ConsumerState<ActiveBookingsScreen> {
                           Row(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              ElevatedButton.icon(
-                                icon: const Icon(Icons.search, size: 18),
-                                label: const Text('Browse Catalog'),
-                                onPressed: () => context.go('/catalog'),
-                              ),
+                              if (isOwner)
+                                ElevatedButton.icon(
+                                  icon: const Icon(Icons.add, size: 18),
+                                  label: const Text('Add Machinery'),
+                                  onPressed: () => context.push('/catalog/add'),
+                                )
+                              else
+                                ElevatedButton.icon(
+                                  icon: const Icon(Icons.search, size: 18),
+                                  label: const Text('Browse Catalog'),
+                                  onPressed: () => context.go('/catalog'),
+                                ),
                               const SizedBox(width: 12),
                               OutlinedButton.icon(
                                 icon: const Icon(Icons.map, size: 18),

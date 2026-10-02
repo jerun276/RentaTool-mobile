@@ -180,8 +180,12 @@ class ProfileScreen extends ConsumerWidget {
                         Row(
                           children: [
                             StatusBadge(
-                              label: user.role.name,
-                              style: BadgeStyle.purple,
+                              label: user.role.displayName.toUpperCase(),
+                              style: user.role == UserRole.owner
+                                  ? BadgeStyle.info
+                                  : (user.role == UserRole.admin
+                                      ? BadgeStyle.purple
+                                      : BadgeStyle.success),
                             ),
                             const SizedBox(width: 8),
                             StatusBadge(
@@ -482,6 +486,119 @@ class ProfileScreen extends ConsumerWidget {
                 ),
               ),
             ],
+            // Owner Fleet Management Section (Visible for Owner role)
+            if (user.role == UserRole.owner) ...[
+              const SizedBox(height: 20),
+              Container(
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  color: AppColors.surface,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: AppColors.border),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          'FLEET & DISPATCH CONTROLS',
+                          style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.bold,
+                            letterSpacing: 0.8,
+                            color: AppColors.textMuted,
+                          ),
+                        ),
+                        const StatusBadge(label: 'FLEET OWNER', style: BadgeStyle.info),
+                      ],
+                    ),
+                    const SizedBox(height: 14),
+                    _profileActionTile(
+                      icon: Icons.add_business_outlined,
+                      iconColor: AppColors.primary,
+                      title: 'List New Fleet Machinery',
+                      subtitle: 'Add equipment specifications, daily rates & photo telemetry',
+                      onTap: () => context.push('/catalog/add'),
+                    ),
+                    const SizedBox(height: 10),
+                    _profileActionTile(
+                      icon: Icons.report_problem_outlined,
+                      iconColor: const Color(0xFFF59E0B),
+                      title: 'File Return Damage Claim',
+                      subtitle: 'Submit escrow dispute with photographic evidence',
+                      onTap: () => context.push('/escrow/claim-new'),
+                    ),
+                    const SizedBox(height: 10),
+                    _profileActionTile(
+                      icon: Icons.qr_code_scanner,
+                      iconColor: const Color(0xFF3B82F6),
+                      title: 'Scan Contractor Handover Token',
+                      subtitle: 'Verify equipment pickup & GPS location clearance',
+                      onTap: () => context.push('/bookings/scan'),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+
+            // Renter Workspace Section (Visible for Renter role)
+            if (user.role == UserRole.renter) ...[
+              const SizedBox(height: 20),
+              Container(
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  color: AppColors.surface,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: AppColors.border),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          'RENTER WORKSPACE & PRIVILEGES',
+                          style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.bold,
+                            letterSpacing: 0.8,
+                            color: AppColors.textMuted,
+                          ),
+                        ),
+                        const StatusBadge(label: 'RENTER', style: BadgeStyle.success),
+                      ],
+                    ),
+                    const SizedBox(height: 14),
+                    _profileActionTile(
+                      icon: Icons.search,
+                      iconColor: AppColors.primary,
+                      title: 'Browse Machinery Catalog',
+                      subtitle: 'Reserve heavy equipment, power tools & power generators',
+                      onTap: () => context.go('/catalog'),
+                    ),
+                    const SizedBox(height: 10),
+                    _profileActionTile(
+                      icon: Icons.radar,
+                      iconColor: const Color(0xFF10B981),
+                      title: 'Nearby Machinery Map',
+                      subtitle: 'Find equipment within your target radius in Sri Lanka',
+                      onTap: () => context.push('/bookings/map'),
+                    ),
+                    const SizedBox(height: 10),
+                    _profileActionTile(
+                      icon: Icons.shield_outlined,
+                      iconColor: const Color(0xFF6366F1),
+                      title: 'Escrow Security Deposit Holds',
+                      subtitle: 'View protected deposit accounts and dispute clearance',
+                      onTap: () => context.push('/escrow'),
+                    ),
+                  ],
+                ),
+              ),
+            ],
           ],
         ),
       ),
@@ -492,5 +609,60 @@ class ProfileScreen extends ConsumerWidget {
     if (score >= 80) return 'Tier A';
     if (score >= 60) return 'Tier B';
     return 'Tier C';
+  }
+
+  Widget _profileActionTile({
+    required IconData icon,
+    required Color iconColor,
+    required String title,
+    required String subtitle,
+    required VoidCallback onTap,
+  }) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(10),
+      child: Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: AppColors.surfaceLight,
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(color: AppColors.border),
+        ),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: iconColor.withValues(alpha: 0.15),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Icon(icon, color: iconColor, size: 22),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 14,
+                      color: AppColors.textPrimary,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    subtitle,
+                    style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
+                  ),
+                ],
+              ),
+            ),
+            Icon(Icons.chevron_right, color: AppColors.textMuted),
+          ],
+        ),
+      ),
+    );
   }
 }

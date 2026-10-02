@@ -12,6 +12,8 @@ import '../models/booking_model.dart';
 import '../services/booking_service.dart';
 import '../widgets/booking_timeline_widget.dart';
 import '../widgets/surge_extension_sheet.dart';
+import '../../identity/providers/auth_provider.dart';
+import '../../identity/models/user_model.dart';
 
 class BookingDetailScreen extends ConsumerStatefulWidget {
   final String bookingId;
@@ -77,6 +79,9 @@ class _BookingDetailScreenState extends ConsumerState<BookingDetailScreen> {
     }
 
     final b = _booking!;
+    final authState = ref.watch(authProvider);
+    final currentUser = authState.user;
+    final isOwnerOrAdmin = currentUser?.role == UserRole.owner || currentUser?.role == UserRole.admin;
     final currencyFormatter = NumberFormat.currency(locale: 'en_LK', symbol: 'LKR ', decimalDigits: 0);
     final dateFormatter = DateFormat('EEEE, MMM dd, yyyy');
 
@@ -291,8 +296,8 @@ class _BookingDetailScreenState extends ConsumerState<BookingDetailScreen> {
               ),
             const SizedBox(height: 12),
 
-            // 7. Damage Claim Dispute Link (Component 4 Bridge)
-            if (b.canDispute)
+            // 7. Damage Claim Dispute Link (Only available to Equipment Owner or Admin)
+            if (b.canDispute && isOwnerOrAdmin)
               TextButton.icon(
                 icon: const Icon(Icons.report_problem_outlined, size: 18, color: AppColors.warning),
                 label: const Text('File Damage Claim / Escrow Dispute', style: TextStyle(color: AppColors.warning)),

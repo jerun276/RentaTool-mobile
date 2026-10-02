@@ -9,6 +9,8 @@ import '../../../core/widgets/loading_indicator.dart';
 import '../../../core/widgets/status_badge.dart';
 import '../models/damage_claim_model.dart';
 import '../providers/escrow_provider.dart';
+import '../../identity/providers/auth_provider.dart';
+import '../../identity/models/user_model.dart';
 
 class EscrowOverviewScreen extends ConsumerWidget {
   const EscrowOverviewScreen({super.key});
@@ -23,6 +25,10 @@ class EscrowOverviewScreen extends ConsumerWidget {
     final textMuted = isDark ? AppColors.darkTextMuted : AppColors.lightTextMuted;
     final escrowState = ref.watch(escrowProvider);
     final currencyFormatter = NumberFormat.currency(locale: 'en_LK', symbol: 'LKR ', decimalDigits: 0);
+    final authState = ref.watch(authProvider);
+    final currentUser = authState.user;
+    final isOwnerOrAdmin = currentUser?.role == UserRole.owner || currentUser?.role == UserRole.admin;
+    final isRenter = currentUser?.role == UserRole.renter;
 
     return Scaffold(
       appBar: AppBar(
@@ -40,7 +46,7 @@ class EscrowOverviewScreen extends ConsumerWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // Escrow Trust Banner
+            // Escrow Trust Banner (Tailored for Renter vs Owner/Admin)
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
@@ -56,7 +62,7 @@ class EscrowOverviewScreen extends ConsumerWidget {
                       Icon(Icons.shield_outlined, color: isDark ? AppColors.primaryLight : AppColors.primaryDark, size: 22),
                       const SizedBox(width: 8),
                       Text(
-                        'Automated Pre-Auth Escrow Vault',
+                        isRenter ? 'Protected Renter Escrow Vault' : 'Automated Pre-Auth Escrow Vault',
                         style: TextStyle(
                           fontWeight: FontWeight.bold,
                           fontSize: 14,
@@ -67,7 +73,9 @@ class EscrowOverviewScreen extends ConsumerWidget {
                   ),
                   const SizedBox(height: 6),
                   Text(
-                    'Security deposits are securely held in escrow until mutual handover verification. Any damage claim undergoes AI visual telemetry evaluation and fair human review.',
+                    isRenter
+                        ? 'Your rental security deposits are securely locked in pre-authorization escrow and automatically refunded in full upon safe return. Any owner claim is subject to AI telemetry evaluation and your fair rebuttal.'
+                        : 'Contractor security deposits are securely held in escrow until mutual handover verification. As an equipment owner, you can file damage claims with photo evidence within the return inspection window.',
                     style: TextStyle(color: textSecondary, fontSize: 12),
                   ),
                 ],
@@ -75,7 +83,7 @@ class EscrowOverviewScreen extends ConsumerWidget {
             ),
             const SizedBox(height: 20),
 
-            // Claims Header & Quick Action
+            // Claims Header & Role-Tailored Action
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
@@ -88,11 +96,36 @@ class EscrowOverviewScreen extends ConsumerWidget {
                     color: textMuted,
                   ),
                 ),
-                TextButton.icon(
-                  icon: const Icon(Icons.add_circle_outline, size: 16),
-                  label: const Text('File Claim', style: TextStyle(fontSize: 12)),
-                  onPressed: () => context.push('/escrow/claim-new'),
-                ),
+                if (isOwnerOrAdmin)
+                  TextButton.icon(
+                    icon: const Icon(Icons.add_circle_outline, size: 16),
+                    label: const Text('File Claim', style: TextStyle(fontSize: 12)),
+                    onPressed: () => context.push('/escrow/claim-new'),
+                  )
+                else
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: isDark ? const Color(0x2210B981) : const Color(0x1510B981),
+                      borderRadius: BorderRadius.circular(6),
+                      border: Border.all(color: const Color(0xFF10B981).withValues(alpha: 0.3)),
+                    ),
+                    child: const Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.lock_outline, size: 12, color: Color(0xFF10B981)),
+                        SizedBox(width: 4),
+                        Text(
+                          'DEPOSIT PROTECTED',
+                          style: TextStyle(
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                            color: Color(0xFF10B981),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
               ],
             ),
             const SizedBox(height: 8),
@@ -130,7 +163,10 @@ class EscrowOverviewScreen extends ConsumerWidget {
                           ),
                           const SizedBox(height: 4),
                           Text(
-                            'All current rentals are operating with clean handover telemetry.',
+                            isRenter
+                                ? 'Your equipment rentals operate with clean return telemetry. All security deposits are intact.'
+                                : 'All current fleet rentals are operating with clean handover telemetry. No incident claims filed.',
+                            textAlign: TextAlign.center,
                             style: TextStyle(color: textSecondary, fontSize: 12),
                           ),
                         ],
