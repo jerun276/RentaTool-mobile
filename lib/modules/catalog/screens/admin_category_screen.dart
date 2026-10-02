@@ -842,7 +842,7 @@ class _CreateCategoryBottomSheetState extends ConsumerState<_CreateCategoryBotto
                   const SizedBox(height: 4),
                   Switch.adaptive(
                     value: field.isRequired,
-                    activeThumbColor: AppColors.primary,
+                    activeColor: AppColors.primary,
                     onChanged: (val) => setState(() => field.isRequired = val),
                   ),
                 ],

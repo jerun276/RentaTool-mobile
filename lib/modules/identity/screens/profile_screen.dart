@@ -393,7 +393,7 @@ class ProfileScreen extends ConsumerWidget {
                   ),
                   Switch.adaptive(
                     value: isDarkMode,
-                    activeThumbColor: AppColors.primary,
+                    activeColor: AppColors.primary,
                     activeTrackColor: AppColors.primaryDark,
                     onChanged: (val) {
                       ref.read(themeProvider.notifier).toggleTheme();
