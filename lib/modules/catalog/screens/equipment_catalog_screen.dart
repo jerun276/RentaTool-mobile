@@ -19,7 +19,7 @@ class EquipmentCatalogScreen extends ConsumerStatefulWidget {
 class _EquipmentCatalogScreenState extends ConsumerState<EquipmentCatalogScreen> {
   final _scrollController = ScrollController();
 
-  final List<String> _categories = [
+  static const List<String> _defaultCategories = [
     'All',
     'Heavy Machinery',
     'Power Tools',
@@ -110,15 +110,23 @@ class _EquipmentCatalogScreenState extends ConsumerState<EquipmentCatalogScreen>
           ),
 
           // Category Chips Bar
-          SizedBox(
-            height: 44,
-            child: ListView.builder(
-              scrollDirection: Axis.horizontal,
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              itemCount: _categories.length,
-              itemBuilder: (context, index) {
-                final category = _categories[index];
-                final isSelected = catalogState.selectedCategory == category;
+          Builder(
+            builder: (context) {
+              final categoriesAsync = ref.watch(categoryListProvider);
+              final dynamicCategories = categoriesAsync.valueOrNull;
+              final categoriesList = (dynamicCategories != null && dynamicCategories.isNotEmpty)
+                  ? ['All', ...dynamicCategories.map((c) => c.name)]
+                  : _defaultCategories;
+
+              return SizedBox(
+                height: 44,
+                child: ListView.builder(
+                  scrollDirection: Axis.horizontal,
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  itemCount: categoriesList.length,
+                  itemBuilder: (context, index) {
+                    final category = categoriesList[index];
+                    final isSelected = catalogState.selectedCategory == category;
                 return Padding(
                   padding: const EdgeInsets.only(right: 8.0),
                   child: FilterChip(
@@ -148,7 +156,9 @@ class _EquipmentCatalogScreenState extends ConsumerState<EquipmentCatalogScreen>
                 );
               },
             ),
-          ),
+          );
+        },
+      ),
           const SizedBox(height: 6),
 
           // Status Filters (All, Available, Under Maintenance)
