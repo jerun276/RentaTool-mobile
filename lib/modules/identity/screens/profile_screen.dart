@@ -6,11 +6,20 @@ import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/theme_provider.dart';
 import '../../../core/widgets/app_button.dart';
 import '../../../core/widgets/status_badge.dart';
+import '../models/user_model.dart';
 import '../providers/auth_provider.dart';
 import 'edit_profile_screen.dart';
 
 class ProfileScreen extends ConsumerWidget {
   const ProfileScreen({super.key});
+
+  ImageProvider? _resolveAvatarImage(String? path) {
+    if (path == null || path.isEmpty) return null;
+    if (path.startsWith('http://') || path.startsWith('https://')) {
+      return NetworkImage(path);
+    }
+    return FileImage(File(path));
+  }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -84,10 +93,8 @@ class ProfileScreen extends ConsumerWidget {
                   CircleAvatar(
                     radius: 28,
                     backgroundColor: AppColors.primary.withValues(alpha: 0.2),
-                    backgroundImage: user.profilePhotoPath == null
-                        ? null
-                        : FileImage(File(user.profilePhotoPath!)),
-                    child: user.profilePhotoPath != null
+                    backgroundImage: _resolveAvatarImage(user.profilePhotoPath),
+                    child: user.profilePhotoPath != null && user.profilePhotoPath!.isNotEmpty
                         ? null
                         : Text(
                             user.name.isNotEmpty
@@ -386,7 +393,7 @@ class ProfileScreen extends ConsumerWidget {
                   ),
                   Switch.adaptive(
                     value: isDarkMode,
-                    activeColor: AppColors.primary,
+                    activeThumbColor: AppColors.primary,
                     activeTrackColor: AppColors.primaryDark,
                     onChanged: (val) {
                       ref.read(themeProvider.notifier).toggleTheme();
@@ -395,6 +402,86 @@ class ProfileScreen extends ConsumerWidget {
                 ],
               ),
             ),
+
+            // Admin Management Section (Visible for Admin role)
+            if (user.role == UserRole.admin) ...[
+              const SizedBox(height: 20),
+              Container(
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  color: AppColors.surface,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: AppColors.border),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          'SYSTEM ADMINISTRATION',
+                          style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.bold,
+                            letterSpacing: 0.8,
+                            color: AppColors.textMuted,
+                          ),
+                        ),
+                        const StatusBadge(label: 'ADMIN', style: BadgeStyle.purple),
+                      ],
+                    ),
+                    const SizedBox(height: 14),
+                    InkWell(
+                      onTap: () => context.push('/admin/categories'),
+                      borderRadius: BorderRadius.circular(10),
+                      child: Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: AppColors.surfaceLight,
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(color: AppColors.border),
+                        ),
+                        child: Row(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(8),
+                              decoration: BoxDecoration(
+                                color: AppColors.primary.withValues(alpha: 0.15),
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: const Icon(Icons.category_outlined, color: AppColors.primary, size: 22),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'Categories & Dynamic Specs',
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 14,
+                                      color: AppColors.textPrimary,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 2),
+                                  Text(
+                                    'Create machinery categories & configure dynamic schema fields',
+                                    style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            Icon(Icons.chevron_right, color: AppColors.textMuted),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
           ],
         ),
       ),

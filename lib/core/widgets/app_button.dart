@@ -10,6 +10,9 @@ class AppButton extends StatelessWidget {
   final IconData? icon;
   final AppButtonVariant variant;
   final double? width;
+  final double? fontSize;
+  final EdgeInsetsGeometry? padding;
+  final int? maxLines;
 
   const AppButton({
     super.key,
@@ -19,6 +22,9 @@ class AppButton extends StatelessWidget {
     this.icon,
     this.variant = AppButtonVariant.primary,
     this.width,
+    this.fontSize,
+    this.padding,
+    this.maxLines = 1,
   });
 
   @override
@@ -65,15 +71,24 @@ class AppButton extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               if (icon != null) ...[
-                Icon(icon, size: 18, color: fg),
-                const SizedBox(width: 8),
-              ],
-              Text(
-                text,
-                style: TextStyle(
+                Icon(
+                  icon,
+                  size: (fontSize != null && fontSize! < 14) ? 16 : 18,
                   color: fg,
-                  fontWeight: FontWeight.bold,
-                  fontSize: 15,
+                ),
+                SizedBox(width: (fontSize != null && fontSize! < 14) ? 5 : 8),
+              ],
+              Flexible(
+                child: Text(
+                  text,
+                  textAlign: TextAlign.center,
+                  overflow: TextOverflow.ellipsis,
+                  maxLines: maxLines ?? 1,
+                  style: TextStyle(
+                    color: fg,
+                    fontWeight: FontWeight.bold,
+                    fontSize: fontSize ?? 15,
+                  ),
                 ),
               ),
             ],
@@ -84,7 +99,7 @@ class AppButton extends StatelessWidget {
       foregroundColor: fg,
       side: border,
       elevation: 0,
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+      padding: padding ?? const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
     );
 

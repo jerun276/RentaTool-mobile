@@ -81,6 +81,8 @@ class ApiConstants {
   static String userById(String id) => '/users/$id';
 
   // --- Catalog & Equipment Endpoints (Component 2) ---
+  static const String categories = '/categories';
+  static String categoryById(String id) => '/categories/$id';
   static const String equipment = '/equipment';
   static String equipmentById(String id) => '/equipment/$id';
   static String equipmentInspectionLogs(String id) => '/equipment/$id/inspection-logs';

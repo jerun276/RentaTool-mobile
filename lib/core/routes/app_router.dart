@@ -12,6 +12,7 @@ import '../../modules/identity/screens/kyc_submission_screen.dart';
 
 // Component 2 (Catalog)
 import '../../modules/catalog/screens/equipment_catalog_screen.dart';
+import '../../modules/catalog/screens/admin_category_screen.dart';
 import '../../modules/catalog/screens/equipment_detail_screen.dart';
 import '../../modules/catalog/screens/add_equipment_screen.dart';
 import '../../modules/catalog/screens/condition_inspection_screen.dart';
@@ -50,6 +51,10 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/kyc-submit',
         builder: (context, state) => const KycSubmissionScreen(),
+      ),
+      GoRoute(
+        path: '/admin/categories',
+        builder: (context, state) => const AdminCategoryScreen(),
       ),
 
       // Main Navigation Shell (4 Component Branches)

@@ -258,15 +258,19 @@ class _BookingDetailScreenState extends ConsumerState<BookingDetailScreen> {
                   child: AppButton(
                     text: 'Show Handover QR',
                     icon: Icons.qr_code,
+                    fontSize: 12,
+                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 12),
                     onPressed: () => context.push('/bookings/qr/${b.id}'),
                   ),
                 ),
-                const SizedBox(width: 10),
+                const SizedBox(width: 8),
                 Expanded(
                   child: AppButton(
-                    text: 'Scan Counterpart QR',
+                    text: 'Scan Handover QR',
                     variant: AppButtonVariant.outline,
                     icon: Icons.qr_code_scanner,
+                    fontSize: 12,
+                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 12),
                     onPressed: () => context.push('/bookings/scan'),
                   ),
                 ),
