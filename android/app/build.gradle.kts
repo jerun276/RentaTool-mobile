@@ -8,7 +8,7 @@ plugins {
 android {
     namespace = "lk.rentatool.rentatool_mobile"
     compileSdk = flutter.compileSdkVersion
-    ndkVersion = "28.2.13676358"
+    ndkVersion = "27.1.12297006"
 
 
     compileOptions {

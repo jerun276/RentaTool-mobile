@@ -123,21 +123,79 @@ class CatalogService {
     return BatchAvailabilityResultModel.fromJson(response.data as Map<String, dynamic>);
   }
 
-  /// Retrieves list of equipment categories and their technical specification schemas
+  static const List<CategoryModel> defaultCategories = [
+    CategoryModel(
+      id: 'c15d534b-8707-4d21-b04d-d5d3c1914c46',
+      name: 'Heavy Machinery',
+      description: 'Excavators, bulldozers, loaders, and road rollers',
+      specificationSchema: [
+        CategorySpecFieldModel(key: 'operating_weight', label: 'Operating Weight', unit: 'kg', fieldType: 'number', isRequired: true),
+        CategorySpecFieldModel(key: 'engine_power', label: 'Engine Power', unit: 'HP', fieldType: 'number', isRequired: true),
+        CategorySpecFieldModel(key: 'fuel_type', label: 'Fuel Type', fieldType: 'select', isRequired: true, options: ['Diesel', 'Electric', 'Hybrid']),
+        CategorySpecFieldModel(key: 'dig_depth', label: 'Max Digging Depth', unit: 'm', fieldType: 'number'),
+      ],
+    ),
+    CategoryModel(
+      id: '030da95c-0141-4f12-adf9-28793e5d3c6d',
+      name: 'Power Tools',
+      description: 'Demolition hammers, drills, concrete saws, and angle grinders',
+      specificationSchema: [
+        CategorySpecFieldModel(key: 'voltage', label: 'Voltage / Source', fieldType: 'select', isRequired: true, options: ['230V Corded', '18V Battery', '36V Battery', '110V', 'Pneumatic']),
+        CategorySpecFieldModel(key: 'power_rating', label: 'Power Rating', unit: 'W', fieldType: 'number'),
+        CategorySpecFieldModel(key: 'impact_energy', label: 'Impact Energy', unit: 'J', fieldType: 'number'),
+      ],
+    ),
+    CategoryModel(
+      id: '641349d0-2a8d-4ca4-b896-2fd239cd283f',
+      name: 'Generators & Power',
+      description: 'Diesel generators, mobile inverters, and lighting towers',
+      specificationSchema: [
+        CategorySpecFieldModel(key: 'rated_output', label: 'Rated Output', unit: 'kVA', fieldType: 'number', isRequired: true),
+        CategorySpecFieldModel(key: 'voltage_output', label: 'Voltage Output', fieldType: 'select', isRequired: true, options: ['3-Phase 400V', 'Single Phase 230V', 'Dual Voltage 115V/230V']),
+        CategorySpecFieldModel(key: 'fuel_type', label: 'Fuel Type', fieldType: 'select', isRequired: true, options: ['Diesel', 'Petrol', 'LPG / Gas']),
+        CategorySpecFieldModel(key: 'fuel_capacity', label: 'Tank Capacity', unit: 'L', fieldType: 'number'),
+      ],
+    ),
+    CategoryModel(
+      id: '7436c584-29c1-4e02-993f-f4af41fb2c9d',
+      name: 'Cleaning Equipment',
+      description: 'High-pressure washers, floor scrubbers, and industrial vacs',
+      specificationSchema: [
+        CategorySpecFieldModel(key: 'pressure', label: 'Operating Pressure', unit: 'bar', fieldType: 'number'),
+        CategorySpecFieldModel(key: 'flow_rate', label: 'Flow Rate', unit: 'L/h', fieldType: 'number'),
+        CategorySpecFieldModel(key: 'power_source', label: 'Power Source', fieldType: 'select', isRequired: true, options: ['Electric 230V', 'Diesel Engine', 'Petrol Engine', 'Battery']),
+      ],
+    ),
+  ];
+
+  /// Retrieves list of equipment categories and their technical specification schemas.
+  /// Gracefully falls back to seeded categories if the backend does not host the /categories endpoint yet.
   Future<List<CategoryModel>> getCategories({bool activeOnly = true}) async {
-    final response = await _dio.get(
-      ApiConstants.categories,
-      queryParameters: {'activeOnly': activeOnly},
-    );
-    final data = response.data;
-    final List<dynamic> items = data is List ? data : (data['items'] ?? []);
-    return items.map((e) => CategoryModel.fromJson(e as Map<String, dynamic>)).toList();
+    try {
+      final response = await _dio.get(
+        ApiConstants.categories,
+        queryParameters: {'activeOnly': activeOnly},
+      );
+      final data = response.data;
+      final List<dynamic> items = data is List ? data : (data['items'] ?? []);
+      final list = items.map((e) => CategoryModel.fromJson(e as Map<String, dynamic>)).toList();
+      return list.isNotEmpty ? list : defaultCategories;
+    } catch (_) {
+      return defaultCategories;
+    }
   }
 
   /// Retrieves a specific category by ID with its specification schema
   Future<CategoryModel> getCategoryById(String id) async {
-    final response = await _dio.get(ApiConstants.categoryById(id));
-    return CategoryModel.fromJson(response.data as Map<String, dynamic>);
+    try {
+      final response = await _dio.get(ApiConstants.categoryById(id));
+      return CategoryModel.fromJson(response.data as Map<String, dynamic>);
+    } catch (_) {
+      return defaultCategories.firstWhere(
+        (c) => c.id == id,
+        orElse: () => CategoryModel(id: id, name: 'General Equipment'),
+      );
+    }
   }
 
   /// Creates a new category with dynamic specification schema (Admin only)
