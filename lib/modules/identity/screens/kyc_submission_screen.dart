@@ -96,6 +96,9 @@ class _KycSubmissionScreenState extends ConsumerState<KycSubmissionScreen> {
             content: Text('NIC Verified! You can now reserve and receive machinery.'),
           ),
         );
+        Future.delayed(const Duration(milliseconds: 1500), () {
+          if (mounted) Navigator.of(context).pop(true);
+        });
       }
     } catch (_) {
       // Allow local verification fallback so tests/rentals can proceed smoothly
@@ -111,6 +114,9 @@ class _KycSubmissionScreenState extends ConsumerState<KycSubmissionScreen> {
             content: Text('NIC Verified! You can now reserve and receive machinery.'),
           ),
         );
+        Future.delayed(const Duration(milliseconds: 1500), () {
+          if (mounted) Navigator.of(context).pop(true);
+        });
       }
     } finally {
       if (mounted) setState(() => _submitting = false);
@@ -281,10 +287,12 @@ class _KycSubmissionScreenState extends ConsumerState<KycSubmissionScreen> {
                 ),
               ),
             AppButton(
-              text: 'Submit & Validate Document',
+              text: isAlreadyVerified
+                  ? 'Identity Verified ✓'
+                  : 'Submit & Validate Document',
               isLoading: _submitting,
-              icon: Icons.verified_outlined,
-              onPressed: _submit,
+              icon: isAlreadyVerified ? Icons.check_circle : Icons.verified_outlined,
+              onPressed: isAlreadyVerified ? null : _submit,
             ),
           ],
         ),
