@@ -209,7 +209,9 @@ class ProfileScreen extends ConsumerWidget {
                           ),
                         ),
                         const SizedBox(height: 10),
-                        Row(
+                        Wrap(
+                          spacing: 8,
+                          runSpacing: 6,
                           children: [
                             StatusBadge(
                               label: user.role.displayName.toUpperCase(),
@@ -219,13 +221,12 @@ class ProfileScreen extends ConsumerWidget {
                                       ? BadgeStyle.purple
                                       : BadgeStyle.success),
                             ),
-                            const SizedBox(width: 8),
                             StatusBadge(
                               label: user.isVerified || kycStatus == 'Approved'
                                   ? 'KYC VERIFIED'
                                   : (kycStatus == 'Pending'
                                       ? 'UNDER REVIEW'
-                                      : (kycStatus == 'Rejected' ? 'RE-UPLOAD REQUIRED' : 'PENDING KYC')),
+                                      : (kycStatus == 'Rejected' ? 'RE-UPLOAD' : 'PENDING KYC')),
                               style: user.isVerified || kycStatus == 'Approved'
                                   ? BadgeStyle.success
                                   : (kycStatus == 'Pending'
