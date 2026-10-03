@@ -77,46 +77,27 @@ class _KycSubmissionScreenState extends ConsumerState<KycSubmissionScreen> {
         backImagePath: _back?.path,
       );
 
-      final user = ref.read(authProvider).user;
-      if (user != null) {
-        try {
-          await ref.read(identityServiceProvider).updateVerificationStatus(
-            userId: user.id,
-            isVerified: true,
-          );
-        } catch (_) {}
-        ref.read(authProvider.notifier).setVerified(true);
-      }
-
       if (mounted) {
-        setState(() => _message = 'Document submitted & verified! Your account is now authorized to rent and receive equipment.');
+        setState(() => _message = 'Document submitted successfully! Awaiting administrator verification.');
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             backgroundColor: AppColors.success,
-            content: Text('NIC Verified! You can now reserve and receive machinery.'),
+            content: Text('NIC submitted! Administrator will review your document.'),
           ),
         );
         Future.delayed(const Duration(milliseconds: 1500), () {
           if (mounted) Navigator.of(context).pop(true);
         });
       }
-    } catch (_) {
-      // Allow local verification fallback so tests/rentals can proceed smoothly
-      final user = ref.read(authProvider).user;
-      if (user != null) {
-        ref.read(authProvider.notifier).setVerified(true);
-      }
+    } catch (e) {
       if (mounted) {
-        setState(() => _message = 'Document validated! Your account is now authorized to rent and receive equipment.');
+        setState(() => _message = 'Failed to submit document: ${e.toString()}');
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            backgroundColor: AppColors.success,
-            content: Text('NIC Verified! You can now reserve and receive machinery.'),
+          SnackBar(
+            backgroundColor: AppColors.error,
+            content: Text('Submission failed: $e'),
           ),
         );
-        Future.delayed(const Duration(milliseconds: 1500), () {
-          if (mounted) Navigator.of(context).pop(true);
-        });
       }
     } finally {
       if (mounted) setState(() => _submitting = false);
