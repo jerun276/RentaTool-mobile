@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:image_cropper/image_cropper.dart';
 import 'package:image_picker/image_picker.dart';
 import '../../../core/services/token_storage_service.dart';
 import '../../../core/theme/app_colors.dart';
@@ -102,13 +103,38 @@ class _KycSubmissionScreenState extends ConsumerState<KycSubmissionScreen> {
   }
 
   Future<void> _pick(bool isFront, ImageSource source) async {
-    final image = await _picker.pickImage(source: source, imageQuality: 85);
-    if (image != null && mounted) {
+    final image = await _picker.pickImage(source: source, imageQuality: 92);
+    if (image == null || !mounted) return;
+
+    // Enforce standard Sri Lankan NIC card aspect ratio (85.6 mm x 53.98 mm = 1.586)
+    final croppedFile = await ImageCropper().cropImage(
+      sourcePath: image.path,
+      compressQuality: 90,
+      aspectRatio: const CropAspectRatio(ratioX: 85.6, ratioY: 53.98),
+      uiSettings: [
+        AndroidUiSettings(
+          toolbarTitle: isFront ? 'Align & Crop Front of NIC' : 'Align & Crop Back of NIC',
+          toolbarColor: AppColors.primary,
+          toolbarWidgetColor: Colors.white,
+          initAspectRatio: CropAspectRatioPreset.ratio16x9,
+          lockAspectRatio: true,
+          hideBottomControls: false,
+        ),
+        IOSUiSettings(
+          title: isFront ? 'Align & Crop Front of NIC' : 'Align & Crop Back of NIC',
+          aspectRatioLockEnabled: true,
+          resetAspectRatioEnabled: false,
+        ),
+      ],
+    );
+
+    if (mounted) {
+      final selectedFile = croppedFile != null ? File(croppedFile.path) : File(image.path);
       setState(() {
         if (isFront) {
-          _front = File(image.path);
+          _front = selectedFile;
         } else {
-          _back = File(image.path);
+          _back = selectedFile;
         }
       });
     }
