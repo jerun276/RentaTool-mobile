@@ -23,6 +23,20 @@ class KycSubmissionModel {
     this.submittedAtUtc,
   });
 
+  static String _parseStatus(dynamic val) {
+    if (val == null) return 'Pending';
+    if (val is int) {
+      if (val == 2) return 'Approved';
+      if (val == 3) return 'Rejected';
+      return 'Pending';
+    }
+    final s = val.toString().trim();
+    if (s.toLowerCase() == 'approved' || s == '2') return 'Approved';
+    if (s.toLowerCase() == 'rejected' || s == '3') return 'Rejected';
+    if (s.toLowerCase() == 'pending' || s == '1') return 'Pending';
+    return s;
+  }
+
   factory KycSubmissionModel.fromJson(Map<String, dynamic> json) {
     return KycSubmissionModel(
       kycRecordId: json['kycRecordId'],
@@ -32,7 +46,7 @@ class KycSubmissionModel {
       documentNumber: json['documentNumber'] ?? '',
       frontImageUrl: json['frontImageUrl'],
       backImageUrl: json['backImageUrl'],
-      status: json['status'] ?? 'Pending',
+      status: _parseStatus(json['status']),
       rejectionReason: json['rejectionReason'],
       submittedAtUtc: json['submittedAtUtc'],
     );

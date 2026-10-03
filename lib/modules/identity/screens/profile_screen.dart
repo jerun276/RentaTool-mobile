@@ -25,20 +25,267 @@ final profileKycStatusProvider = FutureProvider.autoDispose.family<Map<String, S
       return {
         'status': sub.status,
         'rejectionReason': sub.rejectionReason,
+        'documentNumber': sub.documentNumber,
       };
     }
   } catch (_) {}
 
   final localStatus = await ref.read(tokenStorageServiceProvider).getKycStatus(userId);
   final localReason = await ref.read(tokenStorageServiceProvider).getKycRejectionReason(userId);
+  final localDoc = await ref.read(tokenStorageServiceProvider).getKycDocumentNumber(userId);
   return {
     'status': localStatus ?? 'none',
     'rejectionReason': localReason,
+    'documentNumber': localDoc,
   };
 });
 
 class ProfileScreen extends ConsumerWidget {
   const ProfileScreen({super.key});
+
+  void _showPendingStatusModal(BuildContext context, String? docNumber) {
+    showDialog<void>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: const Row(
+          children: [
+            Icon(Icons.hourglass_top_rounded, color: AppColors.warning, size: 24),
+            SizedBox(width: 10),
+            Expanded(
+              child: Text(
+                'Verification In Progress',
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+              ),
+            ),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Your National Identity Card (NIC) was submitted successfully and is currently in the administrative review queue.',
+              style: TextStyle(fontSize: 13, height: 1.4),
+            ),
+            const SizedBox(height: 14),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: AppColors.surfaceLight,
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: AppColors.border),
+              ),
+              child: Column(
+                children: [
+                  if (docNumber != null && docNumber.isNotEmpty) ...[
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text('Document:', style: TextStyle(fontSize: 12, color: AppColors.textMuted)),
+                        Text('NIC ($docNumber)', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                      ],
+                    ),
+                    const Divider(height: 16),
+                  ],
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text('Status:', style: TextStyle(fontSize: 12, color: AppColors.textMuted)),
+                      const Text('Under Review ⏳', style: TextStyle(fontSize: 12, color: AppColors.warning, fontWeight: FontWeight.bold)),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 12),
+            Text(
+              'No further action is required from you at this time. You will receive notification as soon as verification completes.',
+              style: TextStyle(fontSize: 12, color: AppColors.textMuted, height: 1.3),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: const Text('Close', style: TextStyle(fontWeight: FontWeight.bold)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showVerifiedStatusModal(BuildContext context) {
+    showDialog<void>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: const Row(
+          children: [
+            Icon(Icons.verified, color: AppColors.success, size: 24),
+            SizedBox(width: 10),
+            Expanded(
+              child: Text(
+                'Identity Verified',
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+              ),
+            ),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Your National Identity Card (NIC) has been approved by compliance administrators.',
+              style: TextStyle(fontSize: 13, height: 1.4),
+            ),
+            const SizedBox(height: 12),
+            Text(
+              'You have full access to machinery reservations, equipment fleet listings, and secure escrow transactions.',
+              style: TextStyle(fontSize: 12, color: AppColors.textMuted, height: 1.3),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: const Text('Close', style: TextStyle(fontWeight: FontWeight.bold)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showRejectedStatusModal(BuildContext context, String? reason, String userId, WidgetRef ref) {
+    showDialog<void>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: const Row(
+          children: [
+            Icon(Icons.error_outline, color: Color(0xFFDC2626), size: 24),
+            SizedBox(width: 10),
+            Expanded(
+              child: Text(
+                'Verification Declined',
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+              ),
+            ),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Your previous identity submission was declined by compliance administrators.',
+              style: TextStyle(fontSize: 13, height: 1.4),
+            ),
+            if (reason != null && reason.isNotEmpty) ...[
+              const SizedBox(height: 12),
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFFEE2E2),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: const Color(0xFFFECACA)),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text('Admin Reason:', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Color(0xFF991B1B))),
+                    const SizedBox(height: 4),
+                    Text(reason, style: const TextStyle(fontSize: 12, color: Color(0xFF7F1D1D))),
+                  ],
+                ),
+              ),
+            ],
+            const SizedBox(height: 12),
+            Text(
+              'Please re-upload clear photographs of both front and back of your NIC to unlock equipment access.',
+              style: TextStyle(fontSize: 12, color: AppColors.textMuted, height: 1.3),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.primary,
+              foregroundColor: Colors.white,
+            ),
+            onPressed: () async {
+              Navigator.of(ctx).pop();
+              await context.push('/kyc-submit');
+              ref.invalidate(profileKycStatusProvider(userId));
+              ref.read(authProvider.notifier).refreshProfile();
+            },
+            child: const Text('Re-upload Documents', style: TextStyle(fontWeight: FontWeight.bold)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showUnverifiedInfoModal(BuildContext context, String userId, WidgetRef ref) {
+    showDialog<void>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: const Row(
+          children: [
+            Icon(Icons.assignment_ind_outlined, color: AppColors.primary, size: 24),
+            SizedBox(width: 10),
+            Expanded(
+              child: Text(
+                'Identity Verification',
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+              ),
+            ),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Identity verification (NIC) is required by Sri Lankan rental regulations to ensure equipment security.',
+              style: TextStyle(fontSize: 13, height: 1.4),
+            ),
+            const SizedBox(height: 12),
+            Text(
+              'Please submit clear photos of both sides of your National Identity Card to unlock equipment rentals.',
+              style: TextStyle(fontSize: 12, color: AppColors.textMuted, height: 1.3),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: const Text('Later'),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.primary,
+              foregroundColor: Colors.white,
+            ),
+            onPressed: () async {
+              Navigator.of(ctx).pop();
+              await context.push('/kyc-submit');
+              ref.invalidate(profileKycStatusProvider(userId));
+              ref.read(authProvider.notifier).refreshProfile();
+            },
+            child: const Text('Submit NIC', style: TextStyle(fontWeight: FontWeight.bold)),
+          ),
+        ],
+      ),
+    );
+  }
 
   ImageProvider? _resolveAvatarImage(String? path) {
     if (path == null || path.isEmpty) return null;
@@ -81,8 +328,19 @@ class ProfileScreen extends ConsumerWidget {
 
     final kycInfoAsync = ref.watch(profileKycStatusProvider(user.id));
     final kycInfo = kycInfoAsync.valueOrNull;
-    final kycStatus = user.isVerified ? 'Approved' : (kycInfo?['status'] ?? 'none');
+    final rawStatus = user.isVerified ? 'Approved' : (kycInfo?['status'] ?? 'none');
+    final String kycStatus;
+    if (user.isVerified || rawStatus.toLowerCase() == 'approved' || rawStatus == '2') {
+      kycStatus = 'Approved';
+    } else if (rawStatus.toLowerCase() == 'pending' || rawStatus == '1') {
+      kycStatus = 'Pending';
+    } else if (rawStatus.toLowerCase() == 'rejected' || rawStatus == '3') {
+      kycStatus = 'Rejected';
+    } else {
+      kycStatus = rawStatus;
+    }
     final rejectionReason = kycInfo?['rejectionReason'];
+    final kycDocNumber = kycInfo?['documentNumber'];
 
     final theme = Theme.of(context);
     final textPrimary = theme.colorScheme.onSurface;
@@ -221,17 +479,31 @@ class ProfileScreen extends ConsumerWidget {
                                       ? BadgeStyle.purple
                                       : BadgeStyle.success),
                             ),
-                            StatusBadge(
-                              label: user.isVerified || kycStatus == 'Approved'
-                                  ? 'KYC VERIFIED'
-                                  : (kycStatus == 'Pending'
-                                      ? 'UNDER REVIEW'
-                                      : (kycStatus == 'Rejected' ? 'RE-UPLOAD' : 'PENDING KYC')),
-                              style: user.isVerified || kycStatus == 'Approved'
-                                  ? BadgeStyle.success
-                                  : (kycStatus == 'Pending'
-                                      ? BadgeStyle.warning
-                                      : (kycStatus == 'Rejected' ? BadgeStyle.error : BadgeStyle.info)),
+                            InkWell(
+                              onTap: () {
+                                if (kycStatus == 'Pending') {
+                                  _showPendingStatusModal(context, kycDocNumber);
+                                } else if (kycStatus == 'Approved' || user.isVerified) {
+                                  _showVerifiedStatusModal(context);
+                                } else if (kycStatus == 'Rejected') {
+                                  _showRejectedStatusModal(context, rejectionReason, user.id, ref);
+                                } else {
+                                  _showUnverifiedInfoModal(context, user.id, ref);
+                                }
+                              },
+                              borderRadius: BorderRadius.circular(6),
+                              child: StatusBadge(
+                                label: user.isVerified || kycStatus == 'Approved'
+                                    ? 'KYC VERIFIED'
+                                    : (kycStatus == 'Pending'
+                                        ? 'UNDER REVIEW'
+                                        : (kycStatus == 'Rejected' ? 'RE-UPLOAD' : 'PENDING KYC')),
+                                style: user.isVerified || kycStatus == 'Approved'
+                                    ? BadgeStyle.success
+                                    : (kycStatus == 'Pending'
+                                        ? BadgeStyle.warning
+                                        : (kycStatus == 'Rejected' ? BadgeStyle.error : BadgeStyle.info)),
+                              ),
                             ),
                           ],
                         ),
@@ -243,88 +515,155 @@ class ProfileScreen extends ConsumerWidget {
             ),
             if (!user.isVerified && kycStatus != 'Approved') ...[
               const SizedBox(height: 16),
-              // KYC Action Card
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: isDarkMode ? AppColors.darkSurface : AppColors.lightSurface,
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(
-                    color: kycStatus == 'Pending'
-                        ? AppColors.warning.withValues(alpha: 0.4)
-                        : (kycStatus == 'Rejected'
-                            ? const Color(0xFFDC2626).withValues(alpha: 0.4)
-                            : (isDarkMode ? AppColors.darkBorder : AppColors.lightBorder)),
+              if (kycInfoAsync.isLoading && kycInfo == null) ...[
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: isDarkMode ? AppColors.darkSurface : AppColors.lightSurface,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: isDarkMode ? AppColors.darkBorder : AppColors.lightBorder,
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      const SizedBox(
+                        width: 16,
+                        height: 16,
+                        child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.primary),
+                      ),
+                      const SizedBox(width: 12),
+                      Text('Checking verification status...', style: TextStyle(fontSize: 13, color: AppColors.textMuted)),
+                    ],
                   ),
                 ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Icon(
-                          kycStatus == 'Pending'
-                              ? Icons.hourglass_top_rounded
-                              : (kycStatus == 'Rejected'
-                                  ? Icons.warning_amber_rounded
-                                  : Icons.assignment_ind_outlined),
-                          color: kycStatus == 'Pending'
-                              ? AppColors.warning
-                              : (isDarkMode ? const Color(0xFFF87171) : const Color(0xFFDC2626)),
-                          size: 18,
-                        ),
-                        const SizedBox(width: 8),
-                        Text(
-                          kycStatus == 'Pending'
-                              ? 'KYC Verification Under Review'
-                              : (kycStatus == 'Rejected'
-                                  ? 'NIC Re-upload Requested'
-                                  : 'Complete NIC Verification'),
-                          style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                            color: kycStatus == 'Pending'
-                                ? AppColors.warning
-                                : (isDarkMode ? const Color(0xFFF87171) : const Color(0xFFDC2626)),
-                            fontSize: 14,
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 6),
-                    Text(
-                      kycStatus == 'Pending'
-                          ? 'Your NIC document has been uploaded and is currently being inspected by compliance administrators. You will receive notification once verified.'
-                          : (kycStatus == 'Rejected'
-                              ? (rejectionReason != null && rejectionReason.isNotEmpty
-                                  ? 'Admin Feedback: $rejectionReason\nPlease tap below to re-upload clear replacement photographs.'
-                                  : 'Your previous submission was declined. Please re-upload clear photographs of your NIC.')
-                              : 'Upload your Sri Lankan NIC photo to unlock unrestricted equipment rental access.'),
-                      style: TextStyle(
-                        color: isDarkMode
-                            ? AppColors.darkTextSecondary
-                            : AppColors.lightTextSecondary,
-                        fontSize: 12,
-                        height: 1.3,
+              ] else ...[
+                // KYC Action Card
+                InkWell(
+                  onTap: kycStatus == 'Pending' ? () => _showPendingStatusModal(context, kycDocNumber) : null,
+                  borderRadius: BorderRadius.circular(12),
+                  child: Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: isDarkMode ? AppColors.darkSurface : AppColors.lightSurface,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: kycStatus == 'Pending'
+                            ? AppColors.warning.withValues(alpha: 0.4)
+                            : (kycStatus == 'Rejected'
+                                ? const Color(0xFFDC2626).withValues(alpha: 0.4)
+                                : (isDarkMode ? AppColors.darkBorder : AppColors.lightBorder)),
                       ),
                     ),
-                    const SizedBox(height: 12),
-                    AppButton(
-                      text: kycStatus == 'Pending'
-                          ? 'View Submission Status'
-                          : (kycStatus == 'Rejected' ? 'Re-upload NIC Documents' : 'Submit NIC Documents'),
-                      variant: kycStatus == 'Pending' ? AppButtonVariant.outline : AppButtonVariant.primary,
-                      icon: kycStatus == 'Pending'
-                          ? Icons.info_outline
-                          : (kycStatus == 'Rejected' ? Icons.replay_outlined : Icons.upload_file_outlined),
-                      onPressed: () async {
-                        await context.push('/kyc-submit');
-                        ref.invalidate(profileKycStatusProvider(user.id));
-                        ref.read(authProvider.notifier).refreshProfile();
-                      },
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Icon(
+                              kycStatus == 'Pending'
+                                  ? Icons.hourglass_top_rounded
+                                  : (kycStatus == 'Rejected'
+                                      ? Icons.warning_amber_rounded
+                                      : Icons.assignment_ind_outlined),
+                              color: kycStatus == 'Pending'
+                                  ? AppColors.warning
+                                  : (isDarkMode ? const Color(0xFFF87171) : const Color(0xFFDC2626)),
+                              size: 18,
+                            ),
+                            const SizedBox(width: 8),
+                            Text(
+                              kycStatus == 'Pending'
+                                  ? 'KYC Verification Under Review'
+                                  : (kycStatus == 'Rejected'
+                                      ? 'NIC Re-upload Requested'
+                                      : 'Complete NIC Verification'),
+                              style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                color: kycStatus == 'Pending'
+                                    ? AppColors.warning
+                                    : (isDarkMode ? const Color(0xFFF87171) : const Color(0xFFDC2626)),
+                                fontSize: 14,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 6),
+                        Text(
+                          kycStatus == 'Pending'
+                              ? 'Your NIC document has been uploaded and is currently being inspected by compliance administrators. You will receive notification once verified.'
+                              : (kycStatus == 'Rejected'
+                                  ? (rejectionReason != null && rejectionReason.isNotEmpty
+                                      ? 'Admin Feedback: $rejectionReason\nPlease tap below to re-upload clear replacement photographs.'
+                                      : 'Your previous submission was declined. Please re-upload clear photographs of your NIC.')
+                                  : 'Upload your Sri Lankan NIC photo to unlock unrestricted equipment rental access.'),
+                          style: TextStyle(
+                            color: isDarkMode
+                                ? AppColors.darkTextSecondary
+                                : AppColors.lightTextSecondary,
+                            fontSize: 12,
+                            height: 1.3,
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        if (kycStatus == 'Pending') ...[
+                          Row(
+                            children: [
+                              Expanded(
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                                  decoration: BoxDecoration(
+                                    color: AppColors.warning.withValues(alpha: 0.12),
+                                    borderRadius: BorderRadius.circular(8),
+                                    border: Border.all(color: AppColors.warning.withValues(alpha: 0.3)),
+                                  ),
+                                  child: const Row(
+                                    children: [
+                                      Icon(Icons.hourglass_top_rounded, color: AppColors.warning, size: 16),
+                                      SizedBox(width: 8),
+                                      Expanded(
+                                        child: Text(
+                                          'In Administrative Queue',
+                                          style: TextStyle(
+                                            color: AppColors.warning,
+                                            fontWeight: FontWeight.w600,
+                                            fontSize: 12,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              TextButton.icon(
+                                icon: const Icon(Icons.info_outline, size: 16),
+                                label: const Text('Details'),
+                                style: TextButton.styleFrom(
+                                  foregroundColor: AppColors.primary,
+                                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                                ),
+                                onPressed: () => _showPendingStatusModal(context, kycDocNumber),
+                              ),
+                            ],
+                          ),
+                        ] else ...[
+                          AppButton(
+                            text: kycStatus == 'Rejected' ? 'Re-upload NIC Documents' : 'Submit NIC Documents',
+                            variant: AppButtonVariant.primary,
+                            icon: kycStatus == 'Rejected' ? Icons.replay_outlined : Icons.upload_file_outlined,
+                            onPressed: () async {
+                              await context.push('/kyc-submit');
+                              ref.invalidate(profileKycStatusProvider(user.id));
+                              ref.read(authProvider.notifier).refreshProfile();
+                            },
+                          ),
+                        ],
+                      ],
                     ),
-                  ],
+                  ),
                 ),
-              ),
+              ],
             ],
             const SizedBox(height: 20),
 
