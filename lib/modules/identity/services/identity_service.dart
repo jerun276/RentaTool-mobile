@@ -5,6 +5,7 @@ import '../../../core/network/api_client.dart';
 import '../../../core/services/cloudinary_service.dart';
 import '../models/user_model.dart';
 import '../models/trust_score_model.dart';
+import '../models/kyc_submission_model.dart';
 
 final identityServiceProvider = Provider<IdentityService>((ref) {
   final dio = ref.watch(apiClientProvider);
@@ -117,5 +118,16 @@ class IdentityService {
       data: {'isVerified': isVerified},
     );
     return UserModel.fromJson(response.data);
+  }
+
+  /// Retrieves the current user's KYC submission if one exists.
+  Future<KycSubmissionModel?> getMyKycSubmission(String userId) async {
+    try {
+      final response = await _dio.get('${ApiConstants.users}/$userId/kyc-submission');
+      if (response.data != null) {
+        return KycSubmissionModel.fromJson(response.data as Map<String, dynamic>);
+      }
+    } catch (_) {}
+    return null;
   }
 }

@@ -2,13 +2,40 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../../../core/services/token_storage_service.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/theme_provider.dart';
 import '../../../core/widgets/app_button.dart';
 import '../../../core/widgets/status_badge.dart';
 import '../models/user_model.dart';
 import '../providers/auth_provider.dart';
+import '../services/identity_service.dart';
 import 'edit_profile_screen.dart';
+
+final profileKycStatusProvider = FutureProvider.autoDispose.family<Map<String, String?>, String>((ref, userId) async {
+  try {
+    final sub = await ref.watch(identityServiceProvider).getMyKycSubmission(userId);
+    if (sub != null) {
+      await ref.read(tokenStorageServiceProvider).saveKycStatus(
+        userId,
+        sub.status,
+        rejectionReason: sub.rejectionReason,
+        documentNumber: sub.documentNumber,
+      );
+      return {
+        'status': sub.status,
+        'rejectionReason': sub.rejectionReason,
+      };
+    }
+  } catch (_) {}
+
+  final localStatus = await ref.read(tokenStorageServiceProvider).getKycStatus(userId);
+  final localReason = await ref.read(tokenStorageServiceProvider).getKycRejectionReason(userId);
+  return {
+    'status': localStatus ?? 'none',
+    'rejectionReason': localReason,
+  };
+});
 
 class ProfileScreen extends ConsumerWidget {
   const ProfileScreen({super.key});
@@ -51,6 +78,11 @@ class ProfileScreen extends ConsumerWidget {
     final trustScore = trustScoreAsync.valueOrNull?.score ?? user.trustScore;
     final trustTier =
         trustScoreAsync.valueOrNull?.tier ?? _tierForScore(trustScore);
+
+    final kycInfoAsync = ref.watch(profileKycStatusProvider(user.id));
+    final kycInfo = kycInfoAsync.valueOrNull;
+    final kycStatus = user.isVerified ? 'Approved' : (kycInfo?['status'] ?? 'none');
+    final rejectionReason = kycInfo?['rejectionReason'];
 
     final theme = Theme.of(context);
     final textPrimary = theme.colorScheme.onSurface;
@@ -189,12 +221,16 @@ class ProfileScreen extends ConsumerWidget {
                             ),
                             const SizedBox(width: 8),
                             StatusBadge(
-                              label: user.isVerified
+                              label: user.isVerified || kycStatus == 'Approved'
                                   ? 'KYC VERIFIED'
-                                  : 'PENDING KYC',
-                              style: user.isVerified
+                                  : (kycStatus == 'Pending'
+                                      ? 'UNDER REVIEW'
+                                      : (kycStatus == 'Rejected' ? 'RE-UPLOAD REQUIRED' : 'PENDING KYC')),
+                              style: user.isVerified || kycStatus == 'Approved'
                                   ? BadgeStyle.success
-                                  : BadgeStyle.warning,
+                                  : (kycStatus == 'Pending'
+                                      ? BadgeStyle.warning
+                                      : (kycStatus == 'Rejected' ? BadgeStyle.error : BadgeStyle.info)),
                             ),
                           ],
                         ),
@@ -204,7 +240,7 @@ class ProfileScreen extends ConsumerWidget {
                 ],
               ),
             ),
-            if (!user.isVerified) ...[
+            if (!user.isVerified && kycStatus != 'Approved') ...[
               const SizedBox(height: 16),
               // KYC Action Card
               Container(
@@ -213,7 +249,11 @@ class ProfileScreen extends ConsumerWidget {
                   color: isDarkMode ? AppColors.darkSurface : AppColors.lightSurface,
                   borderRadius: BorderRadius.circular(12),
                   border: Border.all(
-                    color: isDarkMode ? AppColors.darkBorder : AppColors.lightBorder,
+                    color: kycStatus == 'Pending'
+                        ? AppColors.warning.withValues(alpha: 0.4)
+                        : (kycStatus == 'Rejected'
+                            ? const Color(0xFFDC2626).withValues(alpha: 0.4)
+                            : (isDarkMode ? AppColors.darkBorder : AppColors.lightBorder)),
                   ),
                 ),
                 child: Column(
@@ -222,20 +262,28 @@ class ProfileScreen extends ConsumerWidget {
                     Row(
                       children: [
                         Icon(
-                          Icons.assignment_ind_outlined,
-                          color: isDarkMode
-                              ? const Color(0xFFF87171)
-                              : const Color(0xFFDC2626),
+                          kycStatus == 'Pending'
+                              ? Icons.hourglass_top_rounded
+                              : (kycStatus == 'Rejected'
+                                  ? Icons.warning_amber_rounded
+                                  : Icons.assignment_ind_outlined),
+                          color: kycStatus == 'Pending'
+                              ? AppColors.warning
+                              : (isDarkMode ? const Color(0xFFF87171) : const Color(0xFFDC2626)),
                           size: 18,
                         ),
                         const SizedBox(width: 8),
                         Text(
-                          'Complete NIC Verification',
+                          kycStatus == 'Pending'
+                              ? 'KYC Verification Under Review'
+                              : (kycStatus == 'Rejected'
+                                  ? 'NIC Re-upload Requested'
+                                  : 'Complete NIC Verification'),
                           style: TextStyle(
                             fontWeight: FontWeight.bold,
-                            color: isDarkMode
-                                ? const Color(0xFFF87171)
-                                : const Color(0xFFDC2626),
+                            color: kycStatus == 'Pending'
+                                ? AppColors.warning
+                                : (isDarkMode ? const Color(0xFFF87171) : const Color(0xFFDC2626)),
                             fontSize: 14,
                           ),
                         ),
@@ -243,7 +291,13 @@ class ProfileScreen extends ConsumerWidget {
                     ),
                     const SizedBox(height: 6),
                     Text(
-                      'Upload your Sri Lankan NIC photo to unlock unrestricted equipment rental access.',
+                      kycStatus == 'Pending'
+                          ? 'Your NIC document has been uploaded and is currently being inspected by compliance administrators. You will receive notification once verified.'
+                          : (kycStatus == 'Rejected'
+                              ? (rejectionReason != null && rejectionReason.isNotEmpty
+                                  ? 'Admin Feedback: $rejectionReason\nPlease tap below to re-upload clear replacement photographs.'
+                                  : 'Your previous submission was declined. Please re-upload clear photographs of your NIC.')
+                              : 'Upload your Sri Lankan NIC photo to unlock unrestricted equipment rental access.'),
                       style: TextStyle(
                         color: isDarkMode
                             ? AppColors.darkTextSecondary
@@ -254,10 +308,18 @@ class ProfileScreen extends ConsumerWidget {
                     ),
                     const SizedBox(height: 12),
                     AppButton(
-                      text: 'Submit NIC Documents',
-                      variant: AppButtonVariant.primary,
-                      icon: Icons.upload_file_outlined,
-                      onPressed: () => context.push('/kyc-submit'),
+                      text: kycStatus == 'Pending'
+                          ? 'View Submission Status'
+                          : (kycStatus == 'Rejected' ? 'Re-upload NIC Documents' : 'Submit NIC Documents'),
+                      variant: kycStatus == 'Pending' ? AppButtonVariant.outline : AppButtonVariant.primary,
+                      icon: kycStatus == 'Pending'
+                          ? Icons.info_outline
+                          : (kycStatus == 'Rejected' ? Icons.replay_outlined : Icons.upload_file_outlined),
+                      onPressed: () async {
+                        await context.push('/kyc-submit');
+                        ref.invalidate(profileKycStatusProvider(user.id));
+                        ref.read(authProvider.notifier).refreshProfile();
+                      },
                     ),
                   ],
                 ),

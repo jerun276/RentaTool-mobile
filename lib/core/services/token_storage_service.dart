@@ -75,6 +75,39 @@ class TokenStorageService {
     return _storage.read(key: _profilePhotoKey(userId));
   }
 
+  String _kycStatusKey(String userId) => 'rentatool_kyc_status_$userId';
+  String _kycReasonKey(String userId) => 'rentatool_kyc_reason_$userId';
+  String _kycDocNumKey(String userId) => 'rentatool_kyc_docnum_$userId';
+
+  Future<void> saveKycStatus(
+    String userId,
+    String status, {
+    String? rejectionReason,
+    String? documentNumber,
+  }) async {
+    await _storage.write(key: _kycStatusKey(userId), value: status);
+    if (rejectionReason != null) {
+      await _storage.write(key: _kycReasonKey(userId), value: rejectionReason);
+    } else {
+      await _storage.delete(key: _kycReasonKey(userId));
+    }
+    if (documentNumber != null) {
+      await _storage.write(key: _kycDocNumKey(userId), value: documentNumber);
+    }
+  }
+
+  Future<String?> getKycStatus(String userId) async {
+    return _storage.read(key: _kycStatusKey(userId));
+  }
+
+  Future<String?> getKycRejectionReason(String userId) async {
+    return _storage.read(key: _kycReasonKey(userId));
+  }
+
+  Future<String?> getKycDocumentNumber(String userId) async {
+    return _storage.read(key: _kycDocNumKey(userId));
+  }
+
   Future<bool> hasToken() async {
     final token = await getAccessToken();
     return token != null && token.isNotEmpty;
