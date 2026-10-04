@@ -278,5 +278,21 @@ final authProvider = StateNotifierProvider<AuthNotifier, AuthState>((ref) {
 
 final trustScoreProvider = FutureProvider.autoDispose
     .family<TrustScoreModel, String>((ref, userId) async {
-  return ref.watch(identityServiceProvider).getTrustScore(userId);
+  final tokenStorage = ref.read(tokenStorageServiceProvider);
+  try {
+    final score = await ref.watch(identityServiceProvider).getTrustScore(userId);
+    await tokenStorage.saveTrustScore(userId, score.score, score.tier);
+    return score;
+  } catch (e) {
+    final cachedScore = await tokenStorage.getTrustScore(userId);
+    final cachedTier = await tokenStorage.getTrustTier(userId);
+    if (cachedScore != null && cachedTier != null) {
+      return TrustScoreModel(
+        userId: userId,
+        score: cachedScore,
+        tier: cachedTier,
+      );
+    }
+    rethrow;
+  }
 });

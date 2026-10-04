@@ -37,6 +37,11 @@ class TokenStorageService {
     return await _storage.read(key: _keyRefreshToken);
   }
 
+  Future<void> clearTokens() async {
+    await _storage.delete(key: _keyAccessToken);
+    await _storage.delete(key: _keyRefreshToken);
+  }
+
   Future<void> saveUser({
     required String userId,
     required String role,
@@ -106,6 +111,23 @@ class TokenStorageService {
 
   Future<String?> getKycDocumentNumber(String userId) async {
     return _storage.read(key: _kycDocNumKey(userId));
+  }
+
+  String _trustScoreKey(String userId) => 'rentatool_trust_score_$userId';
+  String _trustTierKey(String userId) => 'rentatool_trust_tier_$userId';
+
+  Future<void> saveTrustScore(String userId, int score, String tier) async {
+    await _storage.write(key: _trustScoreKey(userId), value: score.toString());
+    await _storage.write(key: _trustTierKey(userId), value: tier);
+  }
+
+  Future<int?> getTrustScore(String userId) async {
+    final val = await _storage.read(key: _trustScoreKey(userId));
+    return val != null ? int.tryParse(val) : null;
+  }
+
+  Future<String?> getTrustTier(String userId) async {
+    return _storage.read(key: _trustTierKey(userId));
   }
 
   Future<bool> hasToken() async {
