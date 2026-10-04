@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
+import '../../../core/constants/sri_lanka_locations.dart';
 import '../../../core/services/cloudinary_service.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/widgets/app_button.dart';
@@ -86,6 +87,77 @@ class _AddEquipmentScreenState extends ConsumerState<AddEquipmentScreen> {
       _dynamicDropdownValues.clear();
       _initCategorySpecs(category);
     });
+  }
+
+  Future<void> _pickLocation() async {
+    FocusScope.of(context).unfocus();
+    final selected = await showModalBottomSheet<String>(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) {
+        String query = '';
+        return StatefulBuilder(
+          builder: (ctx, setSheetState) {
+            final items = SriLankaLocations.all
+                .where((l) => l.toLowerCase().contains(query.toLowerCase()))
+                .toList();
+            return SafeArea(
+              child: Padding(
+                padding: EdgeInsets.only(bottom: MediaQuery.of(ctx).viewInsets.bottom),
+                child: SizedBox(
+                  height: MediaQuery.of(ctx).size.height * 0.7,
+                  child: Column(
+                    children: [
+                      const SizedBox(height: 12),
+                      const Text(
+                        'Select Base Depot Location',
+                        style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+                        child: TextField(
+                          decoration: const InputDecoration(
+                            hintText: 'Search city or province',
+                            prefixIcon: Icon(Icons.search),
+                          ),
+                          onChanged: (v) => setSheetState(() => query = v),
+                        ),
+                      ),
+                      Expanded(
+                        child: items.isEmpty
+                            ? const Center(child: Text('No matching locations'))
+                            : ListView.builder(
+                                physics: const BouncingScrollPhysics(),
+                                itemCount: items.length,
+                                itemBuilder: (_, i) {
+                                  final loc = items[i];
+                                  final isSelected = loc == _locationController.text;
+                                  return ListTile(
+                                    leading: const Icon(Icons.location_on_outlined, color: AppColors.primary),
+                                    title: Text(loc),
+                                    trailing: isSelected
+                                        ? const Icon(Icons.check_circle, color: AppColors.primary)
+                                        : null,
+                                    onTap: () => Navigator.of(ctx).pop(loc),
+                                  );
+                                },
+                              ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+    if (selected != null) {
+      setState(() => _locationController.text = selected);
+    }
   }
 
   Future<void> _pickImage(String angle) async {
@@ -368,12 +440,19 @@ class _AddEquipmentScreenState extends ConsumerState<AddEquipmentScreen> {
               ),
               const SizedBox(height: 16),
 
-              AppTextField(
-                controller: _locationController,
-                label: 'Base Depot Location',
-                hintText: 'e.g. Colombo 05, Sri Lanka',
-                prefixIcon: Icon(Icons.location_on_outlined, size: 20, color: AppColors.textMuted),
-                validator: (v) => v == null || v.trim().isEmpty ? 'Location is required' : null,
+              GestureDetector(
+                onTap: _pickLocation,
+                behavior: HitTestBehavior.opaque,
+                child: AbsorbPointer(
+                  child: AppTextField(
+                    controller: _locationController,
+                    label: 'Base Depot Location',
+                    hintText: 'Tap to select a location',
+                    prefixIcon: Icon(Icons.location_on_outlined, size: 20, color: AppColors.textMuted),
+                    suffixIcon: Icon(Icons.keyboard_arrow_down_rounded, color: AppColors.textMuted),
+                    validator: (v) => v == null || v.trim().isEmpty ? 'Location is required' : null,
+                  ),
+                ),
               ),
               const SizedBox(height: 24),
 
