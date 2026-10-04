@@ -2,6 +2,8 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:image_picker/image_picker.dart';
+import '../../../core/services/cloudinary_service.dart';
 import '../../../core/services/token_storage_service.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/theme_provider.dart';
@@ -10,6 +12,7 @@ import '../../../core/widgets/status_badge.dart';
 import '../models/user_model.dart';
 import '../providers/auth_provider.dart';
 import '../services/identity_service.dart';
+import '../services/local_profile_photo_service.dart';
 import 'edit_profile_screen.dart';
 
 final profileKycStatusProvider = FutureProvider.autoDispose.family<Map<String, String?>, String>((ref, userId) async {
@@ -40,8 +43,115 @@ final profileKycStatusProvider = FutureProvider.autoDispose.family<Map<String, S
   };
 });
 
-class ProfileScreen extends ConsumerWidget {
+class ProfileScreen extends ConsumerStatefulWidget {
   const ProfileScreen({super.key});
+
+  @override
+  ConsumerState<ProfileScreen> createState() => _ProfileScreenState();
+}
+
+class _ProfileScreenState extends ConsumerState<ProfileScreen> {
+  bool _isUploadingPhoto = false;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _refreshAllData();
+    });
+  }
+
+  Future<void> _refreshAllData() async {
+    final user = ref.read(authProvider).user;
+    if (user != null) {
+      await ref.read(authProvider.notifier).refreshProfile();
+      ref.invalidate(trustScoreProvider(user.id));
+      ref.invalidate(profileKycStatusProvider(user.id));
+    }
+  }
+
+  Future<void> _pickAndUploadPhoto(ImageSource source, UserModel user) async {
+    setState(() => _isUploadingPhoto = true);
+    try {
+      final photoService = LocalProfilePhotoService();
+      final path = await photoService.chooseAndSave(source: source);
+      if (path == null) {
+        if (mounted) setState(() => _isUploadingPhoto = false);
+        return;
+      }
+      final cloudinary = ref.read(cloudinaryServiceProvider);
+      final uploadedUrl = await cloudinary.uploadImage(
+        path,
+        folder: 'rentatool/profiles',
+      );
+
+      final updated = await ref.read(authProvider.notifier).updateProfile(
+        name: user.name,
+        phoneNumber: user.phoneNumber,
+        profilePhotoUrl: uploadedUrl,
+      );
+
+      if (updated) {
+        await ref.read(authProvider.notifier).saveLocalProfilePhoto(uploadedUrl);
+        await ref.read(authProvider.notifier).refreshProfile();
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Profile photo updated successfully!')),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to upload photo: $e')),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isUploadingPhoto = false);
+      }
+    }
+  }
+
+  void _showPhotoOptions(BuildContext context, UserModel user) {
+    showModalBottomSheet<void>(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 16),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text(
+                'Update Profile Photo',
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+              ),
+              const SizedBox(height: 12),
+              ListTile(
+                leading: const Icon(Icons.camera_alt_outlined, color: AppColors.primary),
+                title: const Text('Take Photo (Camera)'),
+                onTap: () {
+                  Navigator.of(ctx).pop();
+                  _pickAndUploadPhoto(ImageSource.camera, user);
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.photo_library_outlined, color: AppColors.primary),
+                title: const Text('Choose from Gallery'),
+                onTap: () {
+                  Navigator.of(ctx).pop();
+                  _pickAndUploadPhoto(ImageSource.gallery, user);
+                },
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
 
   void _showPendingStatusModal(BuildContext context, String? docNumber) {
     showDialog<void>(
@@ -296,7 +406,7 @@ class ProfileScreen extends ConsumerWidget {
   }
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     final authState = ref.watch(authProvider);
     final user = authState.user;
     final currentThemeMode = ref.watch(themeProvider);
@@ -322,7 +432,8 @@ class ProfileScreen extends ConsumerWidget {
     }
 
     final trustScoreAsync = ref.watch(trustScoreProvider(user.id));
-    final trustScore = trustScoreAsync.valueOrNull?.score ?? user.trustScore;
+    final liveScore = trustScoreAsync.valueOrNull?.score;
+    final trustScore = liveScore ?? (user.trustScore > 0 ? user.trustScore : 50);
     final trustTier =
         trustScoreAsync.valueOrNull?.tier ?? _tierForScore(trustScore);
 
@@ -351,6 +462,21 @@ class ProfileScreen extends ConsumerWidget {
         title: const Text('User Profile & Trust'),
         actions: [
           IconButton(
+            icon: const Icon(Icons.sync_rounded, size: 22),
+            tooltip: 'Sync Profile & Trust',
+            onPressed: () async {
+              await _refreshAllData();
+              if (context.mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Profile & trust score updated.'),
+                    duration: Duration(seconds: 1),
+                  ),
+                );
+              }
+            },
+          ),
+          IconButton(
             icon: const Icon(Icons.logout, size: 20),
             tooltip: 'Sign Out',
             onPressed: () async {
@@ -362,41 +488,80 @@ class ProfileScreen extends ConsumerWidget {
           ),
         ],
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(20.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            // User Header Card
-            Container(
-              padding: const EdgeInsets.all(18),
-              decoration: BoxDecoration(
-                color: isDarkMode ? AppColors.darkSurface : AppColors.lightSurface,
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(
-                  color: isDarkMode ? AppColors.darkBorder : AppColors.lightBorder,
+      body: RefreshIndicator(
+        onRefresh: _refreshAllData,
+        child: SingleChildScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          padding: const EdgeInsets.all(20.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              // User Header Card
+              Container(
+                padding: const EdgeInsets.all(18),
+                decoration: BoxDecoration(
+                  color: isDarkMode ? AppColors.darkSurface : AppColors.lightSurface,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: isDarkMode ? AppColors.darkBorder : AppColors.lightBorder,
+                  ),
                 ),
-              ),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  CircleAvatar(
-                    radius: 28,
-                    backgroundColor: AppColors.primary.withValues(alpha: 0.2),
-                    backgroundImage: _resolveAvatarImage(user.profilePhotoPath),
-                    child: user.profilePhotoPath != null && user.profilePhotoPath!.isNotEmpty
-                        ? null
-                        : Text(
-                            user.name.isNotEmpty
-                                ? user.name[0].toUpperCase()
-                                : 'U',
-                            style: TextStyle(
-                              color: isDarkMode ? AppColors.primaryLight : AppColors.primaryDark,
-                              fontWeight: FontWeight.bold,
-                              fontSize: 22,
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    GestureDetector(
+                      onTap: _isUploadingPhoto ? null : () => _showPhotoOptions(context, user),
+                      child: Stack(
+                        children: [
+                          CircleAvatar(
+                            radius: 28,
+                            backgroundColor: AppColors.primary.withValues(alpha: 0.2),
+                            backgroundImage: _resolveAvatarImage(user.profilePhotoPath),
+                            child: _isUploadingPhoto
+                                ? const SizedBox(
+                                    width: 20,
+                                    height: 20,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                      color: AppColors.primary,
+                                    ),
+                                  )
+                                : (user.profilePhotoPath != null && user.profilePhotoPath!.isNotEmpty
+                                    ? null
+                                    : Text(
+                                        user.name.isNotEmpty
+                                            ? user.name[0].toUpperCase()
+                                            : 'U',
+                                        style: TextStyle(
+                                          color: isDarkMode ? AppColors.primaryLight : AppColors.primaryDark,
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 22,
+                                        ),
+                                      )),
+                          ),
+                          Positioned(
+                            bottom: 0,
+                            right: 0,
+                            child: Container(
+                              padding: const EdgeInsets.all(4),
+                              decoration: BoxDecoration(
+                                color: AppColors.primary,
+                                shape: BoxShape.circle,
+                                border: Border.all(
+                                  color: isDarkMode ? AppColors.darkSurface : Colors.white,
+                                  width: 1.5,
+                                ),
+                              ),
+                              child: const Icon(
+                                Icons.camera_alt,
+                                size: 11,
+                                color: Colors.white,
+                              ),
                             ),
                           ),
-                  ),
+                        ],
+                      ),
+                    ),
                   const SizedBox(width: 14),
                   Expanded(
                     child: Column(
@@ -1004,12 +1169,14 @@ class ProfileScreen extends ConsumerWidget {
           ],
         ),
       ),
-    );
-  }
+    ),
+  );
+}
 
   String _tierForScore(int score) {
-    if (score >= 80) return 'Tier A';
-    if (score >= 60) return 'Tier B';
+    if (score >= 90) return 'Tier A+';
+    if (score >= 75) return 'Tier A';
+    if (score >= 50) return 'Tier B';
     return 'Tier C';
   }
 

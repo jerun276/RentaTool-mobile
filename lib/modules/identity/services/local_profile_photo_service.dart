@@ -9,9 +9,9 @@ class LocalProfilePhotoService {
   LocalProfilePhotoService({ImagePicker? picker})
       : _picker = picker ?? ImagePicker();
 
-  Future<String?> chooseAndSave() async {
+  Future<String?> chooseAndSave({ImageSource source = ImageSource.gallery}) async {
     final image = await _picker.pickImage(
-      source: ImageSource.gallery,
+      source: source,
       imageQuality: 85,
       maxWidth: 1200,
       maxHeight: 1200,
