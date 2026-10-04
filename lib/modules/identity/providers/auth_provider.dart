@@ -1,3 +1,4 @@
+import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/services/token_storage_service.dart';
 import '../models/user_model.dart';
@@ -191,9 +192,16 @@ class AuthNotifier extends StateNotifier<AuthState> {
       );
       return true;
     } catch (e) {
+      String message = 'Registration failed. Please check your details.';
+      if (e is DioException && e.response?.statusCode == 409) {
+        final data = e.response?.data;
+        if (data is Map && data['message'] != null) {
+          message = data['message'].toString();
+        }
+      }
       state = state.copyWith(
         isLoading: false,
-        errorMessage: 'Registration failed. Please check your details.',
+        errorMessage: message,
       );
       return false;
     }
