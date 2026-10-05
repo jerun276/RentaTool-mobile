@@ -28,7 +28,10 @@ class EquipmentHistoryScreen extends ConsumerWidget {
           IconButton(
             icon: const Icon(Icons.refresh, size: 20),
             tooltip: 'Refresh Timeline',
-            onPressed: () => ref.invalidate(equipmentHistoryProvider(equipmentId)),
+            onPressed: () {
+              ref.invalidate(equipmentHistoryProvider(equipmentId));
+              ref.invalidate(equipmentDetailProvider(equipmentId));
+            },
           ),
         ],
       ),
@@ -40,6 +43,7 @@ class EquipmentHistoryScreen extends ConsumerWidget {
         onPressed: () async {
           await context.push('/catalog/inspection/$equipmentId');
           ref.invalidate(equipmentHistoryProvider(equipmentId));
+          ref.invalidate(equipmentDetailProvider(equipmentId));
         },
       ),
       body: historyAsync.when(
@@ -48,7 +52,13 @@ class EquipmentHistoryScreen extends ConsumerWidget {
           message: 'Failed to load maintenance timeline.',
           onRetry: () => ref.invalidate(equipmentHistoryProvider(equipmentId)),
         ),
-        data: (history) => _buildTimelineContent(context, ref, history, dateFormatter),
+        data: (history) => RefreshIndicator(
+          onRefresh: () async {
+            ref.invalidate(equipmentHistoryProvider(equipmentId));
+            ref.invalidate(equipmentDetailProvider(equipmentId));
+          },
+          child: _buildTimelineContent(context, ref, history, dateFormatter),
+        ),
       ),
     );
   }

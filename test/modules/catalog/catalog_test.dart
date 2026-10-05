@@ -103,6 +103,28 @@ void main() {
       expect(log.photos[2].angle, 'Motor');
     });
 
+    test('InspectionLogModel correctly parses photosJson with PascalCase and string URLs', () {
+      final json = {
+        'id': '536d9ab7-84db-4a98-9507-96d641a1c2e0',
+        'equipmentId': '8cf23c80-0b38-43ab-bde8-23a9e0572704',
+        'bookingId': null,
+        'inspectorUserId': '85b26154-abdd-4b3d-a819-430a3b9cb212',
+        'type': 'PreRental',
+        'severity': 'None',
+        'conditionNotes': "It's on a brand new condition",
+        'photosJson': '[{"Angle": "Casing", "PhotoUrl": "https://res.cloudinary.com/dbegz7gty/image/upload/v1791180969/rentatool/inspections/ra39hq7ez9mlodqo5a37.jpg", "ObservationNote": null}, {"Angle": "General", "PhotoUrl": "https://res.cloudinary.com/dbegz7gty/image/upload/v1791180970/rentatool/inspections/ytme5oigp1az0dbsunpw.jpg", "ObservationNote": null}]',
+        'createdAtUtc': '2026-10-05T06:16:10.785565Z',
+      };
+
+      final log = InspectionLogModel.fromJson(json);
+
+      expect(log.photos.length, 2);
+      expect(log.photos[0].angle, 'Casing');
+      expect(log.photos[0].photoUrl, 'https://res.cloudinary.com/dbegz7gty/image/upload/v1791180969/rentatool/inspections/ra39hq7ez9mlodqo5a37.jpg');
+      expect(log.photos[1].angle, 'General');
+      expect(log.photos[1].photoUrl, 'https://res.cloudinary.com/dbegz7gty/image/upload/v1791180970/rentatool/inspections/ytme5oigp1az0dbsunpw.jpg');
+    });
+
     test('EquipmentHistoryTimelineModel correctly deserializes timeline records', () {
       final json = {
         'equipmentId': 'eq-777',
