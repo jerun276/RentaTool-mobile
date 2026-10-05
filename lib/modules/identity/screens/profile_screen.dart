@@ -524,7 +524,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                             ),
                             SizedBox(height: 2),
                             Text(
-                              'Please sign in again to sync your live trust score (75 Points) and profile photo.',
+                              'Please sign in again to sync.',
                               style: TextStyle(
                                 color: Color(0xFFB45309),
                                 fontSize: 11,

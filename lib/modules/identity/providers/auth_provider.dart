@@ -1,5 +1,7 @@
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'dart:async';
+import '../../../core/network/auth_interceptor.dart' show SessionEvents;
 import '../../../core/services/token_storage_service.dart';
 import '../models/user_model.dart';
 import '../models/trust_score_model.dart';
@@ -37,9 +39,24 @@ class AuthNotifier extends StateNotifier<AuthState> {
   final IdentityService _identityService;
   final TokenStorageService _tokenStorage;
 
+  StreamSubscription<void>? _sessionSub;
+
   AuthNotifier(this._identityService, this._tokenStorage)
       : super(const AuthState()) {
+    _sessionSub = SessionEvents.onExpired.listen((_) {
+      if (state.isAuthenticated) {
+        state = const AuthState(
+          errorMessage: 'Your session expired. Please sign in again.',
+        );
+      }
+    });
     checkCurrentSession();
+  }
+
+  @override
+  void dispose() {
+    _sessionSub?.cancel();
+    super.dispose();
   }
 
   Future<UserModel> _withLocalPhoto(UserModel user) async {

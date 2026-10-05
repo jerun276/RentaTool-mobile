@@ -9,6 +9,7 @@ import '../../modules/identity/screens/login_screen.dart';
 import '../../modules/identity/screens/register_screen.dart';
 import '../../modules/identity/screens/profile_screen.dart';
 import '../../modules/identity/screens/kyc_submission_screen.dart';
+import '../../modules/identity/providers/auth_provider.dart';
 
 // Component 2 (Catalog)
 import '../../modules/catalog/screens/equipment_catalog_screen.dart';
@@ -35,6 +36,20 @@ import '../../modules/escrow/screens/file_claim_screen.dart';
 final _rootNavigatorKey = GlobalKey<NavigatorState>();
 
 final appRouterProvider = Provider<GoRouter>((ref) {
+  final router = _buildRouter();
+
+  // Auto-logout: when an authenticated session is dropped (e.g. expired JWT),
+  // send the user straight to the login screen.
+  ref.listen<AuthState>(authProvider, (previous, next) {
+    if (previous != null && previous.isAuthenticated && !next.isAuthenticated) {
+      router.go('/login');
+    }
+  });
+
+  return router;
+});
+
+GoRouter _buildRouter() {
   return GoRouter(
     navigatorKey: _rootNavigatorKey,
     initialLocation: '/catalog',
@@ -189,4 +204,4 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       ),
     ],
   );
-});
+}
