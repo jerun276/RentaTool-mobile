@@ -48,17 +48,24 @@ class EquipmentHistoryScreen extends ConsumerWidget {
           message: 'Failed to load maintenance timeline.',
           onRetry: () => ref.invalidate(equipmentHistoryProvider(equipmentId)),
         ),
-        data: (history) => _buildTimelineContent(context, history, dateFormatter),
+        data: (history) => _buildTimelineContent(context, ref, history, dateFormatter),
       ),
     );
   }
 
   Widget _buildTimelineContent(
     BuildContext context,
+    WidgetRef ref,
     EquipmentHistoryTimelineModel history,
     DateFormat dateFormatter,
   ) {
     final isLockout = history.isLockoutTriggered;
+    final equipmentAsync = ref.watch(equipmentDetailProvider(equipmentId));
+    final equipment = equipmentAsync.valueOrNull;
+    final images = equipment?.images ?? [];
+    final primaryImgUrl = images.isNotEmpty
+        ? images.firstWhere((img) => img.isPrimary, orElse: () => images.first).imageUrl
+        : '';
 
     return ListView(
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 80),
@@ -71,17 +78,41 @@ class EquipmentHistoryScreen extends ConsumerWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Expanded(
-                      child: Text(
-                        history.title,
-                        style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
+                    if (primaryImgUrl.isNotEmpty) ...[
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(10),
+                        child: Image.network(
+                          primaryImgUrl,
+                          width: 60,
+                          height: 60,
+                          fit: BoxFit.cover,
+                          errorBuilder: (_, __, ___) => Container(
+                            width: 60,
+                            height: 60,
+                            color: AppColors.surfaceLight,
+                            child: Icon(Icons.precision_manufacturing_outlined, size: 28, color: AppColors.textMuted),
+                          ),
+                        ),
                       ),
-                    ),
-                    StatusBadge(
-                      label: isLockout ? 'LOCKOUT TRIGGERED' : 'OPERATIONAL',
-                      style: isLockout ? BadgeStyle.error : BadgeStyle.success,
+                      const SizedBox(width: 12),
+                    ],
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            history.title,
+                            style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
+                          ),
+                          const SizedBox(height: 6),
+                          StatusBadge(
+                            label: isLockout ? 'LOCKOUT TRIGGERED' : 'OPERATIONAL',
+                            style: isLockout ? BadgeStyle.error : BadgeStyle.success,
+                          ),
+                        ],
+                      ),
                     ),
                   ],
                 ),
@@ -177,12 +208,12 @@ class EquipmentHistoryScreen extends ConsumerWidget {
             ),
           )
         else
-          ...history.inspectionTimeline.map((log) => _buildTimelineCard(log, dateFormatter)),
+          ...history.inspectionTimeline.map((log) => _buildTimelineCard(context, log, dateFormatter)),
       ],
     );
   }
 
-  Widget _buildTimelineCard(InspectionLogModel log, DateFormat dateFormatter) {
+  Widget _buildTimelineCard(BuildContext context, InspectionLogModel log, DateFormat dateFormatter) {
     final dateStr = log.createdAtUtc != null
         ? dateFormatter.format(DateTime.tryParse(log.createdAtUtc!) ?? DateTime.now())
         : 'Unknown Date';
@@ -245,45 +276,68 @@ class EquipmentHistoryScreen extends ConsumerWidget {
                 itemCount: log.photos.length,
                 itemBuilder: (context, idx) {
                   final photo = log.photos[idx];
-                  return Container(
-                    width: 100,
-                    margin: const EdgeInsets.only(right: 8),
-                    decoration: BoxDecoration(
-                      color: AppColors.surfaceLight,
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: AppColors.border),
-                    ),
-                    clipBehavior: Clip.antiAlias,
-                    child: Stack(
-                      fit: StackFit.expand,
-                      children: [
-                        if (photo.photoUrl.isNotEmpty)
-                          Image.network(
-                            photo.photoUrl,
-                            fit: BoxFit.cover,
-                            errorBuilder: (_, __, ___) => Center(
-                              child: Icon(Icons.image_not_supported_outlined, size: 24, color: AppColors.textMuted),
+                  return GestureDetector(
+                    onTap: () {
+                      if (photo.photoUrl.isNotEmpty) {
+                        _showPhotoDialog(context, photo);
+                      }
+                    },
+                    child: Container(
+                      width: 100,
+                      margin: const EdgeInsets.only(right: 8),
+                      decoration: BoxDecoration(
+                        color: AppColors.surfaceLight,
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: AppColors.border),
+                      ),
+                      clipBehavior: Clip.antiAlias,
+                      child: Stack(
+                        fit: StackFit.expand,
+                        children: [
+                          if (photo.photoUrl.isNotEmpty)
+                            Image.network(
+                              photo.photoUrl,
+                              fit: BoxFit.cover,
+                              loadingBuilder: (context, child, progress) {
+                                if (progress == null) return child;
+                                return Center(
+                                  child: SizedBox(
+                                    width: 18,
+                                    height: 18,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                      value: progress.expectedTotalBytes != null
+                                          ? progress.cumulativeBytesLoaded / progress.expectedTotalBytes!
+                                          : null,
+                                      color: AppColors.primary,
+                                    ),
+                                  ),
+                                );
+                              },
+                              errorBuilder: (_, __, ___) => Center(
+                                child: Icon(Icons.image_not_supported_outlined, size: 24, color: AppColors.textMuted),
+                              ),
+                            )
+                          else
+                            Center(
+                              child: Icon(Icons.camera_alt_outlined, size: 24, color: AppColors.textMuted),
                             ),
-                          )
-                        else
-                          Center(
-                            child: Icon(Icons.camera_alt_outlined, size: 24, color: AppColors.textMuted),
-                          ),
-                        Positioned(
-                          bottom: 0,
-                          left: 0,
-                          right: 0,
-                          child: Container(
-                            color: const Color(0xCC000000),
-                            padding: const EdgeInsets.symmetric(vertical: 2),
-                            child: Text(
-                              photo.angle,
-                              textAlign: TextAlign.center,
-                              style: const TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: Colors.white),
+                          Positioned(
+                            bottom: 0,
+                            left: 0,
+                            right: 0,
+                            child: Container(
+                              color: const Color(0xCC000000),
+                              padding: const EdgeInsets.symmetric(vertical: 2),
+                              child: Text(
+                                photo.angle,
+                                textAlign: TextAlign.center,
+                                style: const TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: Colors.white),
+                              ),
                             ),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
                   );
                 },
@@ -291,6 +345,54 @@ class EquipmentHistoryScreen extends ConsumerWidget {
             ),
           ],
         ],
+      ),
+    );
+  }
+
+  void _showPhotoDialog(BuildContext context, InspectionPhotoModel photo) {
+    showDialog(
+      context: context,
+      builder: (ctx) => Dialog(
+        backgroundColor: Colors.transparent,
+        insetPadding: const EdgeInsets.all(16),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Align(
+              alignment: Alignment.topRight,
+              child: IconButton(
+                icon: const Icon(Icons.close, color: Colors.white, size: 28),
+                onPressed: () => Navigator.of(ctx).pop(),
+              ),
+            ),
+            ClipRRect(
+              borderRadius: BorderRadius.circular(12),
+              child: Image.network(
+                photo.photoUrl,
+                fit: BoxFit.contain,
+                errorBuilder: (_, __, ___) => Container(
+                  height: 200,
+                  color: AppColors.surface,
+                  child: const Center(
+                    child: Text('Failed to load image', style: TextStyle(color: Colors.white)),
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(height: 10),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+              decoration: BoxDecoration(
+                color: const Color(0xDD000000),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Text(
+                'Angle: ${photo.angle}${photo.observationNote != null ? ' • ${photo.observationNote}' : ''}',
+                style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w500),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

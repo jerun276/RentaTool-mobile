@@ -17,14 +17,21 @@ class InspectionPhotoModel {
     if (json is String) {
       return InspectionPhotoModel(angle: 'General', photoUrl: json);
     }
-    if (json is Map<String, dynamic>) {
+    if (json is Map) {
+      final url = json['photoUrl'] ??
+          json['PhotoUrl'] ??
+          json['photo_url'] ??
+          json['url'] ??
+          json['Url'] ??
+          '';
+      final angle = json['angle'] ?? json['Angle'] ?? 'General';
+      final note = json['observationNote'] ?? json['ObservationNote'] ?? json['note'];
+      final dateVal = json['capturedAtUtc'] ?? json['CapturedAtUtc'];
       return InspectionPhotoModel(
-        angle: json['angle'] ?? 'General',
-        photoUrl: json['photoUrl'] ?? '',
-        observationNote: json['observationNote'],
-        capturedAtUtc: json['capturedAtUtc'] != null
-            ? DateTime.tryParse(json['capturedAtUtc'].toString())
-            : null,
+        angle: angle.toString(),
+        photoUrl: url.toString(),
+        observationNote: note?.toString(),
+        capturedAtUtc: dateVal != null ? DateTime.tryParse(dateVal.toString()) : null,
       );
     }
     return const InspectionPhotoModel(angle: 'General', photoUrl: '');
@@ -73,21 +80,25 @@ class InspectionLogModel {
   factory InspectionLogModel.fromJson(Map<String, dynamic> json) {
     List<InspectionPhotoModel> parsedPhotos = [];
 
-    if (json['photos'] is List) {
-      parsedPhotos = (json['photos'] as List)
+    final rawPhotos = json['photos'] ?? json['Photos'];
+    final rawPhotosJson = json['photosJson'] ?? json['PhotosJson'];
+    final rawPhotoUrls = json['photoUrls'] ?? json['PhotoUrls'];
+
+    if (rawPhotos is List) {
+      parsedPhotos = rawPhotos
           .map((p) => InspectionPhotoModel.fromJson(p))
           .toList();
-    } else if (json['photosJson'] != null) {
+    } else if (rawPhotosJson != null && rawPhotosJson.toString().trim().isNotEmpty) {
       try {
-        final decoded = jsonDecode(json['photosJson']);
+        final decoded = jsonDecode(rawPhotosJson.toString());
         if (decoded is List) {
           parsedPhotos = decoded
               .map((p) => InspectionPhotoModel.fromJson(p))
               .toList();
         }
       } catch (_) {}
-    } else if (json['photoUrls'] is List) {
-      parsedPhotos = (json['photoUrls'] as List)
+    } else if (rawPhotoUrls is List) {
+      parsedPhotos = rawPhotoUrls
           .map((url) => InspectionPhotoModel(angle: 'General', photoUrl: url.toString()))
           .toList();
     }
