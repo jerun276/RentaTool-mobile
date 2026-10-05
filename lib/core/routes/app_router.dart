@@ -18,6 +18,7 @@ import '../../modules/catalog/screens/equipment_detail_screen.dart';
 import '../../modules/catalog/screens/add_equipment_screen.dart';
 import '../../modules/catalog/screens/condition_inspection_screen.dart';
 import '../../modules/catalog/screens/equipment_history_screen.dart';
+import '../../modules/catalog/screens/my_equipment_screen.dart';
 
 // Component 3 (Booking)
 import '../../modules/booking/screens/active_bookings_screen.dart';
@@ -109,6 +110,10 @@ GoRouter _buildRouter() {
                       final id = state.pathParameters['id'] ?? '';
                       return EquipmentHistoryScreen(equipmentId: id);
                     },
+                  ),
+                  GoRoute(
+                    path: 'my-fleet',
+                    builder: (context, state) => const MyEquipmentScreen(),
                   ),
                   GoRoute(
                     path: ':id',

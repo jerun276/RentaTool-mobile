@@ -1140,6 +1140,14 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                     ),
                     const SizedBox(height: 14),
                     _profileActionTile(
+                      icon: Icons.precision_manufacturing_outlined,
+                      iconColor: const Color(0xFF10B981),
+                      title: 'My Fleet Machineries',
+                      subtitle: 'Monitor listed units, 60-day wear meters & dispatch readiness',
+                      onTap: () => context.push('/catalog/my-fleet'),
+                    ),
+                    const SizedBox(height: 10),
+                    _profileActionTile(
                       icon: Icons.add_business_outlined,
                       iconColor: AppColors.primary,
                       title: 'List New Fleet Machinery',
