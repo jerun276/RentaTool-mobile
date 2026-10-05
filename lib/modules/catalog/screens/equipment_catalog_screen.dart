@@ -84,6 +84,12 @@ class _EquipmentCatalogScreenState extends ConsumerState<EquipmentCatalogScreen>
               }
             },
           ),
+          if (currentUser?.role == UserRole.owner)
+            IconButton(
+              icon: const Icon(Icons.precision_manufacturing_outlined, size: 22),
+              tooltip: 'My Fleet Machineries',
+              onPressed: () => context.push('/catalog/my-fleet'),
+            ),
           if (isOwnerOrAdmin)
             IconButton(
               icon: const Icon(Icons.add, size: 22),
@@ -200,6 +206,62 @@ class _EquipmentCatalogScreenState extends ConsumerState<EquipmentCatalogScreen>
               ],
             ),
           ),
+          // Owner Fleet Management Quick Access Banner
+          if (currentUser?.role == UserRole.owner)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 10),
+              child: InkWell(
+                onTap: () => context.push('/catalog/my-fleet'),
+                borderRadius: BorderRadius.circular(12),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF10B981).withValues(alpha: isDark ? 0.15 : 0.08),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: const Color(0xFF10B981).withValues(alpha: 0.3),
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(
+                        Icons.precision_manufacturing_outlined,
+                        size: 20,
+                        color: Color(0xFF10B981),
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Fleet Owner Hub',
+                              style: TextStyle(
+                                fontSize: 13,
+                                fontWeight: FontWeight.bold,
+                                color: isDark ? Colors.white : AppColors.lightTextPrimary,
+                              ),
+                            ),
+                            Text(
+                              'Tap to view your listed units, wear gauges & dispatch logs',
+                              style: TextStyle(
+                                fontSize: 11,
+                                color: isDark ? AppColors.darkTextMuted : AppColors.lightTextMuted,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const Icon(
+                        Icons.arrow_forward_ios_rounded,
+                        size: 13,
+                        color: Color(0xFF10B981),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
 
           // Renter KYC Verification Alert Banner (if unverified)
           if (isRenter && !(currentUser?.isVerified ?? false))
