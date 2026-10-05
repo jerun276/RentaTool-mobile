@@ -87,48 +87,49 @@ class CatalogService {
     required String conditionNotes,
     List<InspectionPhotoModel> photos = const [],
   }) async {
-    // Normalize type to backend InspectionType enum (PreRental, PostRental, MaintenanceCheck)
-    String normalizedType = type;
+    // Map type to backend enum integer (PreRental = 1, PostRental = 2, MaintenanceCheck = 3)
+    int typeInt = 1;
     switch (type.toLowerCase()) {
+      case 'postrental':
+      case '2':
+        typeInt = 2;
+        break;
+      case 'maintenancecheck':
       case 'periodicmaintenance':
       case 'maintenance':
-      case 'maintenancecheck':
-        normalizedType = 'MaintenanceCheck';
-        break;
-      case 'damageassessment':
-      case 'damage':
-      case 'postrental':
-        normalizedType = 'PostRental';
+      case '3':
+        typeInt = 3;
         break;
       case 'prerental':
-        normalizedType = 'PreRental';
-        break;
+      case '1':
       default:
-        normalizedType = type;
+        typeInt = 1;
         break;
     }
 
-    // Normalize severity to backend InspectionSeverity enum (None, MinorWear, ModerateDamage, StructuralDamage)
-    String normalizedSeverity = severity;
+    // Map severity to backend enum integer (None = 0, MinorWear = 1, ModerateDamage = 2, StructuralDamage = 3)
+    int severityInt = 0;
     switch (severity.toLowerCase()) {
       case 'minor':
       case 'minorwear':
-        normalizedSeverity = 'MinorWear';
+      case '1':
+        severityInt = 1;
         break;
       case 'moderate':
       case 'moderatedamage':
-        normalizedSeverity = 'ModerateDamage';
+      case '2':
+        severityInt = 2;
         break;
       case 'severe':
       case 'critical':
       case 'structuraldamage':
-        normalizedSeverity = 'StructuralDamage';
+      case '3':
+        severityInt = 3;
         break;
       case 'none':
-        normalizedSeverity = 'None';
-        break;
+      case '0':
       default:
-        normalizedSeverity = severity;
+        severityInt = 0;
         break;
     }
 
@@ -136,8 +137,8 @@ class CatalogService {
       ApiConstants.equipmentInspectionLogs(equipmentId),
       data: {
         if (bookingId != null && bookingId.isNotEmpty) 'bookingId': bookingId,
-        'type': normalizedType,
-        'severity': normalizedSeverity,
+        'type': typeInt,
+        'severity': severityInt,
         'conditionNotes': conditionNotes,
         'photos': photos.map((p) => p.toJson()).toList(),
       },
