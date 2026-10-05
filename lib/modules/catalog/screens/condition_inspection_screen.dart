@@ -214,8 +214,7 @@ class _ConditionInspectionScreenState extends ConsumerState<ConditionInspectionS
                 children: [
                   _typeChip('PreRental', 'Pre-Rental Handover'),
                   _typeChip('PostRental', 'Post-Rental Return'),
-                  _typeChip('PeriodicMaintenance', 'Periodic Servicing'),
-                  _typeChip('DamageAssessment', 'Damage Claim Audit'),
+                  _typeChip('MaintenanceCheck', 'Periodic Maintenance'),
                 ],
               ),
               const SizedBox(height: 18),
@@ -229,11 +228,10 @@ class _ConditionInspectionScreenState extends ConsumerState<ConditionInspectionS
               Wrap(
                 spacing: 8,
                 children: [
-                  _severityChip('None', AppColors.success),
-                  _severityChip('Minor', Colors.blue),
-                  _severityChip('Moderate', AppColors.warning),
-                  _severityChip('Severe', Colors.deepOrange),
-                  _severityChip('Critical', AppColors.wearLockout),
+                  _severityChip('None', 'None (Pristine)', AppColors.success),
+                  _severityChip('MinorWear', 'Minor Wear', Colors.blue),
+                  _severityChip('ModerateDamage', 'Moderate Damage', AppColors.warning),
+                  _severityChip('StructuralDamage', 'Structural Damage', AppColors.wearLockout),
                 ],
               ),
               const SizedBox(height: 20),
@@ -292,10 +290,10 @@ class _ConditionInspectionScreenState extends ConsumerState<ConditionInspectionS
     );
   }
 
-  Widget _severityChip(String value, Color color) {
+  Widget _severityChip(String value, String label, Color color) {
     final isSelected = _severity == value;
     return ChoiceChip(
-      label: Text(value, style: TextStyle(fontSize: 12, color: isSelected ? Colors.white : color)),
+      label: Text(label, style: TextStyle(fontSize: 12, color: isSelected ? Colors.white : color)),
       selected: isSelected,
       selectedColor: color,
       backgroundColor: AppColors.surface,

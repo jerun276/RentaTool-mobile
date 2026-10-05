@@ -66,7 +66,9 @@ class InspectionLogModel {
   });
 
   bool get isSevereOrCritical =>
-      severity.toLowerCase() == 'severe' || severity.toLowerCase() == 'critical';
+      severity.toLowerCase() == 'severe' ||
+      severity.toLowerCase() == 'critical' ||
+      severity.toLowerCase() == 'structuraldamage';
 
   factory InspectionLogModel.fromJson(Map<String, dynamic> json) {
     List<InspectionPhotoModel> parsedPhotos = [];

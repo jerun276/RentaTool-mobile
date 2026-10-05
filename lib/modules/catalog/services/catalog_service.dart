@@ -82,17 +82,62 @@ class CatalogService {
   Future<InspectionLogModel> createInspectionLog({
     required String equipmentId,
     String? bookingId,
-    required String type, // 'PreRental', 'PostRental', 'PeriodicMaintenance', 'DamageAssessment'
-    required String severity, // 'None', 'Minor', 'Moderate', 'Severe', 'Critical'
+    required String type, // 'PreRental', 'PostRental', 'MaintenanceCheck'
+    required String severity, // 'None', 'MinorWear', 'ModerateDamage', 'StructuralDamage'
     required String conditionNotes,
     List<InspectionPhotoModel> photos = const [],
   }) async {
+    // Normalize type to backend InspectionType enum (PreRental, PostRental, MaintenanceCheck)
+    String normalizedType = type;
+    switch (type.toLowerCase()) {
+      case 'periodicmaintenance':
+      case 'maintenance':
+      case 'maintenancecheck':
+        normalizedType = 'MaintenanceCheck';
+        break;
+      case 'damageassessment':
+      case 'damage':
+      case 'postrental':
+        normalizedType = 'PostRental';
+        break;
+      case 'prerental':
+        normalizedType = 'PreRental';
+        break;
+      default:
+        normalizedType = type;
+        break;
+    }
+
+    // Normalize severity to backend InspectionSeverity enum (None, MinorWear, ModerateDamage, StructuralDamage)
+    String normalizedSeverity = severity;
+    switch (severity.toLowerCase()) {
+      case 'minor':
+      case 'minorwear':
+        normalizedSeverity = 'MinorWear';
+        break;
+      case 'moderate':
+      case 'moderatedamage':
+        normalizedSeverity = 'ModerateDamage';
+        break;
+      case 'severe':
+      case 'critical':
+      case 'structuraldamage':
+        normalizedSeverity = 'StructuralDamage';
+        break;
+      case 'none':
+        normalizedSeverity = 'None';
+        break;
+      default:
+        normalizedSeverity = severity;
+        break;
+    }
+
     final response = await _dio.post(
       ApiConstants.equipmentInspectionLogs(equipmentId),
       data: {
         if (bookingId != null && bookingId.isNotEmpty) 'bookingId': bookingId,
-        'type': type,
-        'severity': severity,
+        'type': normalizedType,
+        'severity': normalizedSeverity,
         'conditionNotes': conditionNotes,
         'photos': photos.map((p) => p.toJson()).toList(),
       },

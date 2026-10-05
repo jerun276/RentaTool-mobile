@@ -189,7 +189,7 @@ class EquipmentHistoryScreen extends ConsumerWidget {
 
     final badgeStyle = log.isSevereOrCritical
         ? BadgeStyle.error
-        : (log.severity.toLowerCase() == 'moderate'
+        : (log.severity.toLowerCase().contains('moderate')
             ? BadgeStyle.warning
             : BadgeStyle.success);
 
