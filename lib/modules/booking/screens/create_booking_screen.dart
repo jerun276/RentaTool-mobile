@@ -149,6 +149,7 @@ class _CreateBookingScreenState extends ConsumerState<CreateBookingScreen> {
             ownerId: ownId,
             depositAmount: depositAmount > 0 ? depositAmount : 15000.0,
           );
+          await service.confirmBooking(newBooking.id);
         }
       } catch (err) {
         debugPrint('Auto escrow pre-auth notice: $err');

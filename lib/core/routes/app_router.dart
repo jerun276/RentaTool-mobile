@@ -201,7 +201,10 @@ GoRouter _buildRouter() {
                   ),
                   GoRoute(
                     path: 'claim-new',
-                    builder: (context, state) => const FileClaimScreen(),
+                    builder: (context, state) {
+                      final bId = state.uri.queryParameters['bookingId'];
+                      return FileClaimScreen(bookingId: bId);
+                    },
                   ),
                   GoRoute(
                     path: 'pre-authorize',

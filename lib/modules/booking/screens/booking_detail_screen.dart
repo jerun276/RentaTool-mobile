@@ -301,7 +301,7 @@ class _BookingDetailScreenState extends ConsumerState<BookingDetailScreen> {
               TextButton.icon(
                 icon: const Icon(Icons.report_problem_outlined, size: 18, color: AppColors.warning),
                 label: const Text('File Damage Claim / Escrow Dispute', style: TextStyle(color: AppColors.warning)),
-                onPressed: () => context.push('/escrow/claim/${b.id}'),
+                onPressed: () => context.push('/escrow/claim-new?bookingId=${b.id}'),
               ),
           ],
         ),
