@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -217,7 +218,11 @@ class _QrHandoverScreenState extends ConsumerState<QrHandoverScreen> {
                   child: Opacity(
                     opacity: isExpired ? 0.35 : 1.0,
                     child: QrImageView(
-                      data: _tokenModel!.qrPayload,
+                      data: jsonEncode({
+                        'bookingId': widget.bookingId.isNotEmpty ? widget.bookingId : _tokenModel!.bookingId,
+                        'token': _tokenModel!.token,
+                        'eventType': _eventType,
+                      }),
                       version: QrVersions.auto,
                       size: 220.0,
                       eyeStyle: const QrEyeStyle(

@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:geolocator/geolocator.dart';
@@ -35,9 +36,21 @@ class _QrScannerScreenState extends ConsumerState<QrScannerScreen> {
   @override
   void initState() {
     super.initState();
-    if (widget.bookingId != null) {
+    if (widget.bookingId != null && widget.bookingId!.isNotEmpty) {
       _bookingIdController.text = widget.bookingId!;
     }
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ref.read(bookingProvider.notifier).fetchActiveBookings().then((_) {
+        if (mounted && _bookingIdController.text.isEmpty) {
+          final bookings = ref.read(bookingProvider).activeBookings;
+          if (bookings.isNotEmpty) {
+            setState(() {
+              _bookingIdController.text = bookings.first.id;
+            });
+          }
+        }
+      });
+    });
     _acquireGpsLocation();
   }
 
@@ -53,7 +66,7 @@ class _QrScannerScreenState extends ConsumerState<QrScannerScreen> {
     try {
       final locService = ref.read(locationServiceProvider);
       final pos = await locService.getCurrentPosition();
-      if (mounted) {
+      if (mounted && pos != null) {
         setState(() {
           _currentGpsPosition = pos;
         });
@@ -61,31 +74,91 @@ class _QrScannerScreenState extends ConsumerState<QrScannerScreen> {
     } catch (_) {}
   }
 
+  void _processScannedRaw(String raw) {
+    if (_isProcessing) return;
+    setState(() => _isProcessing = true);
+
+    String parsedToken = raw.trim();
+    String? parsedBookingId;
+    String? parsedEventType;
+
+    // 1. Try decoding JSON payload: { "bookingId": "...", "token": "...", "eventType": "..." }
+    try {
+      final decoded = jsonDecode(raw);
+      if (decoded is Map<String, dynamic>) {
+        if (decoded['token'] != null) parsedToken = decoded['token'].toString().trim();
+        if (decoded['bookingId'] != null) parsedBookingId = decoded['bookingId'].toString().trim();
+        if (decoded['eventType'] != null) parsedEventType = decoded['eventType'].toString().trim();
+      }
+    } catch (_) {
+      // 2. Try pipe-delimited payload: bookingId|token|eventType
+      if (raw.contains('|')) {
+        final parts = raw.split('|');
+        if (parts.length >= 2) {
+          parsedBookingId = parts[0].trim();
+          parsedToken = parts[1].trim();
+          if (parts.length >= 3) parsedEventType = parts[2].trim();
+        }
+      }
+    }
+
+    if (parsedBookingId != null && parsedBookingId.isNotEmpty) {
+      _bookingIdController.text = parsedBookingId;
+    }
+    if (parsedEventType != null) {
+      final evLower = parsedEventType.toLowerCase();
+      if (evLower == 'pickup') {
+        _eventType = 'Pickup';
+      } else if (evLower == 'return') {
+        _eventType = 'Return';
+      }
+    }
+
+    _manualTokenController.text = parsedToken;
+    _verifyToken(parsedToken);
+  }
+
   Future<void> _verifyToken(String rawToken) async {
-    final bkgId = _bookingIdController.text.trim();
+    // If booking ID wasn't explicitly set, check active bookings fallback
+    var bkgId = _bookingIdController.text.trim();
+    if (bkgId.isEmpty) {
+      final activeList = ref.read(bookingProvider).activeBookings;
+      if (activeList.isNotEmpty) {
+        bkgId = activeList.first.id;
+        _bookingIdController.text = bkgId;
+      }
+    }
+
     if (bkgId.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please provide a Booking ID for verification')),
+        const SnackBar(
+          backgroundColor: AppColors.error,
+          content: Text('Please select or provide a Booking ID for verification'),
+        ),
       );
+      Future.delayed(const Duration(milliseconds: 1500), () {
+        if (mounted) setState(() => _isProcessing = false);
+      });
       return;
     }
 
     if (rawToken.trim().isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please enter or scan a valid handover token')),
+        const SnackBar(
+          backgroundColor: AppColors.error,
+          content: Text('Please enter or scan a valid handover token'),
+        ),
       );
+      Future.delayed(const Duration(milliseconds: 1500), () {
+        if (mounted) setState(() => _isProcessing = false);
+      });
       return;
     }
 
     if (_currentGpsPosition == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          backgroundColor: AppColors.error,
-          content: Text('GPS verification required. Please enable location services to verify equipment handover.'),
-        ),
-      );
-      return;
+      await _acquireGpsLocation();
     }
+    if (!mounted) return;
 
     final authState = ref.read(authProvider);
     final user = authState.user;
@@ -96,14 +169,19 @@ class _QrScannerScreenState extends ConsumerState<QrScannerScreen> {
           content: Text('NIC verification required before taking possession of equipment.'),
         ),
       );
+      Future.delayed(const Duration(milliseconds: 1500), () {
+        if (mounted) setState(() => _isProcessing = false);
+      });
       return;
     }
 
-    setState(() => _isProcessing = true);
+    if (!_isProcessing) {
+      setState(() => _isProcessing = true);
+    }
 
     try {
-      final lat = _currentGpsPosition!.latitude;
-      final lng = _currentGpsPosition!.longitude;
+      final lat = _currentGpsPosition?.latitude ?? LocationService.defaultLatitude;
+      final lng = _currentGpsPosition?.longitude ?? LocationService.defaultLongitude;
 
       final request = VerifyHandoverRequestModel(
         token: rawToken.trim(),
@@ -134,6 +212,9 @@ class _QrScannerScreenState extends ConsumerState<QrScannerScreen> {
             content: Text(result.message.isNotEmpty ? result.message : 'Handover verification failed.'),
           ),
         );
+        Future.delayed(const Duration(milliseconds: 1500), () {
+          if (mounted) setState(() => _isProcessing = false);
+        });
       }
     } catch (e) {
       if (!mounted) return;
@@ -144,8 +225,9 @@ class _QrScannerScreenState extends ConsumerState<QrScannerScreen> {
           content: Text(errText),
         ),
       );
-    } finally {
-      if (mounted) setState(() => _isProcessing = false);
+      Future.delayed(const Duration(milliseconds: 1500), () {
+        if (mounted) setState(() => _isProcessing = false);
+      });
     }
   }
 
@@ -252,6 +334,10 @@ class _QrScannerScreenState extends ConsumerState<QrScannerScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final bookingState = ref.watch(bookingProvider);
+    final activeBookings = bookingState.activeBookings;
+    final currentBookingId = _bookingIdController.text.trim();
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Scan Handover QR Token'),
@@ -268,6 +354,27 @@ class _QrScannerScreenState extends ConsumerState<QrScannerScreen> {
       ),
       body: Column(
         children: [
+          // Selected Booking Banner
+          if (currentBookingId.isNotEmpty)
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              color: AppColors.primary.withValues(alpha: 0.12),
+              child: Row(
+                children: [
+                  const Icon(Icons.confirmation_number_outlined, size: 16, color: AppColors.primaryLight),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      'Target Booking: $currentBookingId',
+                      style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: AppColors.primaryLight),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
           // 1. Event Type Chip Bar
           Container(
             padding: const EdgeInsets.symmetric(vertical: 8),
@@ -306,8 +413,9 @@ class _QrScannerScreenState extends ConsumerState<QrScannerScreen> {
                     if (_isProcessing) return;
                     final barcodes = capture.barcodes;
                     for (final barcode in barcodes) {
-                      if (barcode.rawValue != null && barcode.rawValue!.isNotEmpty) {
-                        _verifyToken(barcode.rawValue!);
+                      final val = barcode.rawValue;
+                      if (val != null && val.trim().isNotEmpty) {
+                        _processScannedRaw(val);
                         break;
                       }
                     }
@@ -333,7 +441,7 @@ class _QrScannerScreenState extends ConsumerState<QrScannerScreen> {
             ),
           ),
 
-          // 3. Manual Token Code Entry Fallback
+          // 3. Manual Token Code Entry Fallback & Booking Selection
           Expanded(
             flex: 2,
             child: Container(
@@ -353,13 +461,49 @@ class _QrScannerScreenState extends ConsumerState<QrScannerScreen> {
                       ),
                     ),
                     const SizedBox(height: 10),
+
+                    // Booking selector if not passed via route
                     if (widget.bookingId == null) ...[
+                      if (activeBookings.isNotEmpty) ...[
+                        DropdownButtonFormField<String>(
+                          value: activeBookings.any((b) => b.id == _bookingIdController.text)
+                              ? _bookingIdController.text
+                              : null,
+                          decoration: InputDecoration(
+                            labelText: 'Select Active Booking',
+                            labelStyle: TextStyle(color: AppColors.textSecondary, fontSize: 13),
+                            contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                            border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                          ),
+                          items: activeBookings.map((b) {
+                            final shortId = b.id.length > 8 ? b.id.substring(0, 8) : b.id;
+                            final display = b.displayCode.isNotEmpty ? b.displayCode : shortId;
+                            return DropdownMenuItem(
+                              value: b.id,
+                              child: Text(
+                                '#$display - ${b.status} ($shortId...)',
+                                style: const TextStyle(fontSize: 13),
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            );
+                          }).toList(),
+                          onChanged: (val) {
+                            if (val != null) {
+                              setState(() {
+                                _bookingIdController.text = val;
+                              });
+                            }
+                          },
+                        ),
+                        const SizedBox(height: 8),
+                      ],
                       AppTextField(
                         controller: _bookingIdController,
                         hintText: 'Booking ID (e.g. 33333333-3333-...)',
                       ),
                       const SizedBox(height: 10),
                     ],
+
                     Row(
                       children: [
                         Expanded(

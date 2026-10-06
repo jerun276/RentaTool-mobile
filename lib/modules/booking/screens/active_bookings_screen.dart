@@ -288,7 +288,7 @@ class _ActiveBookingsScreenState extends ConsumerState<ActiveBookingsScreen> {
                         booking: item,
                         onTap: () => context.push('/bookings/detail/${item.id}'),
                         onShowQR: () => context.push('/bookings/qr/${item.id}'),
-                        onScanQR: () => context.push('/bookings/scan'),
+                        onScanQR: () => context.push('/bookings/scan?bookingId=${item.id}'),
                       );
                     },
                   ),

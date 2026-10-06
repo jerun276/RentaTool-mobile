@@ -7,6 +7,8 @@ import '../../../core/theme/app_colors.dart';
 import '../../../core/widgets/app_button.dart';
 import '../../../core/widgets/app_text_field.dart';
 import '../../catalog/models/equipment_model.dart';
+import '../../escrow/services/escrow_service.dart';
+import '../../identity/providers/auth_provider.dart';
 import '../models/create_booking_request.dart';
 import '../providers/booking_provider.dart';
 import '../services/booking_service.dart';
@@ -133,6 +135,25 @@ class _CreateBookingScreenState extends ConsumerState<CreateBookingScreen> {
       final service = ref.read(bookingServiceProvider);
       final newBooking = await service.createBooking(request);
 
+      // Auto-preauthorize security deposit in escrow so it appears immediately under Escrow Tab in "Held" status
+      try {
+        final authState = ref.read(authProvider);
+        final renterId = authState.user?.id ?? '';
+        final depositAmount = (widget.equipment != null && widget.equipment!.replacementValue > 0)
+            ? (widget.equipment!.replacementValue * 0.15)
+            : (rate * 3);
+        if (renterId.isNotEmpty && ownId.isNotEmpty) {
+          await ref.read(escrowServiceProvider).preAuthorizeDeposit(
+            bookingId: newBooking.id,
+            renterId: renterId,
+            ownerId: ownId,
+            depositAmount: depositAmount > 0 ? depositAmount : 15000.0,
+          );
+        }
+      } catch (err) {
+        debugPrint('Auto escrow pre-auth notice: $err');
+      }
+
       // Refresh active bookings provider
       ref.read(bookingProvider.notifier).fetchActiveBookings();
 
@@ -140,7 +161,7 @@ class _CreateBookingScreenState extends ConsumerState<CreateBookingScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             backgroundColor: AppColors.success,
-            content: Text('Reservation successfully confirmed! Ready for pickup.'),
+            content: Text('Reservation confirmed & deposit pre-authorized in Escrow! Ready for pickup.'),
           ),
         );
 

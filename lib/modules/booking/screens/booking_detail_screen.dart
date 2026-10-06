@@ -276,7 +276,7 @@ class _BookingDetailScreenState extends ConsumerState<BookingDetailScreen> {
                     icon: Icons.qr_code_scanner,
                     fontSize: 12,
                     padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 12),
-                    onPressed: () => context.push('/bookings/scan'),
+                    onPressed: () => context.push('/bookings/scan?bookingId=${b.id}'),
                   ),
                 ),
               ],

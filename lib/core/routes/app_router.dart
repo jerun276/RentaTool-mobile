@@ -33,6 +33,7 @@ import '../../modules/catalog/models/equipment_model.dart';
 import '../../modules/escrow/screens/escrow_overview_screen.dart';
 import '../../modules/escrow/screens/claim_detail_screen.dart';
 import '../../modules/escrow/screens/file_claim_screen.dart';
+import '../../modules/escrow/screens/pre_authorize_screen.dart';
 
 final _rootNavigatorKey = GlobalKey<NavigatorState>();
 
@@ -155,7 +156,18 @@ GoRouter _buildRouter() {
                   ),
                   GoRoute(
                     path: 'scan',
-                    builder: (context, state) => const QrScannerScreen(),
+                    builder: (context, state) {
+                      final bId = state.uri.queryParameters['bookingId'] ??
+                          (state.extra is String ? state.extra as String : null);
+                      return QrScannerScreen(bookingId: bId);
+                    },
+                  ),
+                  GoRoute(
+                    path: 'scan/:id',
+                    builder: (context, state) {
+                      final id = state.pathParameters['id'];
+                      return QrScannerScreen(bookingId: id);
+                    },
                   ),
                   GoRoute(
                     path: 'create',
@@ -190,6 +202,21 @@ GoRouter _buildRouter() {
                   GoRoute(
                     path: 'claim-new',
                     builder: (context, state) => const FileClaimScreen(),
+                  ),
+                  GoRoute(
+                    path: 'pre-authorize',
+                    builder: (context, state) {
+                      final bId = state.uri.queryParameters['bookingId'];
+                      final rId = state.uri.queryParameters['renterId'];
+                      final oId = state.uri.queryParameters['ownerId'];
+                      final dep = double.tryParse(state.uri.queryParameters['deposit'] ?? '');
+                      return PreAuthorizeScreen(
+                        bookingId: bId,
+                        renterId: rId,
+                        ownerId: oId,
+                        depositAmount: dep,
+                      );
+                    },
                   ),
                 ],
               ),
