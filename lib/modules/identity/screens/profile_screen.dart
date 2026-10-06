@@ -33,6 +33,10 @@ class ProfileScreen extends ConsumerWidget {
       );
     }
 
+    final trustScoreAsync = ref.watch(trustScoreProvider(user.id));
+    final trustScore = trustScoreAsync.valueOrNull?.score ?? user.trustScore;
+    final trustTier = trustScoreAsync.valueOrNull?.tier ?? _tierForScore(trustScore);
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('User Profile & Trust'),
@@ -130,10 +134,10 @@ class ProfileScreen extends ConsumerWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Row(
+                  Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text(
+                      const Text(
                         'ALGORITHMIC TRUST SCORE',
                         style: TextStyle(
                           fontSize: 11,
@@ -142,7 +146,7 @@ class ProfileScreen extends ConsumerWidget {
                           color: AppColors.textMuted,
                         ),
                       ),
-                      StatusBadge(label: 'TIER A', style: BadgeStyle.success),
+                      StatusBadge(label: trustTier.toUpperCase(), style: BadgeStyle.success),
                     ],
                   ),
                   const SizedBox(height: 12),
@@ -151,7 +155,7 @@ class ProfileScreen extends ConsumerWidget {
                     textBaseline: TextBaseline.alphabetic,
                     children: [
                       Text(
-                        '${user.trustScore}',
+                        '$trustScore',
                         style: const TextStyle(
                           fontSize: 36,
                           fontWeight: FontWeight.w800,
@@ -167,7 +171,7 @@ class ProfileScreen extends ConsumerWidget {
                   ),
                   const SizedBox(height: 12),
                   LinearProgressIndicator(
-                    value: user.trustScore / 100,
+                    value: trustScore.clamp(0, 100).toDouble() / 100,
                     backgroundColor: AppColors.surfaceLight,
                     valueColor: const AlwaysStoppedAnimation<Color>(AppColors.primary),
                     minHeight: 8,
@@ -178,6 +182,11 @@ class ProfileScreen extends ConsumerWidget {
                     'Higher trust scores unlock reduced escrow pre-authorizations and automatic booking confirmations across Sri Lanka.',
                     style: TextStyle(color: AppColors.textSecondary, fontSize: 12),
                   ),
+                  if (trustScoreAsync.isLoading)
+                    const Padding(
+                      padding: EdgeInsets.only(top: 10),
+                      child: Text('Refreshing trust score...', style: TextStyle(color: AppColors.textMuted, fontSize: 11)),
+                    ),
                 ],
               ),
             ),
@@ -222,5 +231,11 @@ class ProfileScreen extends ConsumerWidget {
         ),
       ),
     );
+  }
+
+  String _tierForScore(int score) {
+    if (score >= 80) return 'Tier A';
+    if (score >= 60) return 'Tier B';
+    return 'Tier C';
   }
 }

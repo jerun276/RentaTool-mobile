@@ -340,10 +340,10 @@ packages:
     dependency: transitive
     description:
       name: google_maps_flutter_web
-      sha256: ec802303734d907dea71adfe8037233966837acb10c5282ebdbc65fe33787750
+      sha256: "903db0e985e831d3883cf0971dd5b4dbee83468b748c3753dc94da0e9a269b93"
       url: "https://pub.dev"
     source: hosted
-    version: "0.6.4"
+    version: "0.6.3+1"
   hooks:
     dependency: transitive
     description:
@@ -404,10 +404,10 @@ packages:
     dependency: transitive
     description:
       name: image_picker_ios
-      sha256: "852a7762962f3bb3ad54ef1d342669e41557f466033a676baa8876b367cf4050"
+      sha256: ee3885b6fcd71958fbc79770dd194c63371439d536d69c47b279171a486482ae
       url: "https://pub.dev"
     source: hosted
-    version: "0.8.13+8"
+    version: "0.8.13+7"
   image_picker_linux:
     dependency: transitive
     description:

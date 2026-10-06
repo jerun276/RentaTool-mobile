@@ -1,23 +1,44 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+
 import '../../../core/theme/app_colors.dart';
 import '../../../core/widgets/error_view.dart';
 import '../../../core/widgets/loading_indicator.dart';
 import '../providers/booking_provider.dart';
 import '../widgets/booking_card.dart';
 
-class ActiveBookingsScreen extends ConsumerWidget {
+class ActiveBookingsScreen extends ConsumerStatefulWidget {
   const ActiveBookingsScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<ActiveBookingsScreen> createState() => _ActiveBookingsScreenState();
+}
+
+class _ActiveBookingsScreenState extends ConsumerState<ActiveBookingsScreen> {
+  final _searchController = TextEditingController();
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final bookingState = ref.watch(bookingProvider);
+    final notifier = ref.read(bookingProvider.notifier);
+    final filtered = bookingState.filteredBookings;
 
     return Scaffold(
       appBar: AppBar(
         title: const Text('Rental Tracker & Bookings'),
         actions: [
+          IconButton(
+            icon: const Icon(Icons.map_outlined, size: 22),
+            tooltip: 'Interactive Radius Map',
+            onPressed: () => context.push('/bookings/map'),
+          ),
           IconButton(
             icon: const Icon(Icons.qr_code_scanner, size: 22),
             tooltip: 'Scan Handover QR',
@@ -26,77 +47,154 @@ class ActiveBookingsScreen extends ConsumerWidget {
           IconButton(
             icon: const Icon(Icons.refresh, size: 20),
             tooltip: 'Refresh',
-            onPressed: () => ref.read(bookingProvider.notifier).fetchActiveBookings(),
+            onPressed: () => notifier.fetchActiveBookings(),
           ),
         ],
       ),
-      body: Builder(
-        builder: (context) {
-          if (bookingState.isLoading && bookingState.activeBookings.isEmpty) {
-            return const LoadingIndicator(message: 'Loading active rental reservations...');
-          }
+      floatingActionButton: FloatingActionButton.extended(
+        heroTag: 'map_radius_fab',
+        backgroundColor: AppColors.primary,
+        foregroundColor: Colors.black,
+        icon: const Icon(Icons.radar),
+        label: const Text('Nearby Map Search', style: TextStyle(fontWeight: FontWeight.bold)),
+        onPressed: () => context.push('/bookings/map'),
+      ),
+      body: Column(
+        children: [
+          // 1. Search Bar & Status Filter Bar
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            color: AppColors.surface,
+            child: Column(
+              children: [
+                TextField(
+                  controller: _searchController,
+                  decoration: InputDecoration(
+                    hintText: 'Search by Booking Code or ID...',
+                    prefixIcon: const Icon(Icons.search, size: 20),
+                    suffixIcon: _searchController.text.isNotEmpty
+                        ? IconButton(
+                            icon: const Icon(Icons.clear, size: 18),
+                            onPressed: () {
+                              _searchController.clear();
+                              notifier.setSearchQuery('');
+                            },
+                          )
+                        : null,
+                    isDense: true,
+                    contentPadding: const EdgeInsets.symmetric(vertical: 10),
+                  ),
+                  onChanged: (val) => notifier.setSearchQuery(val),
+                ),
+                const SizedBox(height: 10),
 
-          if (bookingState.errorMessage != null && bookingState.activeBookings.isEmpty) {
-            return ErrorView(
-              message: bookingState.errorMessage!,
-              onRetry: () => ref.read(bookingProvider.notifier).fetchActiveBookings(),
-            );
-          }
+                // Filter Chips
+                SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: Row(
+                    children: ['All', 'Confirmed', 'Active', 'Completed'].map((filter) {
+                      final isSelected = bookingState.selectedFilter == filter;
+                      return Padding(
+                        padding: const EdgeInsets.only(right: 8.0),
+                        child: ChoiceChip(
+                          label: Text(filter, style: const TextStyle(fontSize: 12)),
+                          selected: isSelected,
+                          onSelected: (_) => notifier.setFilter(filter),
+                          visualDensity: VisualDensity.compact,
+                        ),
+                      );
+                    }).toList(),
+                  ),
+                ),
+              ],
+            ),
+          ),
 
-          if (bookingState.activeBookings.isEmpty) {
-            return Center(
-              child: Padding(
-                padding: const EdgeInsets.all(32.0),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const Icon(Icons.calendar_today_outlined, size: 48, color: AppColors.textMuted),
-                    const SizedBox(height: 16),
-                    const Text(
-                      'No Active Bookings',
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                        color: AppColors.textPrimary,
+          // 2. Main Content View
+          Expanded(
+            child: Builder(
+              builder: (context) {
+                if (bookingState.isLoading && bookingState.activeBookings.isEmpty) {
+                  return const LoadingIndicator(message: 'Loading active rental reservations...');
+                }
+
+                if (bookingState.errorMessage != null && bookingState.activeBookings.isEmpty) {
+                  return ErrorView(
+                    message: bookingState.errorMessage!,
+                    onRetry: () => notifier.fetchActiveBookings(),
+                  );
+                }
+
+                if (filtered.isEmpty) {
+                  return Center(
+                    child: Padding(
+                      padding: const EdgeInsets.all(32.0),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(Icons.calendar_today_outlined, size: 48, color: AppColors.textMuted),
+                          const SizedBox(height: 16),
+                          Text(
+                            bookingState.activeBookings.isEmpty ? 'No Active Bookings' : 'No Matching Bookings',
+                            style: const TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                              color: AppColors.textPrimary,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            bookingState.activeBookings.isEmpty
+                                ? 'Browse equipment catalog or locate nearby machinery on the interactive map.'
+                                : 'Try changing your search term or status filter.',
+                            textAlign: TextAlign.center,
+                            style: const TextStyle(color: AppColors.textSecondary, fontSize: 13),
+                          ),
+                          const SizedBox(height: 24),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              ElevatedButton.icon(
+                                icon: const Icon(Icons.search, size: 18),
+                                label: const Text('Browse Catalog'),
+                                onPressed: () => context.go('/catalog'),
+                              ),
+                              const SizedBox(width: 12),
+                              OutlinedButton.icon(
+                                icon: const Icon(Icons.map, size: 18),
+                                label: const Text('Radius Map'),
+                                onPressed: () => context.push('/bookings/map'),
+                              ),
+                            ],
+                          ),
+                        ],
                       ),
                     ),
-                    const SizedBox(height: 8),
-                    const Text(
-                      'Browse the equipment catalog to reserve machinery with verified smart handovers.',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(color: AppColors.textSecondary, fontSize: 13),
-                    ),
-                    const SizedBox(height: 24),
-                    ElevatedButton.icon(
-                      icon: const Icon(Icons.search, size: 18),
-                      label: const Text('Explore Catalog'),
-                      onPressed: () => context.go('/catalog'),
-                    ),
-                  ],
-                ),
-              ),
-            );
-          }
+                  );
+                }
 
-          return RefreshIndicator(
-            color: AppColors.primaryLight,
-            backgroundColor: AppColors.surface,
-            onRefresh: () => ref.read(bookingProvider.notifier).fetchActiveBookings(),
-            child: ListView.builder(
-              padding: const EdgeInsets.all(16),
-              itemCount: bookingState.activeBookings.length,
-              itemBuilder: (context, index) {
-                final item = bookingState.activeBookings[index];
-                return BookingCard(
-                  booking: item,
-                  onTap: () => context.push('/bookings/detail/${item.id}'),
-                  onShowQR: () => context.push('/bookings/qr/${item.id}'),
-                  onScanQR: () => context.push('/bookings/scan'),
+                return RefreshIndicator(
+                  color: AppColors.primaryLight,
+                  backgroundColor: AppColors.surface,
+                  onRefresh: () => notifier.fetchActiveBookings(),
+                  child: ListView.builder(
+                    padding: const EdgeInsets.all(16),
+                    itemCount: filtered.length,
+                    itemBuilder: (context, index) {
+                      final item = filtered[index];
+                      return BookingCard(
+                        booking: item,
+                        onTap: () => context.push('/bookings/detail/${item.id}'),
+                        onShowQR: () => context.push('/bookings/qr/${item.id}'),
+                        onScanQR: () => context.push('/bookings/scan'),
+                      );
+                    },
+                  ),
                 );
               },
             ),
-          );
-        },
+          ),
+        ],
       ),
     );
   }

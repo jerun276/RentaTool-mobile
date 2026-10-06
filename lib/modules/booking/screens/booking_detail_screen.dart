@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
+
 import '../../../core/theme/app_colors.dart';
 import '../../../core/widgets/app_button.dart';
 import '../../../core/widgets/error_view.dart';
@@ -9,6 +10,8 @@ import '../../../core/widgets/loading_indicator.dart';
 import '../../../core/widgets/status_badge.dart';
 import '../models/booking_model.dart';
 import '../services/booking_service.dart';
+import '../widgets/booking_timeline_widget.dart';
+import '../widgets/surge_extension_sheet.dart';
 
 class BookingDetailScreen extends ConsumerStatefulWidget {
   final String bookingId;
@@ -44,38 +47,17 @@ class _BookingDetailScreenState extends ConsumerState<BookingDetailScreen> {
       });
     } catch (e) {
       setState(() {
-        _error = 'Failed to load booking details.';
+        _error = e.toString().replaceFirst('Exception: ', '');
         _isLoading = false;
       });
     }
   }
 
-  Future<void> _handleExtend() async {
+  void _openExtensionSheet() {
     if (_booking == null) return;
-    final pickedDate = await showDatePicker(
-      context: context,
-      initialDate: _booking!.endDate.add(const Duration(days: 2)),
-      firstDate: _booking!.endDate.add(const Duration(days: 1)),
-      lastDate: _booking!.endDate.add(const Duration(days: 30)),
-    );
-
-    if (pickedDate != null && mounted) {
-      try {
-        final service = ref.read(bookingServiceProvider);
-        await service.extendSchedule(
-          bookingId: _booking!.id,
-          newEndDate: pickedDate,
-        );
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Schedule extension requested successfully')),
-        );
-        _fetchBooking();
-      } catch (e) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Could not extend schedule')),
-        );
-      }
-    }
+    SurgeExtensionSheet.show(context, _booking!, () {
+      _fetchBooking();
+    });
   }
 
   @override
@@ -98,14 +80,37 @@ class _BookingDetailScreenState extends ConsumerState<BookingDetailScreen> {
     final currencyFormatter = NumberFormat.currency(locale: 'en_LK', symbol: 'LKR ', decimalDigits: 0);
     final dateFormatter = DateFormat('EEEE, MMM dd, yyyy');
 
+    BadgeStyle badgeStyle;
+    switch (b.status.toLowerCase()) {
+      case 'active':
+        badgeStyle = BadgeStyle.success;
+        break;
+      case 'confirmed':
+        badgeStyle = BadgeStyle.info;
+        break;
+      case 'completed':
+        badgeStyle = BadgeStyle.purple;
+        break;
+      case 'cancelled':
+        badgeStyle = BadgeStyle.error;
+        break;
+      default:
+        badgeStyle = BadgeStyle.warning;
+    }
+
     return Scaffold(
       appBar: AppBar(
-        title: Text('Booking #${b.id.substring(0, b.id.length >= 8 ? 8 : b.id.length).toUpperCase()}'),
+        title: Text(b.displayCode),
         actions: [
           IconButton(
             icon: const Icon(Icons.qr_code, size: 20),
             tooltip: 'Show Handover QR',
             onPressed: () => context.push('/bookings/qr/${b.id}'),
+          ),
+          IconButton(
+            icon: const Icon(Icons.refresh, size: 20),
+            tooltip: 'Refresh',
+            onPressed: _fetchBooking,
           ),
         ],
       ),
@@ -114,12 +119,12 @@ class _BookingDetailScreenState extends ConsumerState<BookingDetailScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // Status Banner
+            // 1. Status Banner Card
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
                 color: AppColors.surface,
-                borderRadius: BorderRadius.circular(10),
+                borderRadius: BorderRadius.circular(12),
                 border: Border.all(color: AppColors.border),
               ),
               child: Row(
@@ -132,40 +137,55 @@ class _BookingDetailScreenState extends ConsumerState<BookingDetailScreen> {
                         'BOOKING STATUS',
                         style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: AppColors.textMuted),
                       ),
-                      const SizedBox(height: 2),
+                      const SizedBox(height: 4),
                       Text(
                         b.status.toUpperCase(),
                         style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: AppColors.primaryLight),
                       ),
                     ],
                   ),
-                  StatusBadge(label: b.status, style: BadgeStyle.success),
+                  StatusBadge(label: b.status, style: badgeStyle),
                 ],
               ),
             ),
             const SizedBox(height: 20),
 
-            // Rental Schedule Card
+            // 2. Visual Lifecycle Timeline (Student 3 Deliverable)
+            BookingTimelineWidget(booking: b),
+            const SizedBox(height: 20),
+
+            // 3. Rental Schedule Card
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
                 color: AppColors.surface,
-                borderRadius: BorderRadius.circular(10),
+                borderRadius: BorderRadius.circular(12),
                 border: Border.all(color: AppColors.border),
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text(
-                    'RENTAL DURATION & SCHEDULE',
-                    style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: AppColors.textMuted),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Text(
+                        'RENTAL DURATION & SCHEDULE',
+                        style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: AppColors.textMuted),
+                      ),
+                      Text(
+                        '${b.durationInDays} ${b.durationInDays == 1 ? 'day' : 'days'}',
+                        style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: AppColors.primaryLight),
+                      ),
+                    ],
                   ),
                   const SizedBox(height: 12),
                   Row(
                     children: [
                       const Icon(Icons.play_circle_outline, color: AppColors.primaryLight, size: 18),
                       const SizedBox(width: 8),
-                      Text('Start: ${dateFormatter.format(b.startDate)}', style: const TextStyle(fontSize: 13)),
+                      Expanded(
+                        child: Text('Start: ${dateFormatter.format(b.startDate)}', style: const TextStyle(fontSize: 13)),
+                      ),
                     ],
                   ),
                   const SizedBox(height: 8),
@@ -173,7 +193,9 @@ class _BookingDetailScreenState extends ConsumerState<BookingDetailScreen> {
                     children: [
                       const Icon(Icons.stop_circle_outlined, color: AppColors.warning, size: 18),
                       const SizedBox(width: 8),
-                      Text('End: ${dateFormatter.format(b.endDate)}', style: const TextStyle(fontSize: 13)),
+                      Expanded(
+                        child: Text('End: ${dateFormatter.format(b.endDate)}', style: const TextStyle(fontSize: 13)),
+                      ),
                     ],
                   ),
                 ],
@@ -181,129 +203,100 @@ class _BookingDetailScreenState extends ConsumerState<BookingDetailScreen> {
             ),
             const SizedBox(height: 20),
 
-            // Handover Verification Protocol (Student 3 key feature)
+            // 4. Financial & Escrow Overview
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
                 color: AppColors.surface,
-                borderRadius: BorderRadius.circular(10),
+                borderRadius: BorderRadius.circular(12),
                 border: Border.all(color: AppColors.border),
               ),
               child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text(
-                    'DUAL-PARTY HANDOVER PROTOCOL',
-                    style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: AppColors.textMuted),
-                  ),
-                  const SizedBox(height: 12),
-                  _protocolStep(
-                    title: '1. Equipment Pickup Confirmation',
-                    isDone: b.pickupVerified,
-                    desc: 'Equipment owner generates single-use token; renter scans camera QR to verify receipt.',
-                  ),
-                  const SizedBox(height: 12),
-                  _protocolStep(
-                    title: '2. Return & Post-Inspection',
-                    isDone: b.returnVerified,
-                    desc: 'Renter generates return token; owner inspects condition before confirming return.',
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 20),
-
-            // Payment & Escrow Overview
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: AppColors.surface,
-                borderRadius: BorderRadius.circular(10),
-                border: Border.all(color: AppColors.border),
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      const Text(
-                        'TOTAL RENTAL FEE',
-                        style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: AppColors.textMuted),
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            'TOTAL RENTAL FEE',
+                            style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: AppColors.textMuted),
+                          ),
+                          Text(
+                            currencyFormatter.format(b.totalRentalFee),
+                            style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w800, color: AppColors.primaryLight),
+                          ),
+                        ],
                       ),
-                      Text(
-                        currencyFormatter.format(b.totalRentalFee),
-                        style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w800, color: AppColors.primaryLight),
+                      OutlinedButton.icon(
+                        icon: const Icon(Icons.shield_outlined, size: 16),
+                        label: const Text('Escrow Ledger'),
+                        onPressed: () => context.push('/escrow'),
                       ),
                     ],
                   ),
-                  OutlinedButton.icon(
-                    icon: const Icon(Icons.shield_outlined, size: 16),
-                    label: const Text('Escrow Details'),
-                    onPressed: () => context.push('/escrow'),
-                  ),
+                  if (b.dailyRate > 0) ...[
+                    const Divider(height: 16),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Text('Calculated Daily Rate', style: TextStyle(fontSize: 11, color: AppColors.textMuted)),
+                        Text('${currencyFormatter.format(b.dailyRate)} / day', style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
+                      ],
+                    ),
+                  ],
                 ],
               ),
             ),
-            const SizedBox(height: 28),
+            const SizedBox(height: 24),
 
-            // Actions
-            AppButton(
-              text: 'Show Handover QR Code',
-              icon: Icons.qr_code,
-              onPressed: () => context.push('/bookings/qr/${b.id}'),
+            // 5. Handover QR Action Buttons
+            Row(
+              children: [
+                Expanded(
+                  child: AppButton(
+                    text: 'Show Handover QR',
+                    icon: Icons.qr_code,
+                    onPressed: () => context.push('/bookings/qr/${b.id}'),
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: AppButton(
+                    text: 'Scan Counterpart QR',
+                    variant: AppButtonVariant.outline,
+                    icon: Icons.qr_code_scanner,
+                    onPressed: () => context.push('/bookings/scan'),
+                  ),
+                ),
+              ],
             ),
             const SizedBox(height: 12),
 
-            OutlinedButton.icon(
-              icon: const Icon(Icons.calendar_month, size: 18),
-              label: const Text('Request Schedule Extension'),
-              onPressed: _handleExtend,
-            ),
+            // 6. Dynamic Surge Schedule Extension
+            if (b.canExtendSchedule)
+              OutlinedButton.icon(
+                icon: const Icon(Icons.calendar_month, size: 18),
+                label: const Text('Extend Schedule (Dynamic Surge Preview)'),
+                style: OutlinedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  side: const BorderSide(color: AppColors.border),
+                ),
+                onPressed: _openExtensionSheet,
+              ),
             const SizedBox(height: 12),
 
-            TextButton.icon(
-              icon: const Icon(Icons.report_problem_outlined, size: 18, color: AppColors.warning),
-              label: const Text('File Damage Claim / Dispute', style: TextStyle(color: AppColors.warning)),
-              onPressed: () => context.push('/escrow/claim/${b.id}'),
-            ),
+            // 7. Damage Claim Dispute Link (Component 4 Bridge)
+            if (b.canDispute)
+              TextButton.icon(
+                icon: const Icon(Icons.report_problem_outlined, size: 18, color: AppColors.warning),
+                label: const Text('File Damage Claim / Escrow Dispute', style: TextStyle(color: AppColors.warning)),
+                onPressed: () => context.push('/escrow/claim/${b.id}'),
+              ),
           ],
         ),
       ),
-    );
-  }
-
-  Widget _protocolStep({required String title, required bool isDone, required String desc}) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Icon(
-          isDone ? Icons.check_circle : Icons.radio_button_unchecked,
-          color: isDone ? AppColors.primaryLight : AppColors.textMuted,
-          size: 20,
-        ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                title,
-                style: TextStyle(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 13,
-                  color: isDone ? AppColors.primaryLight : AppColors.textPrimary,
-                ),
-              ),
-              const SizedBox(height: 2),
-              Text(
-                desc,
-                style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
-              ),
-            ],
-          ),
-        ),
-      ],
     );
   }
 }

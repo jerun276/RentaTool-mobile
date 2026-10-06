@@ -22,6 +22,9 @@ import '../../modules/booking/screens/active_bookings_screen.dart';
 import '../../modules/booking/screens/booking_detail_screen.dart';
 import '../../modules/booking/screens/qr_handover_screen.dart';
 import '../../modules/booking/screens/qr_scanner_screen.dart';
+import '../../modules/booking/screens/create_booking_screen.dart';
+import '../../modules/booking/screens/booking_map_screen.dart';
+import '../../modules/catalog/models/equipment_model.dart';
 
 // Component 4 (Escrow)
 import '../../modules/escrow/screens/escrow_overview_screen.dart';
@@ -104,7 +107,12 @@ final appRouterProvider = Provider<GoRouter>((ref) {
             routes: [
               GoRoute(
                 path: '/bookings',
-                builder: (context, state) => const ActiveBookingsScreen(),
+                builder: (context, state) {
+                  if (state.extra is EquipmentModel) {
+                    return CreateBookingScreen(equipment: state.extra as EquipmentModel);
+                  }
+                  return const ActiveBookingsScreen();
+                },
                 routes: [
                   GoRoute(
                     path: 'detail/:id',
@@ -123,6 +131,17 @@ final appRouterProvider = Provider<GoRouter>((ref) {
                   GoRoute(
                     path: 'scan',
                     builder: (context, state) => const QrScannerScreen(),
+                  ),
+                  GoRoute(
+                    path: 'create',
+                    builder: (context, state) {
+                      final equipment = state.extra is EquipmentModel ? state.extra as EquipmentModel : null;
+                      return CreateBookingScreen(equipment: equipment);
+                    },
+                  ),
+                  GoRoute(
+                    path: 'map',
+                    builder: (context, state) => const BookingMapScreen(),
                   ),
                 ],
               ),
