@@ -6,6 +6,7 @@ import '../../../core/widgets/app_button.dart';
 import '../../../core/widgets/app_text_field.dart';
 import '../providers/escrow_provider.dart';
 import '../models/escrow_hold_model.dart';
+import '../../booking/services/booking_service.dart';
 
 class PreAuthorizeScreen extends ConsumerStatefulWidget {
   /// Optional pre-filled values from booking context via route parameters.
@@ -61,6 +62,48 @@ class _PreAuthorizeScreenState extends ConsumerState<PreAuthorizeScreen> {
     _depositAmountCtrl.dispose();
     _paymentTokenCtrl.dispose();
     super.dispose();
+  }
+
+  bool _isFetchingBooking = false;
+
+  Future<void> _fetchBookingDetails() async {
+    final bId = _bookingIdCtrl.text.trim();
+    if (bId.isEmpty) return;
+
+    setState(() {
+      _isFetchingBooking = true;
+    });
+
+    try {
+      final bookingService = ref.read(bookingServiceProvider);
+      final booking = await bookingService.getBookingById(bId);
+      
+      setState(() {
+        _renterIdCtrl.text = booking.renterId;
+        _ownerIdCtrl.text = booking.ownerId;
+        // Optionally calculate deposit amount if you want to default it
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          backgroundColor: AppColors.success,
+          content: Text('Booking details fetched successfully.'),
+        ),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          backgroundColor: AppColors.error,
+          content: Text('Failed to fetch booking: ${e.toString().replaceAll('Exception: ', '')}'),
+        ),
+      );
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isFetchingBooking = false;
+        });
+      }
+    }
   }
 
   Future<void> _submit() async {
@@ -191,14 +234,49 @@ class _PreAuthorizeScreenState extends ConsumerState<PreAuthorizeScreen> {
               // ── Booking Details ──────────────────────────────────────
               const _SectionHeader(label: 'Rental Details'),
               const SizedBox(height: 12),
-              AppTextField(
-                controller: _bookingIdCtrl,
-                label: 'Booking ID',
-                hintText: 'xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx',
-                validator: (v) =>
-                    v == null || v.trim().isEmpty
-                        ? 'Booking ID is required'
-                        : null,
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(
+                    child: AppTextField(
+                      controller: _bookingIdCtrl,
+                      label: 'Booking ID',
+                      hintText: 'xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx',
+                      validator: (v) =>
+                          v == null || v.trim().isEmpty
+                              ? 'Booking ID is required'
+                              : null,
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Padding(
+                    padding: const EdgeInsets.only(top: 24.0), // Align with text field
+                    child: SizedBox(
+                      width: 50,
+                      height: 50,
+                      child: ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.primaryLight,
+                          padding: EdgeInsets.zero,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                        ),
+                        onPressed: _isFetchingBooking ? null : _fetchBookingDetails,
+                        child: _isFetchingBooking
+                            ? const SizedBox(
+                                width: 20,
+                                height: 20,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  color: Colors.white,
+                                ),
+                              )
+                            : const Icon(Icons.download, color: Colors.white),
+                      ),
+                    ),
+                  ),
+                ],
               ),
               const SizedBox(height: 14),
               AppTextField(
