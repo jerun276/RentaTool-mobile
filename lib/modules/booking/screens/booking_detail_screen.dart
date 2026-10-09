@@ -258,34 +258,55 @@ class _BookingDetailScreenState extends ConsumerState<BookingDetailScreen> {
 
             // 5. Handover QR Action Buttons
             if (['confirmed', 'active'].contains(b.status.toLowerCase())) ...[
-              Row(
-                children: [
-                  if (currentUser?.role == UserRole.owner || currentUser?.role == UserRole.admin)
-                    Expanded(
-                      child: AppButton(
-                        text: 'Show Handover QR',
-                        icon: Icons.qr_code,
-                        fontSize: 12,
-                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 12),
-                        onPressed: () => context.push('/bookings/qr/${b.id}'),
+              Builder(
+                builder: (context) {
+                  final bool isPickup = b.status.toLowerCase() == 'confirmed';
+                  final bool isReturn = b.status.toLowerCase() == 'active';
+                  final bool isOwner = currentUser?.role == UserRole.owner;
+                  final bool isRenter = currentUser?.role == UserRole.renter;
+                  final bool isAdmin = currentUser?.role == UserRole.admin;
+
+                  // For Pickup: Owner generates (shows), Renter scans.
+                  // For Return: Renter generates (shows), Owner scans.
+                  final bool canShowQR = isAdmin || (isOwner && isPickup) || (isRenter && isReturn);
+                  final bool canScanQR = isAdmin || (isRenter && isPickup) || (isOwner && isReturn);
+
+                  if (!canShowQR && !canScanQR) return const SizedBox.shrink();
+
+                  return Column(
+                    children: [
+                      Row(
+                        children: [
+                          if (canShowQR)
+                            Expanded(
+                              child: AppButton(
+                                text: 'Show Handover QR',
+                                icon: Icons.qr_code,
+                                fontSize: 12,
+                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 12),
+                                onPressed: () => context.push('/bookings/qr/${b.id}'),
+                              ),
+                            ),
+                          if (canShowQR && canScanQR)
+                            const SizedBox(width: 8),
+                          if (canScanQR)
+                            Expanded(
+                              child: AppButton(
+                                text: 'Scan Handover QR',
+                                variant: AppButtonVariant.outline,
+                                icon: Icons.qr_code_scanner,
+                                fontSize: 12,
+                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 12),
+                                onPressed: () => context.push('/bookings/scan?bookingId=${b.id}'),
+                              ),
+                            ),
+                        ],
                       ),
-                    ),
-                  if (currentUser?.role == UserRole.owner || currentUser?.role == UserRole.admin)
-                    const SizedBox(width: 8),
-                  if (currentUser?.role == UserRole.renter || currentUser?.role == UserRole.admin)
-                    Expanded(
-                      child: AppButton(
-                        text: 'Scan Handover QR',
-                        variant: AppButtonVariant.outline,
-                        icon: Icons.qr_code_scanner,
-                        fontSize: 12,
-                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 12),
-                        onPressed: () => context.push('/bookings/scan?bookingId=${b.id}'),
-                      ),
-                    ),
-                ],
+                      const SizedBox(height: 12),
+                    ],
+                  );
+                },
               ),
-              const SizedBox(height: 12),
             ],
 
             // 6. Dynamic Surge Schedule Extension
