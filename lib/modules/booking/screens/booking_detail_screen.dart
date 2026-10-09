@@ -257,31 +257,36 @@ class _BookingDetailScreenState extends ConsumerState<BookingDetailScreen> {
             const SizedBox(height: 24),
 
             // 5. Handover QR Action Buttons
-            Row(
-              children: [
-                Expanded(
-                  child: AppButton(
-                    text: 'Show Handover QR',
-                    icon: Icons.qr_code,
-                    fontSize: 12,
-                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 12),
-                    onPressed: () => context.push('/bookings/qr/${b.id}'),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: AppButton(
-                    text: 'Scan Handover QR',
-                    variant: AppButtonVariant.outline,
-                    icon: Icons.qr_code_scanner,
-                    fontSize: 12,
-                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 12),
-                    onPressed: () => context.push('/bookings/scan?bookingId=${b.id}'),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 12),
+            if (['confirmed', 'active'].contains(b.status.toLowerCase())) ...[
+              Row(
+                children: [
+                  if (currentUser?.role == UserRole.owner || currentUser?.role == UserRole.admin)
+                    Expanded(
+                      child: AppButton(
+                        text: 'Show Handover QR',
+                        icon: Icons.qr_code,
+                        fontSize: 12,
+                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 12),
+                        onPressed: () => context.push('/bookings/qr/${b.id}'),
+                      ),
+                    ),
+                  if (currentUser?.role == UserRole.owner || currentUser?.role == UserRole.admin)
+                    const SizedBox(width: 8),
+                  if (currentUser?.role == UserRole.renter || currentUser?.role == UserRole.admin)
+                    Expanded(
+                      child: AppButton(
+                        text: 'Scan Handover QR',
+                        variant: AppButtonVariant.outline,
+                        icon: Icons.qr_code_scanner,
+                        fontSize: 12,
+                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 12),
+                        onPressed: () => context.push('/bookings/scan?bookingId=${b.id}'),
+                      ),
+                    ),
+                ],
+              ),
+              const SizedBox(height: 12),
+            ],
 
             // 6. Dynamic Surge Schedule Extension
             if (b.canExtendSchedule)

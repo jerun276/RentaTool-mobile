@@ -167,13 +167,13 @@ class BookingCard extends StatelessWidget {
                   ),
                   Row(
                     children: [
-                      if (onShowQR != null)
+                      if (onShowQR != null && !['completed', 'cancelled'].contains(booking.status.toLowerCase()))
                         IconButton.filledTonal(
                           icon: const Icon(Icons.qr_code, size: 18),
                           tooltip: 'Show Handover QR',
                           onPressed: onShowQR,
                         ),
-                      if (onScanQR != null) ...[
+                      if (onScanQR != null && !['completed', 'cancelled'].contains(booking.status.toLowerCase())) ...[
                         const SizedBox(width: 8),
                         IconButton.filled(
                           icon: const Icon(Icons.qr_code_scanner, size: 18),

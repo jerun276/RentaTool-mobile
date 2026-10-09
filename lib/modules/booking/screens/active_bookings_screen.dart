@@ -287,8 +287,8 @@ class _ActiveBookingsScreenState extends ConsumerState<ActiveBookingsScreen> {
                         key: ValueKey('${item.id}_${isDark ? 'dark' : 'light'}'),
                         booking: item,
                         onTap: () => context.push('/bookings/detail/${item.id}'),
-                        onShowQR: () => context.push('/bookings/qr/${item.id}'),
-                        onScanQR: () => context.push('/bookings/scan?bookingId=${item.id}'),
+                        onShowQR: isOwner ? () => context.push('/bookings/qr/${item.id}') : null,
+                        onScanQR: isRenter ? () => context.push('/bookings/scan?bookingId=${item.id}') : null,
                       );
                     },
                   ),
