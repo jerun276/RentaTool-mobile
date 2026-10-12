@@ -12,15 +12,33 @@ class TrustScoreModel {
   });
 
   factory TrustScoreModel.fromJson(Map<String, dynamic> json) {
+    final rawScore = json['score'] ?? json['trustScore'] ?? 50;
+    final parsedScore = rawScore is int
+        ? rawScore
+        : (int.tryParse(rawScore.toString()) ?? 50);
+    final rawTier = json['tier'] as String?;
     return TrustScoreModel(
-      userId: json['userId'] ?? '',
-      score: json['score'] ?? json['trustScore'] ?? 50,
-      tier: json['tier'] ?? 'Tier B',
+      userId: json['userId']?.toString() ?? '',
+      score: parsedScore,
+      tier: (rawTier != null && rawTier.isNotEmpty)
+          ? rawTier
+          : computeTier(parsedScore),
       ledgerHistory: (json['history'] as List<dynamic>?)
               ?.map((e) => TrustLedgerEntry.fromJson(e))
               .toList() ??
-          [],
+          (json['ledgerEntries'] is List<dynamic>
+              ? (json['ledgerEntries'] as List<dynamic>)
+                  .map((e) => TrustLedgerEntry.fromJson(e))
+                  .toList()
+              : const []),
     );
+  }
+
+  static String computeTier(int score) {
+    if (score >= 90) return 'Tier A+';
+    if (score >= 75) return 'Tier A';
+    if (score >= 50) return 'Tier B';
+    return 'Tier C';
   }
 }
 

@@ -7,6 +7,8 @@ import '../../../core/widgets/app_button.dart';
 import '../../../core/widgets/error_view.dart';
 import '../../../core/widgets/loading_indicator.dart';
 import '../../../core/widgets/status_badge.dart';
+import '../../identity/providers/auth_provider.dart';
+import '../../identity/models/user_model.dart';
 import '../models/damage_claim_model.dart';
 import '../providers/escrow_provider.dart';
 
@@ -18,6 +20,8 @@ class ClaimDetailScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final state = ref.watch(claimDetailProvider(claimId));
+    final authState = ref.watch(authProvider);
+    final isAdmin = authState.user?.role == UserRole.admin;
 
     // Surface snackbar messages reactively
     ref.listen(claimDetailProvider(claimId), (prev, next) {
@@ -90,7 +94,7 @@ class ClaimDetailScreen extends ConsumerWidget {
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text(
+                      Text(
                         'CLAIM STATUS',
                         style: TextStyle(
                             fontSize: 10,
@@ -108,7 +112,7 @@ class ClaimDetailScreen extends ConsumerWidget {
                       if (c.createdAtUtc != null)
                         Text(
                           'Filed: ${_formatDate(c.createdAtUtc)}',
-                          style: const TextStyle(
+                          style: TextStyle(
                               fontSize: 11, color: AppColors.textMuted),
                         ),
                     ],
@@ -126,11 +130,11 @@ class ClaimDetailScreen extends ConsumerWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  _SectionLabel('BOOKING REFERENCE'),
+                  const _SectionLabel('BOOKING REFERENCE'),
                   const SizedBox(height: 6),
                   Text(
                     c.bookingId,
-                    style: const TextStyle(
+                    style: TextStyle(
                         fontFamily: 'monospace',
                         fontSize: 13,
                         color: AppColors.textPrimary),
@@ -145,11 +149,11 @@ class ClaimDetailScreen extends ConsumerWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  _SectionLabel('DAMAGE DESCRIPTION'),
+                  const _SectionLabel('DAMAGE DESCRIPTION'),
                   const SizedBox(height: 8),
                   Text(
                     c.damageDescription,
-                    style: const TextStyle(
+                    style: TextStyle(
                         fontSize: 14,
                         color: AppColors.textPrimary,
                         height: 1.4),
@@ -189,7 +193,7 @@ class ClaimDetailScreen extends ConsumerWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  _SectionLabel('FINANCIAL BREAKDOWN'),
+                  const _SectionLabel('FINANCIAL BREAKDOWN'),
                   const SizedBox(height: 12),
                   _FinancialRow(
                     label: 'Proposed Deduction',
@@ -197,7 +201,7 @@ class ClaimDetailScreen extends ConsumerWidget {
                     valueColor: AppColors.warning,
                   ),
                   if (c.finalDeduction != null) ...[
-                    const Divider(color: AppColors.border, height: 20),
+                    Divider(color: AppColors.border, height: 20),
                     _FinancialRow(
                       label: 'Adjudicated Deduction',
                       value: currency.format(c.finalDeduction!),
@@ -240,7 +244,7 @@ class ClaimDetailScreen extends ConsumerWidget {
                     const SizedBox(height: 6),
                     Text(
                       c.adjudicationNotes!,
-                      style: const TextStyle(
+                      style: TextStyle(
                           color: AppColors.textPrimary,
                           fontSize: 12,
                           height: 1.4),
@@ -249,7 +253,7 @@ class ClaimDetailScreen extends ConsumerWidget {
                       const SizedBox(height: 4),
                       Text(
                         'Adjudicated: ${_formatDate(c.adjudicatedAtUtc)}',
-                        style: const TextStyle(
+                        style: TextStyle(
                             fontSize: 10, color: AppColors.textMuted),
                       ),
                     ],
@@ -298,7 +302,7 @@ class ClaimDetailScreen extends ConsumerWidget {
                     const SizedBox(height: 4),
                     Text(
                       'Ref: ${state.payoutResult!.settlementReference}',
-                      style: const TextStyle(
+                      style: TextStyle(
                           fontSize: 10, color: AppColors.textMuted),
                     ),
                   ],
@@ -308,7 +312,61 @@ class ClaimDetailScreen extends ConsumerWidget {
             ],
 
             // ── Actions ──────────────────────────────────────────────────
+            if (isAdmin && c.status.canAdjudicate) ...[
+              const _SectionLabel('ADJUDICATION CONTROLS'),
+              const SizedBox(height: 10),
+              Row(
+                children: [
+                  Expanded(
+                    child: AppButton(
+                      text: 'Approve',
+                      variant: AppButtonVariant.primary,
+                      isLoading: state.isProcessingAction,
+                      onPressed: state.isProcessingAction
+                          ? null
+                          : () => _confirmAdjudicate(
+                              context, ref, 'Approve', c.claimId),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: AppButton(
+                      text: 'Reject',
+                      variant: AppButtonVariant.destructive,
+                      isLoading: state.isProcessingAction,
+                      onPressed: state.isProcessingAction
+                          ? null
+                          : () => _confirmAdjudicate(
+                              context, ref, 'Reject', c.claimId),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 10),
+              AppButton(
+                text: 'Revise Deduction',
+                variant: AppButtonVariant.secondary,
+                icon: Icons.edit_outlined,
+                isLoading: state.isProcessingAction,
+                onPressed: state.isProcessingAction
+                    ? null
+                    : () => _showReviseDialog(context, ref, c.claimId),
+              ),
+              const SizedBox(height: 16),
+            ],
 
+            if (isAdmin && c.status.canPayout) ...[
+              AppButton(
+                text: 'Disburse Payout & Settle Escrow',
+                variant: AppButtonVariant.secondary,
+                icon: Icons.payments_outlined,
+                isLoading: state.isProcessingAction,
+                onPressed: state.isProcessingAction
+                    ? null
+                    : () => _confirmPayout(context, ref),
+              ),
+              const SizedBox(height: 16),
+            ],
 
             if (c.status.isTerminal)
               Container(
@@ -322,7 +380,7 @@ class ClaimDetailScreen extends ConsumerWidget {
                   c.status == ClaimStatus.settled
                       ? 'This claim has been fully settled.'
                       : 'This claim has been rejected. No payout will be made.',
-                  style: const TextStyle(
+                  style: TextStyle(
                       color: AppColors.textSecondary, fontSize: 12),
                   textAlign: TextAlign.center,
                 ),
@@ -333,7 +391,133 @@ class ClaimDetailScreen extends ConsumerWidget {
     );
   }
 
-}
+  Future<void> _confirmAdjudicate(
+    BuildContext context,
+    WidgetRef ref,
+    String decision,
+    String claimId,
+  ) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: AppColors.surface,
+        title: Text('$decision Claim?'),
+        content: Text(
+          'Are you sure you want to $decision this damage claim? '
+          'This action cannot be undone.',
+          style:
+              TextStyle(color: AppColors.textSecondary, fontSize: 13),
+        ),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.of(ctx).pop(false),
+              child: const Text('Cancel')),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: decision == 'Approve'
+                  ? AppColors.success
+                  : AppColors.error,
+            ),
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: Text(decision,
+                style: const TextStyle(color: Colors.white)),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+    await ref.read(claimDetailProvider(claimId).notifier).adjudicate(
+          decision: decision,
+          adjudicatorId: 'system',
+        );
+  }
+
+  Future<void> _showReviseDialog(
+      BuildContext context, WidgetRef ref, String claimId) async {
+    final ctrl = TextEditingController();
+    final notesCtrl = TextEditingController();
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: AppColors.surface,
+        title: const Text('Revise Deduction'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextFormField(
+              controller: ctrl,
+              keyboardType:
+                  const TextInputType.numberWithOptions(decimal: true),
+              style: TextStyle(color: AppColors.textPrimary),
+              decoration: InputDecoration(
+                labelText: 'Revised Deduction (LKR)',
+                labelStyle: TextStyle(color: AppColors.textSecondary),
+              ),
+            ),
+            const SizedBox(height: 12),
+            TextFormField(
+              controller: notesCtrl,
+              style: TextStyle(color: AppColors.textPrimary),
+              decoration: InputDecoration(
+                labelText: 'Notes (optional)',
+                labelStyle: TextStyle(color: AppColors.textSecondary),
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.of(ctx).pop(false),
+              child: const Text('Cancel')),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primary),
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: const Text('Revise',
+                style: TextStyle(color: Colors.black)),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+    final amount = double.tryParse(ctrl.text.trim());
+    if (amount == null || amount < 0) return;
+    await ref.read(claimDetailProvider(claimId).notifier).adjudicate(
+          decision: 'Revise',
+          adjudicatorId: 'system',
+          revisedDeduction: amount,
+          notes: notesCtrl.text.trim().isNotEmpty ? notesCtrl.text.trim() : null,
+        );
+  }
+
+  Future<void> _confirmPayout(BuildContext context, WidgetRef ref) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: AppColors.surface,
+        title: const Text('Confirm Payout'),
+        content: Text(
+          'This will disburse the settlement payments to the owner and refund '
+          'the remaining deposit to the renter. This action cannot be reversed.',
+          style: TextStyle(color: AppColors.textSecondary, fontSize: 13),
+        ),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.of(ctx).pop(false),
+              child: const Text('Cancel')),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primary),
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: const Text('Confirm Payout',
+                style: TextStyle(color: Colors.black)),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+    await ref.read(claimDetailProvider(claimId).notifier).processPayout();
+  }
 }
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
@@ -393,7 +577,7 @@ class _SectionLabel extends StatelessWidget {
   Widget build(BuildContext context) {
     return Text(
       text,
-      style: const TextStyle(
+      style: TextStyle(
           fontSize: 10,
           fontWeight: FontWeight.bold,
           letterSpacing: 0.8,
@@ -405,13 +589,13 @@ class _SectionLabel extends StatelessWidget {
 class _FinancialRow extends StatelessWidget {
   final String label;
   final String value;
-  final Color valueColor;
+  final Color? valueColor;
   final bool bold;
 
   const _FinancialRow({
     required this.label,
     required this.value,
-    this.valueColor = AppColors.textPrimary,
+    this.valueColor,
     this.bold = false,
   });
 
@@ -421,11 +605,11 @@ class _FinancialRow extends StatelessWidget {
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
         Text(label,
-            style: const TextStyle(
+            style: TextStyle(
                 color: AppColors.textSecondary, fontSize: 13)),
         Text(value,
             style: TextStyle(
-                color: valueColor,
+                color: valueColor ?? AppColors.textPrimary,
                 fontWeight:
                     bold ? FontWeight.bold : FontWeight.w600,
                 fontSize: 14)),
@@ -470,7 +654,7 @@ class _EvidenceThumbnail extends StatelessWidget {
       width: 80,
       height: 80,
       color: AppColors.surfaceLight,
-      child: const Icon(Icons.image_outlined,
+      child: Icon(Icons.image_outlined,
           color: AppColors.textMuted, size: 28),
     );
   }

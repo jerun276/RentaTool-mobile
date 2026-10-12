@@ -15,35 +15,38 @@ class StatusBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
     Color bg;
     Color fg;
     Color border;
 
     switch (style) {
       case BadgeStyle.success:
-        bg = AppColors.success.withValues(alpha: 0.15);
-        fg = AppColors.primaryLight;
-        border = AppColors.success.withValues(alpha: 0.3);
+        bg = isDark ? AppColors.success.withValues(alpha: 0.15) : const Color(0xFFD1FAE5);
+        fg = isDark ? AppColors.primaryLight : const Color(0xFF047857);
+        border = isDark ? AppColors.success.withValues(alpha: 0.3) : const Color(0xFFA7F3D0);
         break;
       case BadgeStyle.warning:
-        bg = AppColors.warning.withValues(alpha: 0.15);
-        fg = const Color(0xFFFFB95F);
-        border = AppColors.warning.withValues(alpha: 0.3);
+        bg = isDark ? AppColors.warning.withValues(alpha: 0.15) : const Color(0xFFFEF3C7);
+        fg = isDark ? const Color(0xFFFFB95F) : const Color(0xFFB45309);
+        border = isDark ? AppColors.warning.withValues(alpha: 0.3) : const Color(0xFFFDE68A);
         break;
       case BadgeStyle.error:
-        bg = AppColors.error.withValues(alpha: 0.15);
-        fg = const Color(0xFFFF8080);
-        border = AppColors.error.withValues(alpha: 0.3);
+        bg = isDark ? AppColors.error.withValues(alpha: 0.15) : const Color(0xFFFEE2E2);
+        fg = isDark ? const Color(0xFFFF8080) : const Color(0xFFB91C1C);
+        border = isDark ? AppColors.error.withValues(alpha: 0.3) : const Color(0xFFFECACA);
         break;
       case BadgeStyle.purple:
-        bg = AppColors.purple.withValues(alpha: 0.15);
-        fg = const Color(0xFFD0BCFF);
-        border = AppColors.purple.withValues(alpha: 0.3);
+        bg = isDark ? AppColors.purple.withValues(alpha: 0.15) : const Color(0xFFF3E8FF);
+        fg = isDark ? const Color(0xFFD0BCFF) : const Color(0xFF6D28D9);
+        border = isDark ? AppColors.purple.withValues(alpha: 0.3) : const Color(0xFFDDD6FE);
         break;
       case BadgeStyle.info:
-        bg = AppColors.info.withValues(alpha: 0.15);
-        fg = const Color(0xFF93C5FD);
-        border = AppColors.info.withValues(alpha: 0.3);
+        bg = isDark ? AppColors.info.withValues(alpha: 0.15) : const Color(0xFFDBEAFE);
+        fg = isDark ? const Color(0xFF93C5FD) : const Color(0xFF1D4ED8);
+        border = isDark ? AppColors.info.withValues(alpha: 0.3) : const Color(0xFFBFDBFE);
         break;
     }
 

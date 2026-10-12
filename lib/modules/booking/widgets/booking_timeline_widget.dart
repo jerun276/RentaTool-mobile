@@ -31,7 +31,7 @@ class BookingTimelineWidget extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text(
+              Text(
                 'RENTAL & HANDOVER LIFECYCLE',
                 style: TextStyle(
                   fontSize: 10,
@@ -118,8 +118,8 @@ class BookingTimelineWidget extends StatelessWidget {
           decoration: BoxDecoration(
             shape: BoxShape.circle,
             color: isCompleted
-                ? AppColors.primary.withOpacity(0.2)
-                : (isCurrent ? AppColors.warning.withOpacity(0.15) : AppColors.surfaceElevated),
+                ? AppColors.primary.withValues(alpha: 0.2)
+                : (isCurrent ? AppColors.warning.withValues(alpha: 0.15) : AppColors.surfaceElevated),
             border: Border.all(
               color: iconColor,
               width: 1.5,
@@ -154,7 +154,7 @@ class BookingTimelineWidget extends StatelessWidget {
               const SizedBox(height: 2),
               Text(
                 desc,
-                style: const TextStyle(fontSize: 11, color: AppColors.textMuted, height: 1.3),
+                style: TextStyle(fontSize: 11, color: AppColors.textMuted, height: 1.3),
               ),
             ],
           ),

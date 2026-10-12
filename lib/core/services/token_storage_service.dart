@@ -37,6 +37,11 @@ class TokenStorageService {
     return await _storage.read(key: _keyRefreshToken);
   }
 
+  Future<void> clearTokens() async {
+    await _storage.delete(key: _keyAccessToken);
+    await _storage.delete(key: _keyRefreshToken);
+  }
+
   Future<void> saveUser({
     required String userId,
     required String role,
@@ -63,6 +68,66 @@ class TokenStorageService {
 
   Future<String?> getUserEmail() async {
     return await _storage.read(key: _keyUserEmail);
+  }
+
+  String _profilePhotoKey(String userId) => 'rentatool_profile_photo_$userId';
+
+  Future<void> saveProfilePhoto(String userId, String path) async {
+    await _storage.write(key: _profilePhotoKey(userId), value: path);
+  }
+
+  Future<String?> getProfilePhoto(String userId) async {
+    return _storage.read(key: _profilePhotoKey(userId));
+  }
+
+  String _kycStatusKey(String userId) => 'rentatool_kyc_status_$userId';
+  String _kycReasonKey(String userId) => 'rentatool_kyc_reason_$userId';
+  String _kycDocNumKey(String userId) => 'rentatool_kyc_docnum_$userId';
+
+  Future<void> saveKycStatus(
+    String userId,
+    String status, {
+    String? rejectionReason,
+    String? documentNumber,
+  }) async {
+    await _storage.write(key: _kycStatusKey(userId), value: status);
+    if (rejectionReason != null) {
+      await _storage.write(key: _kycReasonKey(userId), value: rejectionReason);
+    } else {
+      await _storage.delete(key: _kycReasonKey(userId));
+    }
+    if (documentNumber != null) {
+      await _storage.write(key: _kycDocNumKey(userId), value: documentNumber);
+    }
+  }
+
+  Future<String?> getKycStatus(String userId) async {
+    return _storage.read(key: _kycStatusKey(userId));
+  }
+
+  Future<String?> getKycRejectionReason(String userId) async {
+    return _storage.read(key: _kycReasonKey(userId));
+  }
+
+  Future<String?> getKycDocumentNumber(String userId) async {
+    return _storage.read(key: _kycDocNumKey(userId));
+  }
+
+  String _trustScoreKey(String userId) => 'rentatool_trust_score_$userId';
+  String _trustTierKey(String userId) => 'rentatool_trust_tier_$userId';
+
+  Future<void> saveTrustScore(String userId, int score, String tier) async {
+    await _storage.write(key: _trustScoreKey(userId), value: score.toString());
+    await _storage.write(key: _trustTierKey(userId), value: tier);
+  }
+
+  Future<int?> getTrustScore(String userId) async {
+    final val = await _storage.read(key: _trustScoreKey(userId));
+    return val != null ? int.tryParse(val) : null;
+  }
+
+  Future<String?> getTrustTier(String userId) async {
+    return _storage.read(key: _trustTierKey(userId));
   }
 
   Future<bool> hasToken() async {

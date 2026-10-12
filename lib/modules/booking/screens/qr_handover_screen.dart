@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -10,6 +11,7 @@ import '../../../core/widgets/error_view.dart';
 import '../../../core/widgets/loading_indicator.dart';
 import '../models/handover_token_model.dart';
 import '../services/booking_service.dart';
+import '../providers/booking_provider.dart';
 
 class QrHandoverScreen extends ConsumerStatefulWidget {
   final String bookingId;
@@ -31,6 +33,15 @@ class _QrHandoverScreenState extends ConsumerState<QrHandoverScreen> {
   @override
   void initState() {
     super.initState();
+    final bookings = ref.read(bookingProvider).activeBookings;
+    try {
+      final booking = bookings.firstWhere((b) => b.id == widget.bookingId);
+      if (!booking.pickupVerified) {
+        _eventType = 'Pickup';
+      } else if (!booking.returnVerified) {
+        _eventType = 'Return';
+      }
+    } catch (_) {}
     _generateToken();
   }
 
@@ -111,6 +122,15 @@ class _QrHandoverScreenState extends ConsumerState<QrHandoverScreen> {
   @override
   Widget build(BuildContext context) {
     final isExpired = _secondsRemaining <= 0;
+    final bookings = ref.watch(bookingProvider).activeBookings;
+    bool showPickup = true;
+    bool showReturn = true;
+    
+    try {
+      final booking = bookings.firstWhere((b) => b.id == widget.bookingId);
+      showPickup = booking.canGeneratePickupToken;
+      showReturn = booking.canGenerateReturnToken;
+    } catch (_) {}
 
     return Scaffold(
       appBar: AppBar(
@@ -130,30 +150,32 @@ class _QrHandoverScreenState extends ConsumerState<QrHandoverScreen> {
                   borderRadius: BorderRadius.circular(30),
                   border: Border.all(color: AppColors.border),
                 ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
+                child: Wrap(
+                  spacing: 8,
+                  alignment: WrapAlignment.center,
                   children: [
-                    ChoiceChip(
-                      label: const Text('Pickup Verification'),
-                      selected: _eventType == 'Pickup',
-                      onSelected: (val) {
-                        if (val && _eventType != 'Pickup') {
-                          setState(() => _eventType = 'Pickup');
-                          _generateToken();
-                        }
-                      },
-                    ),
-                    const SizedBox(width: 8),
-                    ChoiceChip(
-                      label: const Text('Return Verification'),
-                      selected: _eventType == 'Return',
-                      onSelected: (val) {
-                        if (val && _eventType != 'Return') {
-                          setState(() => _eventType = 'Return');
-                          _generateToken();
-                        }
-                      },
-                    ),
+                    if (showPickup)
+                      ChoiceChip(
+                        label: const Text('Pickup Verification'),
+                        selected: _eventType == 'Pickup',
+                        onSelected: (val) {
+                          if (val && _eventType != 'Pickup') {
+                            setState(() => _eventType = 'Pickup');
+                            _generateToken();
+                          }
+                        },
+                      ),
+                    if (showReturn)
+                      ChoiceChip(
+                        label: const Text('Return Verification'),
+                        selected: _eventType == 'Return',
+                        onSelected: (val) {
+                          if (val && _eventType != 'Return') {
+                            setState(() => _eventType = 'Return');
+                            _generateToken();
+                          }
+                        },
+                      ),
                   ],
                 ),
               ),
@@ -171,10 +193,10 @@ class _QrHandoverScreenState extends ConsumerState<QrHandoverScreen> {
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
                   decoration: BoxDecoration(
-                    color: isExpired ? AppColors.error.withOpacity(0.15) : AppColors.primary.withOpacity(0.12),
+                    color: isExpired ? AppColors.error.withValues(alpha: 0.15) : AppColors.primary.withValues(alpha: 0.12),
                     borderRadius: BorderRadius.circular(20),
                     border: Border.all(
-                      color: isExpired ? AppColors.error : AppColors.primaryLight.withOpacity(0.4),
+                      color: isExpired ? AppColors.error : AppColors.primaryLight.withValues(alpha: 0.4),
                     ),
                   ),
                   child: Row(
@@ -208,7 +230,7 @@ class _QrHandoverScreenState extends ConsumerState<QrHandoverScreen> {
                     borderRadius: BorderRadius.circular(18),
                     boxShadow: [
                       BoxShadow(
-                        color: (isExpired ? Colors.grey : AppColors.primary).withOpacity(0.25),
+                        color: (isExpired ? Colors.grey : AppColors.primary).withValues(alpha: 0.25),
                         blurRadius: 24,
                         spreadRadius: 2,
                       ),
@@ -217,7 +239,11 @@ class _QrHandoverScreenState extends ConsumerState<QrHandoverScreen> {
                   child: Opacity(
                     opacity: isExpired ? 0.35 : 1.0,
                     child: QrImageView(
-                      data: _tokenModel!.qrPayload,
+                      data: jsonEncode({
+                        'bookingId': widget.bookingId.isNotEmpty ? widget.bookingId : _tokenModel!.bookingId,
+                        'token': _tokenModel!.token,
+                        'eventType': _eventType,
+                      }),
                       version: QrVersions.auto,
                       size: 220.0,
                       eyeStyle: const QrEyeStyle(
@@ -236,7 +262,7 @@ class _QrHandoverScreenState extends ConsumerState<QrHandoverScreen> {
                 // Token Hex Representation with Copy Action
                 Text(
                   '${_eventType.toUpperCase()} CRYPTOGRAPHIC TOKEN',
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 10,
                     fontWeight: FontWeight.bold,
                     letterSpacing: 0.8,
@@ -268,7 +294,7 @@ class _QrHandoverScreenState extends ConsumerState<QrHandoverScreen> {
                           ),
                         ),
                         const SizedBox(width: 8),
-                        const Icon(Icons.copy, size: 16, color: AppColors.textMuted),
+                        Icon(Icons.copy, size: 16, color: AppColors.textMuted),
                       ],
                     ),
                   ),

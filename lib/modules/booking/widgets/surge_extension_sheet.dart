@@ -105,7 +105,7 @@ class _SurgeExtensionSheetState extends ConsumerState<SurgeExtensionSheet> {
       builder: (context, child) {
         return Theme(
           data: Theme.of(context).copyWith(
-            colorScheme: const ColorScheme.dark(
+            colorScheme: ColorScheme.dark(
               primary: AppColors.primaryLight,
               onPrimary: Colors.black,
               surface: AppColors.surface,
@@ -185,7 +185,7 @@ class _SurgeExtensionSheetState extends ConsumerState<SurgeExtensionSheet> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text(
+              Text(
                 'Request Schedule Extension',
                 style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
               ),
@@ -211,7 +211,7 @@ class _SurgeExtensionSheetState extends ConsumerState<SurgeExtensionSheet> {
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text('Current End Date', style: TextStyle(fontSize: 10, color: AppColors.textMuted)),
+                    Text('Current End Date', style: TextStyle(fontSize: 10, color: AppColors.textMuted)),
                     Text(dateFormatter.format(widget.booking.endDate), style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
                     const SizedBox(height: 6),
                     const Text('Proposed New End Date', style: TextStyle(fontSize: 10, color: AppColors.primaryLight)),
@@ -232,10 +232,10 @@ class _SurgeExtensionSheetState extends ConsumerState<SurgeExtensionSheet> {
           Container(
             padding: const EdgeInsets.all(14),
             decoration: BoxDecoration(
-              color: surge.multiplier > 1.0 ? AppColors.warning.withOpacity(0.12) : AppColors.surfaceElevated,
+              color: surge.multiplier > 1.0 ? AppColors.warning.withValues(alpha: 0.12) : AppColors.surfaceElevated,
               borderRadius: BorderRadius.circular(10),
               border: Border.all(
-                color: surge.multiplier > 1.0 ? AppColors.warning.withOpacity(0.4) : AppColors.border,
+                color: surge.multiplier > 1.0 ? AppColors.warning.withValues(alpha: 0.4) : AppColors.border,
               ),
             ),
             child: Column(
@@ -251,7 +251,7 @@ class _SurgeExtensionSheetState extends ConsumerState<SurgeExtensionSheet> {
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                       decoration: BoxDecoration(
-                        color: AppColors.warning.withOpacity(0.2),
+                        color: AppColors.warning.withValues(alpha: 0.2),
                         borderRadius: BorderRadius.circular(4),
                       ),
                       child: Text(
@@ -264,7 +264,7 @@ class _SurgeExtensionSheetState extends ConsumerState<SurgeExtensionSheet> {
                 const SizedBox(height: 6),
                 Text(
                   surge.reason,
-                  style: const TextStyle(fontSize: 11, color: AppColors.textSecondary),
+                  style: TextStyle(fontSize: 11, color: AppColors.textSecondary),
                 ),
               ],
             ),
@@ -322,7 +322,7 @@ class _SurgeExtensionSheetState extends ConsumerState<SurgeExtensionSheet> {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Text(label, style: const TextStyle(fontSize: 12, color: AppColors.textMuted)),
+        Text(label, style: TextStyle(fontSize: 12, color: AppColors.textMuted)),
         Text(
           value,
           style: TextStyle(

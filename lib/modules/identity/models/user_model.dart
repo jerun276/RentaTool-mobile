@@ -37,6 +37,7 @@ class UserModel {
   final bool isActive;
   final String? suspensionReason;
   final int trustScore;
+  final String? profilePhotoPath;
 
   const UserModel({
     required this.id,
@@ -48,6 +49,7 @@ class UserModel {
     this.isActive = true,
     this.suspensionReason,
     this.trustScore = 50,
+    this.profilePhotoPath,
   });
 
   factory UserModel.fromJson(Map<String, dynamic> json) {
@@ -61,6 +63,7 @@ class UserModel {
       isActive: json['isActive'] ?? true,
       suspensionReason: json['suspensionReason'],
       trustScore: json['trustScore'] ?? 50,
+      profilePhotoPath: json['profilePhotoUrl'] ?? json['profilePhotoPath'],
     );
   }
 
@@ -75,16 +78,28 @@ class UserModel {
       'isActive': isActive,
       'suspensionReason': suspensionReason,
       'trustScore': trustScore,
+      'profilePhotoUrl': profilePhotoPath,
     };
   }
 
-  UserModel copyWith({bool? isVerified, bool? isActive, int? trustScore}) {
+  UserModel copyWith(
+      {bool? isVerified,
+      bool? isActive,
+      int? trustScore,
+      String? profilePhotoPath,
+      String? name,
+      String? phoneNumber}) {
     return UserModel(
-      id: id, name: name, email: email, phoneNumber: phoneNumber, role: role,
+      id: id,
+      name: name ?? this.name,
+      email: email,
+      phoneNumber: phoneNumber ?? this.phoneNumber,
+      role: role,
       isVerified: isVerified ?? this.isVerified,
       isActive: isActive ?? this.isActive,
       suspensionReason: suspensionReason,
       trustScore: trustScore ?? this.trustScore,
+      profilePhotoPath: profilePhotoPath ?? this.profilePhotoPath,
     );
   }
 }

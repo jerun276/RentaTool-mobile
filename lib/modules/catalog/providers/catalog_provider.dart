@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/batch_availability_model.dart';
+import '../models/category_model.dart';
 import '../models/equipment_history_model.dart';
 import '../models/equipment_model.dart';
 import '../services/catalog_service.dart';
@@ -159,4 +160,10 @@ final batchAvailabilityCheckProvider = FutureProvider.family<BatchAvailabilityRe
     desiredStartDate: params.start,
     desiredEndDate: params.end,
   );
+});
+
+/// Dynamic categories provider
+final categoryListProvider = FutureProvider<List<CategoryModel>>((ref) async {
+  final service = ref.watch(catalogServiceProvider);
+  return service.getCategories(activeOnly: true);
 });

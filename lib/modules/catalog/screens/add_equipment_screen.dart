@@ -4,9 +4,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
+import '../../../core/constants/sri_lanka_locations.dart';
+import '../../../core/services/cloudinary_service.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/widgets/app_button.dart';
 import '../../../core/widgets/app_text_field.dart';
+import '../models/category_model.dart';
 import '../models/equipment_model.dart';
 import '../providers/catalog_provider.dart';
 import '../services/catalog_service.dart';
@@ -38,31 +41,15 @@ class _AddEquipmentScreenState extends ConsumerState<AddEquipmentScreen> {
   final _replacementValController = TextEditingController();
   final _locationController = TextEditingController(text: 'Colombo, Western Province');
 
-  // Spec fields
-  final _powerOutputController = TextEditingController();
-  final _weightController = TextEditingController();
-  final _voltageController = TextEditingController();
-  final _fuelTypeController = TextEditingController();
+  // Dynamic spec controllers & dropdown selections
+  final Map<String, TextEditingController> _dynamicControllers = {};
+  final Map<String, String> _dynamicDropdownValues = {};
 
   final _picker = ImagePicker();
   final List<_AddEquipmentPhoto> _photos = [];
 
-  // Known categories from backend seed
-  final Map<String, String> _categories = {
-    '352ea07e-bd97-481b-a287-027036658902': 'Heavy Machinery',
-    'b25c3bf2-9d33-4df4-b3c9-02660a92d244': 'Power Tools',
-    '64949df2-eb06-4447-920a-f0fbf1fa000a': 'Generators & Power',
-    '8ca549e3-2fc5-48b3-aa2d-aa5d15a7cf93': 'Cleaning Equipment',
-  };
-
-  late String _selectedCategoryId;
+  String? _selectedCategoryId;
   bool _isSubmitting = false;
-
-  @override
-  void initState() {
-    super.initState();
-    _selectedCategoryId = _categories.keys.first;
-  }
 
   @override
   void dispose() {
@@ -71,11 +58,106 @@ class _AddEquipmentScreenState extends ConsumerState<AddEquipmentScreen> {
     _dailyRateController.dispose();
     _replacementValController.dispose();
     _locationController.dispose();
-    _powerOutputController.dispose();
-    _weightController.dispose();
-    _voltageController.dispose();
-    _fuelTypeController.dispose();
+    for (final c in _dynamicControllers.values) {
+      c.dispose();
+    }
     super.dispose();
+  }
+
+  void _initCategorySpecs(CategoryModel category) {
+    for (final field in category.specificationSchema) {
+      if (field.fieldType == 'select') {
+        if (!_dynamicDropdownValues.containsKey(field.key)) {
+          _dynamicDropdownValues[field.key] =
+              field.options.isNotEmpty ? field.options.first : '';
+        }
+      } else {
+        _dynamicControllers.putIfAbsent(field.key, () => TextEditingController());
+      }
+    }
+  }
+
+  void _onCategoryChanged(CategoryModel category) {
+    setState(() {
+      _selectedCategoryId = category.id;
+      for (final c in _dynamicControllers.values) {
+        c.dispose();
+      }
+      _dynamicControllers.clear();
+      _dynamicDropdownValues.clear();
+      _initCategorySpecs(category);
+    });
+  }
+
+  Future<void> _pickLocation() async {
+    FocusScope.of(context).unfocus();
+    final selected = await showModalBottomSheet<String>(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) {
+        String query = '';
+        return StatefulBuilder(
+          builder: (ctx, setSheetState) {
+            final items = SriLankaLocations.all
+                .where((l) => l.toLowerCase().contains(query.toLowerCase()))
+                .toList();
+            return SafeArea(
+              child: Padding(
+                padding: EdgeInsets.only(bottom: MediaQuery.of(ctx).viewInsets.bottom),
+                child: SizedBox(
+                  height: MediaQuery.of(ctx).size.height * 0.7,
+                  child: Column(
+                    children: [
+                      const SizedBox(height: 12),
+                      const Text(
+                        'Select Base Depot Location',
+                        style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+                        child: TextField(
+                          decoration: const InputDecoration(
+                            hintText: 'Search city or province',
+                            prefixIcon: Icon(Icons.search),
+                          ),
+                          onChanged: (v) => setSheetState(() => query = v),
+                        ),
+                      ),
+                      Expanded(
+                        child: items.isEmpty
+                            ? const Center(child: Text('No matching locations'))
+                            : ListView.builder(
+                                physics: const BouncingScrollPhysics(),
+                                itemCount: items.length,
+                                itemBuilder: (_, i) {
+                                  final loc = items[i];
+                                  final isSelected = loc == _locationController.text;
+                                  return ListTile(
+                                    leading: const Icon(Icons.location_on_outlined, color: AppColors.primary),
+                                    title: Text(loc),
+                                    trailing: isSelected
+                                        ? const Icon(Icons.check_circle, color: AppColors.primary)
+                                        : null,
+                                    onTap: () => Navigator.of(ctx).pop(loc),
+                                  );
+                                },
+                              ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+    if (selected != null) {
+      setState(() => _locationController.text = selected);
+    }
   }
 
   Future<void> _pickImage(String angle) async {
@@ -100,6 +182,13 @@ class _AddEquipmentScreenState extends ConsumerState<AddEquipmentScreen> {
   Future<void> _handleSubmit() async {
     if (!_formKey.currentState!.validate()) return;
 
+    if (_selectedCategoryId == null || _selectedCategoryId!.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please select an equipment category')),
+      );
+      return;
+    }
+
     final dailyRate = double.tryParse(_dailyRateController.text.replaceAll(',', ''));
     if (dailyRate == null || dailyRate <= 0) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -116,30 +205,77 @@ class _AddEquipmentScreenState extends ConsumerState<AddEquipmentScreen> {
       return;
     }
 
+    final categories = ref.read(categoryListProvider).valueOrNull ?? [];
+    final selectedCategory = categories.firstWhere(
+      (c) => c.id == _selectedCategoryId,
+      orElse: () => CategoryModel(id: _selectedCategoryId!, name: ''),
+    );
+
+    // Validate required dynamic fields
+    for (final field in selectedCategory.specificationSchema) {
+      if (field.isRequired) {
+        if (field.fieldType == 'select') {
+          final val = _dynamicDropdownValues[field.key];
+          if (val == null || val.trim().isEmpty) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text('${field.label} is required')),
+            );
+            return;
+          }
+        } else {
+          final val = _dynamicControllers[field.key]?.text.trim() ?? '';
+          if (val.isEmpty) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text('${field.label} is required')),
+            );
+            return;
+          }
+        }
+      }
+    }
+
     setState(() => _isSubmitting = true);
     try {
       final service = ref.read(catalogServiceProvider);
 
-      // Serialize specs to JSON
+      // Serialize dynamic specs to JSON with human-readable labels and units
       final specsMap = <String, dynamic>{};
-      if (_powerOutputController.text.isNotEmpty) specsMap['PowerOutput'] = _powerOutputController.text.trim();
-      if (_weightController.text.isNotEmpty) specsMap['OperatingWeight'] = _weightController.text.trim();
-      if (_voltageController.text.isNotEmpty) specsMap['Voltage'] = _voltageController.text.trim();
-      if (_fuelTypeController.text.isNotEmpty) specsMap['FuelType'] = _fuelTypeController.text.trim();
+      for (final field in selectedCategory.specificationSchema) {
+        if (field.fieldType == 'select') {
+          final val = _dynamicDropdownValues[field.key];
+          if (val != null && val.trim().isNotEmpty) {
+            specsMap[field.label] = val;
+          }
+        } else {
+          final text = _dynamicControllers[field.key]?.text.trim() ?? '';
+          if (text.isNotEmpty) {
+            String formatted = text;
+            if (field.unit.isNotEmpty && !formatted.toLowerCase().endsWith(field.unit.toLowerCase())) {
+              formatted = '$formatted ${field.unit}';
+            }
+            specsMap[field.label] = formatted;
+          }
+        }
+      }
       final specsJson = jsonEncode(specsMap);
 
-      final toolImages = _photos.map((p) {
+      final cloudinary = ref.read(cloudinaryServiceProvider);
+      final toolImages = await Future.wait(_photos.map((p) async {
+        final uploadedUrl = await cloudinary.uploadImage(
+          p.path,
+          folder: 'rentatool/equipment',
+        );
         return ToolImageModel(
-          imageUrl: p.path,
+          imageUrl: uploadedUrl,
           angle: p.angle,
           isPrimary: p.isPrimary,
         );
-      }).toList();
+      }));
 
       await service.createEquipment(
         title: _titleController.text.trim(),
         description: _descController.text.trim(),
-        categoryId: _selectedCategoryId,
+        categoryId: _selectedCategoryId!,
         dailyRate: dailyRate,
         replacementValue: replacementValue,
         location: _locationController.text.trim(),
@@ -173,6 +309,21 @@ class _AddEquipmentScreenState extends ConsumerState<AddEquipmentScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final categoriesAsync = ref.watch(categoryListProvider);
+    final categories = categoriesAsync.valueOrNull ?? [];
+
+    CategoryModel? selectedCategory;
+    if (categories.isNotEmpty) {
+      selectedCategory = categories.firstWhere(
+        (c) => c.id == _selectedCategoryId,
+        orElse: () => categories.first,
+      );
+      if (_selectedCategoryId != selectedCategory.id) {
+        _selectedCategoryId = selectedCategory.id;
+      }
+      _initCategorySpecs(selectedCategory);
+    }
+
     return Scaffold(
       appBar: AppBar(title: const Text('Add Machinery Listing')),
       body: SingleChildScrollView(
@@ -203,41 +354,105 @@ class _AddEquipmentScreenState extends ConsumerState<AddEquipmentScreen> {
               ),
               const SizedBox(height: 16),
 
-              // Category Selector
-              const Text('EQUIPMENT CATEGORY', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 11, letterSpacing: 0.8, color: AppColors.textMuted)),
-              const SizedBox(height: 8),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 14),
-                decoration: BoxDecoration(
-                  color: AppColors.surfaceLight,
-                  borderRadius: BorderRadius.circular(10),
-                  border: Border.all(color: AppColors.border),
+              // Category Selector (Dynamic)
+              Text(
+                'EQUIPMENT CATEGORY',
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 11,
+                  letterSpacing: 0.8,
+                  color: AppColors.textMuted,
                 ),
-                child: DropdownButtonHideUnderline(
-                  child: DropdownButton<String>(
-                    value: _selectedCategoryId,
-                    isExpanded: true,
-                    dropdownColor: AppColors.surface,
-                    items: _categories.entries.map((e) {
-                      return DropdownMenuItem(
-                        value: e.key,
-                        child: Text(e.value, style: const TextStyle(fontSize: 14)),
-                      );
-                    }).toList(),
-                    onChanged: (val) {
-                      if (val != null) setState(() => _selectedCategoryId = val);
-                    },
+              ),
+              const SizedBox(height: 8),
+              categoriesAsync.when(
+                data: (cats) {
+                  if (cats.isEmpty) {
+                    return Container(
+                      padding: const EdgeInsets.all(14),
+                      decoration: BoxDecoration(
+                        color: AppColors.surfaceLight,
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(color: AppColors.border),
+                      ),
+                      child: const Text('No categories configured in system.', style: TextStyle(color: AppColors.warning)),
+                    );
+                  }
+                  return Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 14),
+                    decoration: BoxDecoration(
+                      color: AppColors.surfaceLight,
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(color: AppColors.border),
+                    ),
+                    child: DropdownButtonHideUnderline(
+                      child: DropdownButton<String>(
+                        value: _selectedCategoryId ?? cats.first.id,
+                        isExpanded: true,
+                        dropdownColor: AppColors.surface,
+                        items: cats.map((cat) {
+                          return DropdownMenuItem(
+                            value: cat.id,
+                            child: Text(cat.name, style: const TextStyle(fontSize: 14)),
+                          );
+                        }).toList(),
+                        onChanged: (val) {
+                          if (val != null) {
+                            final cat = cats.firstWhere((c) => c.id == val);
+                            _onCategoryChanged(cat);
+                          }
+                        },
+                      ),
+                    ),
+                  );
+                },
+                loading: () => const Center(
+                  child: Padding(
+                    padding: EdgeInsets.symmetric(vertical: 8.0),
+                    child: SizedBox(
+                      height: 24,
+                      width: 24,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    ),
+                  ),
+                ),
+                error: (err, _) => Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: AppColors.surfaceLight,
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(color: AppColors.error),
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.error_outline, color: AppColors.error, size: 20),
+                      const SizedBox(width: 8),
+                      const Expanded(
+                        child: Text('Failed to load categories', style: TextStyle(color: AppColors.error, fontSize: 13)),
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.refresh, size: 18),
+                        onPressed: () => ref.invalidate(categoryListProvider),
+                      ),
+                    ],
                   ),
                 ),
               ),
               const SizedBox(height: 16),
 
-              AppTextField(
-                controller: _locationController,
-                label: 'Base Depot Location',
-                hintText: 'e.g. Colombo 05, Sri Lanka',
-                prefixIcon: const Icon(Icons.location_on_outlined, size: 20, color: AppColors.textMuted),
-                validator: (v) => v == null || v.trim().isEmpty ? 'Location is required' : null,
+              GestureDetector(
+                onTap: _pickLocation,
+                behavior: HitTestBehavior.opaque,
+                child: AbsorbPointer(
+                  child: AppTextField(
+                    controller: _locationController,
+                    label: 'Base Depot Location',
+                    hintText: 'Tap to select a location',
+                    prefixIcon: Icon(Icons.location_on_outlined, size: 20, color: AppColors.textMuted),
+                    suffixIcon: Icon(Icons.keyboard_arrow_down_rounded, color: AppColors.textMuted),
+                    validator: (v) => v == null || v.trim().isEmpty ? 'Location is required' : null,
+                  ),
+                ),
               ),
               const SizedBox(height: 24),
 
@@ -272,55 +487,46 @@ class _AddEquipmentScreenState extends ConsumerState<AddEquipmentScreen> {
               ),
               const SizedBox(height: 24),
 
-              // Section 3: Technical Specs
-              _sectionHeader('3. TECHNICAL SPECIFICATIONS'),
+              // Section 3: Dynamic Technical Specs
+              _sectionHeader('3. DYNAMIC TECHNICAL SPECIFICATIONS'),
+              const SizedBox(height: 4),
+              Text(
+                selectedCategory != null && selectedCategory.specificationSchema.isNotEmpty
+                    ? 'Specification fields configured for ${selectedCategory.name}:'
+                    : 'No dynamic specifications configured for this category.',
+                style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
+              ),
               const SizedBox(height: 12),
 
-              Row(
-                children: [
-                  Expanded(
-                    child: AppTextField(
-                      controller: _powerOutputController,
-                      label: 'Power Rating',
-                      hintText: 'e.g. 105 kW / 140 HP',
-                    ),
+              if (selectedCategory != null && selectedCategory.specificationSchema.isNotEmpty)
+                _buildDynamicSpecificationFields(selectedCategory)
+              else
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: AppColors.surfaceLight,
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(color: AppColors.border),
                   ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: AppTextField(
-                      controller: _weightController,
-                      label: 'Operating Weight',
-                      hintText: 'e.g. 21,500 kg',
-                    ),
+                  child: Row(
+                    children: [
+                      Icon(Icons.info_outline, size: 20, color: AppColors.textMuted),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Text(
+                          'No dynamic fields required. You can add extra details in the overview description.',
+                          style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
+                        ),
+                      ),
+                    ],
                   ),
-                ],
-              ),
-              const SizedBox(height: 12),
-              Row(
-                children: [
-                  Expanded(
-                    child: AppTextField(
-                      controller: _voltageController,
-                      label: 'Voltage / Source',
-                      hintText: 'e.g. 3-Phase 400V',
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: AppTextField(
-                      controller: _fuelTypeController,
-                      label: 'Fuel / Energy Type',
-                      hintText: 'e.g. Diesel / Electric',
-                    ),
-                  ),
-                ],
-              ),
+                ),
               const SizedBox(height: 24),
 
               // Section 4: Multi-Angle Imagery
               _sectionHeader('4. MULTI-ANGLE EQUIPMENT PHOTOS'),
               const SizedBox(height: 4),
-              const Text(
+              Text(
                 'Upload designated angles for initial asset baseline inspection.',
                 style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
               ),
@@ -429,8 +635,115 @@ class _AddEquipmentScreenState extends ConsumerState<AddEquipmentScreen> {
       avatar: const Icon(Icons.add_a_photo_outlined, size: 14, color: AppColors.primaryLight),
       label: Text(angle, style: const TextStyle(fontSize: 12)),
       backgroundColor: AppColors.surface,
-      side: const BorderSide(color: AppColors.border),
+      side: BorderSide(color: AppColors.border),
       onPressed: () => _pickImage(angle),
+    );
+  }
+
+  Widget _buildDynamicSpecificationFields(CategoryModel category) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: category.specificationSchema.map((field) {
+        if (field.fieldType == 'select') {
+          final currentValue = _dynamicDropdownValues[field.key] ??
+              (field.options.isNotEmpty ? field.options.first : null);
+
+          return Padding(
+            padding: const EdgeInsets.only(bottom: 14),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Text(
+                      field.label,
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.textPrimary,
+                      ),
+                    ),
+                    if (field.isRequired)
+                      const Text(
+                        ' *',
+                        style: TextStyle(color: AppColors.error, fontWeight: FontWeight.bold),
+                      ),
+                    if (field.unit.isNotEmpty) ...[
+                      const SizedBox(width: 6),
+                      Text('(${field.unit})', style: TextStyle(fontSize: 12, color: AppColors.textMuted)),
+                    ],
+                  ],
+                ),
+                const SizedBox(height: 6),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 14),
+                  decoration: BoxDecoration(
+                    color: AppColors.surfaceLight,
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(color: AppColors.border),
+                  ),
+                  child: DropdownButtonHideUnderline(
+                    child: DropdownButton<String>(
+                      value: field.options.contains(currentValue) ? currentValue : null,
+                      isExpanded: true,
+                      dropdownColor: AppColors.surface,
+                      hint: Text(
+                        field.options.isNotEmpty ? 'Select ${field.label}' : 'No options configured',
+                        style: TextStyle(color: AppColors.textMuted, fontSize: 14),
+                      ),
+                      items: field.options.map((opt) {
+                        return DropdownMenuItem<String>(
+                          value: opt,
+                          child: Text(opt, style: const TextStyle(fontSize: 14)),
+                        );
+                      }).toList(),
+                      onChanged: (val) {
+                        if (val != null) {
+                          setState(() => _dynamicDropdownValues[field.key] = val);
+                        }
+                      },
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          );
+        }
+
+        final isNumber = field.fieldType == 'number';
+        return Padding(
+          padding: const EdgeInsets.only(bottom: 14),
+          child: AppTextField(
+            controller: _dynamicControllers[field.key],
+            label: field.isRequired ? '${field.label} *' : field.label,
+            hintText: field.unit.isNotEmpty
+                ? 'Enter ${field.label.toLowerCase()} (${field.unit})'
+                : 'Enter ${field.label.toLowerCase()}',
+            keyboardType: isNumber
+                ? const TextInputType.numberWithOptions(decimal: true)
+                : TextInputType.text,
+            suffixIcon: field.unit.isNotEmpty
+                ? Padding(
+                    padding: const EdgeInsets.only(right: 12),
+                    child: Center(
+                      widthFactor: 1.0,
+                      child: Text(
+                        field.unit,
+                        style: TextStyle(
+                          color: AppColors.textMuted,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 12,
+                        ),
+                      ),
+                    ),
+                  )
+                : null,
+            validator: field.isRequired
+                ? (v) => v == null || v.trim().isEmpty ? '${field.label} is required' : null
+                : null,
+          ),
+        );
+      }).toList(),
     );
   }
 }

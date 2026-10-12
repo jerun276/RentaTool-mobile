@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
+import '../../../core/services/cloudinary_service.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/widgets/app_button.dart';
 import '../../../core/widgets/app_text_field.dart';
@@ -109,14 +110,19 @@ class _ConditionInspectionScreenState extends ConsumerState<ConditionInspectionS
     try {
       final service = ref.read(catalogServiceProvider);
 
-      final photoDtos = capturedList.map((photo) {
+      final cloudinary = ref.read(cloudinaryServiceProvider);
+      final photoDtos = await Future.wait(capturedList.map((photo) async {
+        final uploadedUrl = await cloudinary.uploadImage(
+          photo.path,
+          folder: 'rentatool/inspections',
+        );
         return InspectionPhotoModel(
           angle: photo.angle,
-          photoUrl: photo.path, // In full production, this is uploaded via multipart/signed URL
+          photoUrl: uploadedUrl,
           observationNote: photo.observation.isNotEmpty ? photo.observation : null,
           capturedAtUtc: photo.capturedAt,
         );
-      }).toList();
+      }));
 
       await service.createInspectionLog(
         equipmentId: widget.equipmentId,
@@ -172,10 +178,10 @@ class _ConditionInspectionScreenState extends ConsumerState<ConditionInspectionS
                   borderRadius: BorderRadius.circular(10),
                   border: Border.all(color: AppColors.border),
                 ),
-                child: const Row(
+                child: Row(
                   children: [
-                    Icon(Icons.camera_enhance_outlined, color: AppColors.primaryLight, size: 24),
-                    SizedBox(width: 12),
+                    const Icon(Icons.camera_enhance_outlined, color: AppColors.primaryLight, size: 24),
+                    const SizedBox(width: 12),
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -184,7 +190,7 @@ class _ConditionInspectionScreenState extends ConsumerState<ConditionInspectionS
                             'MULTI-ANGLE AUDIT RECORDING',
                             style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, letterSpacing: 0.8, color: AppColors.textMuted),
                           ),
-                          SizedBox(height: 2),
+                          const SizedBox(height: 2),
                           Text(
                             'Capture high-resolution evidence with tamper-proof timestamp verification.',
                             style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
@@ -198,7 +204,7 @@ class _ConditionInspectionScreenState extends ConsumerState<ConditionInspectionS
               const SizedBox(height: 20),
 
               // Inspection Type Selector
-              const Text(
+              Text(
                 'INSPECTION TYPE',
                 style: TextStyle(fontWeight: FontWeight.bold, fontSize: 11, letterSpacing: 0.8, color: AppColors.textMuted),
               ),
@@ -208,14 +214,13 @@ class _ConditionInspectionScreenState extends ConsumerState<ConditionInspectionS
                 children: [
                   _typeChip('PreRental', 'Pre-Rental Handover'),
                   _typeChip('PostRental', 'Post-Rental Return'),
-                  _typeChip('PeriodicMaintenance', 'Periodic Servicing'),
-                  _typeChip('DamageAssessment', 'Damage Claim Audit'),
+                  _typeChip('MaintenanceCheck', 'Periodic Maintenance'),
                 ],
               ),
               const SizedBox(height: 18),
 
               // Severity Selector
-              const Text(
+              Text(
                 'WEAR & DEFECT SEVERITY RATING',
                 style: TextStyle(fontWeight: FontWeight.bold, fontSize: 11, letterSpacing: 0.8, color: AppColors.textMuted),
               ),
@@ -223,22 +228,21 @@ class _ConditionInspectionScreenState extends ConsumerState<ConditionInspectionS
               Wrap(
                 spacing: 8,
                 children: [
-                  _severityChip('None', AppColors.success),
-                  _severityChip('Minor', Colors.blue),
-                  _severityChip('Moderate', AppColors.warning),
-                  _severityChip('Severe', Colors.deepOrange),
-                  _severityChip('Critical', AppColors.wearLockout),
+                  _severityChip('None', 'None (Pristine)', AppColors.success),
+                  _severityChip('MinorWear', 'Minor Wear', Colors.blue),
+                  _severityChip('ModerateDamage', 'Moderate Damage', AppColors.warning),
+                  _severityChip('StructuralDamage', 'Structural Damage', AppColors.wearLockout),
                 ],
               ),
               const SizedBox(height: 20),
 
               // Multi-Angle Photographic Evidence Grid
-              const Text(
+              Text(
                 'MULTI-ANGLE CAMERA EVIDENCE',
                 style: TextStyle(fontWeight: FontWeight.bold, fontSize: 11, letterSpacing: 0.8, color: AppColors.textMuted),
               ),
               const SizedBox(height: 4),
-              const Text(
+              Text(
                 'Capture designated angles to satisfy dispute and wear-lockout compliance.',
                 style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
               ),
@@ -286,10 +290,10 @@ class _ConditionInspectionScreenState extends ConsumerState<ConditionInspectionS
     );
   }
 
-  Widget _severityChip(String value, Color color) {
+  Widget _severityChip(String value, String label, Color color) {
     final isSelected = _severity == value;
     return ChoiceChip(
-      label: Text(value, style: TextStyle(fontSize: 12, color: isSelected ? Colors.white : color)),
+      label: Text(label, style: TextStyle(fontSize: 12, color: isSelected ? Colors.white : color)),
       selected: isSelected,
       selectedColor: color,
       backgroundColor: AppColors.surface,
@@ -326,7 +330,7 @@ class _ConditionInspectionScreenState extends ConsumerState<ConditionInspectionS
                   const SizedBox(width: 8),
                   Text(
                     angle,
-                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: AppColors.textPrimary),
+                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: AppColors.textPrimary),
                   ),
                 ],
               ),
@@ -388,7 +392,7 @@ class _ConditionInspectionScreenState extends ConsumerState<ConditionInspectionS
               initialValue: photo.observation,
               decoration: InputDecoration(
                 hintText: 'Add note for $angle (optional)...',
-                hintStyle: const TextStyle(fontSize: 12, color: AppColors.textMuted),
+                hintStyle: TextStyle(fontSize: 12, color: AppColors.textMuted),
                 contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                 fillColor: AppColors.surfaceLight,
                 filled: true,

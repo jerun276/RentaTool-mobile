@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/constants/api_constants.dart';
 import '../../../core/network/api_client.dart';
 import '../models/batch_availability_model.dart';
+import '../models/category_model.dart';
 import '../models/equipment_history_model.dart';
 import '../models/equipment_model.dart';
 import '../models/inspection_log_model.dart';
@@ -81,17 +82,63 @@ class CatalogService {
   Future<InspectionLogModel> createInspectionLog({
     required String equipmentId,
     String? bookingId,
-    required String type, // 'PreRental', 'PostRental', 'PeriodicMaintenance', 'DamageAssessment'
-    required String severity, // 'None', 'Minor', 'Moderate', 'Severe', 'Critical'
+    required String type, // 'PreRental', 'PostRental', 'MaintenanceCheck'
+    required String severity, // 'None', 'MinorWear', 'ModerateDamage', 'StructuralDamage'
     required String conditionNotes,
     List<InspectionPhotoModel> photos = const [],
   }) async {
+    // Map type to backend enum integer (PreRental = 1, PostRental = 2, MaintenanceCheck = 3)
+    int typeInt = 1;
+    switch (type.toLowerCase()) {
+      case 'postrental':
+      case '2':
+        typeInt = 2;
+        break;
+      case 'maintenancecheck':
+      case 'periodicmaintenance':
+      case 'maintenance':
+      case '3':
+        typeInt = 3;
+        break;
+      case 'prerental':
+      case '1':
+      default:
+        typeInt = 1;
+        break;
+    }
+
+    // Map severity to backend enum integer (None = 0, MinorWear = 1, ModerateDamage = 2, StructuralDamage = 3)
+    int severityInt = 0;
+    switch (severity.toLowerCase()) {
+      case 'minor':
+      case 'minorwear':
+      case '1':
+        severityInt = 1;
+        break;
+      case 'moderate':
+      case 'moderatedamage':
+      case '2':
+        severityInt = 2;
+        break;
+      case 'severe':
+      case 'critical':
+      case 'structuraldamage':
+      case '3':
+        severityInt = 3;
+        break;
+      case 'none':
+      case '0':
+      default:
+        severityInt = 0;
+        break;
+    }
+
     final response = await _dio.post(
       ApiConstants.equipmentInspectionLogs(equipmentId),
       data: {
         if (bookingId != null && bookingId.isNotEmpty) 'bookingId': bookingId,
-        'type': type,
-        'severity': severity,
+        'type': typeInt,
+        'severity': severityInt,
         'conditionNotes': conditionNotes,
         'photos': photos.map((p) => p.toJson()).toList(),
       },
@@ -120,5 +167,131 @@ class CatalogService {
       },
     );
     return BatchAvailabilityResultModel.fromJson(response.data as Map<String, dynamic>);
+  }
+
+  static const List<CategoryModel> defaultCategories = [
+    CategoryModel(
+      id: 'c15d534b-8707-4d21-b04d-d5d3c1914c46',
+      name: 'Heavy Machinery',
+      description: 'Earthmoving, compaction, and civil construction equipment',
+      iconUrl: 'https://cdn.rentatool.lk/icons/excavator.svg',
+      specificationSchema: [
+        CategorySpecFieldModel(key: 'operating_weight', label: 'Operating Weight', unit: 'tons', fieldType: 'number', isRequired: true),
+        CategorySpecFieldModel(key: 'engine_power', label: 'Engine Power', unit: 'HP / kW', fieldType: 'text', isRequired: true),
+        CategorySpecFieldModel(key: 'bucket_capacity', label: 'Bucket / Blade Capacity', unit: 'm³', fieldType: 'number'),
+        CategorySpecFieldModel(key: 'max_dig_depth', label: 'Max Digging / Reach Depth', unit: 'm', fieldType: 'number'),
+        CategorySpecFieldModel(key: 'fuel_type', label: 'Fuel Type', fieldType: 'select', isRequired: true, options: ['Diesel', 'Electric', 'Hybrid']),
+      ],
+    ),
+    CategoryModel(
+      id: '030da95c-0141-4f12-adf9-28793e5d3c6d',
+      name: 'Power Tools',
+      description: 'Heavy-duty electric & cordless drilling, fastening, and cutting tools',
+      iconUrl: 'https://cdn.rentatool.lk/icons/drill.svg',
+      specificationSchema: [
+        CategorySpecFieldModel(key: 'power_rating', label: 'Power Rating', unit: 'W / kW', fieldType: 'text', isRequired: true),
+        CategorySpecFieldModel(key: 'voltage', label: 'Operating Voltage', unit: 'V', fieldType: 'select', isRequired: true, options: ['110V', '230V / Single-Phase', '400V / 3-Phase', '18V Cordless Battery', '36V Cordless Battery']),
+        CategorySpecFieldModel(key: 'chuck_blade_size', label: 'Chuck / Blade Size', unit: 'mm / inch', fieldType: 'text'),
+        CategorySpecFieldModel(key: 'no_load_speed', label: 'Max Speed / RPM', unit: 'RPM', fieldType: 'number'),
+        CategorySpecFieldModel(key: 'power_source', label: 'Power Source', fieldType: 'select', isRequired: true, options: ['Electric Corded', 'Cordless Li-ion', 'Pneumatic / Air', 'Petrol Engine']),
+        CategorySpecFieldModel(key: 'weight', label: 'Tool Weight', unit: 'kg', fieldType: 'number'),
+      ],
+    ),
+    CategoryModel(
+      id: '641349d0-2a8d-4ca4-b896-2fd239cd283f',
+      name: 'Generators & Power',
+      description: 'Silent diesel & petrol portable power generators',
+      iconUrl: 'https://cdn.rentatool.lk/icons/generator.svg',
+      specificationSchema: [
+        CategorySpecFieldModel(key: 'rated_output', label: 'Rated Output', unit: 'kVA / kW', fieldType: 'text', isRequired: true),
+        CategorySpecFieldModel(key: 'voltage_phase', label: 'Voltage & Phase', fieldType: 'select', isRequired: true, options: ['230V Single-Phase', '400V Three-Phase', 'Dual Voltage (230V/400V)']),
+        CategorySpecFieldModel(key: 'fuel_type', label: 'Fuel Type', fieldType: 'select', isRequired: true, options: ['Diesel', 'Petrol', 'LPG / Natural Gas', 'Solar Battery']),
+        CategorySpecFieldModel(key: 'tank_capacity', label: 'Fuel Tank Capacity', unit: 'Liters', fieldType: 'number'),
+        CategorySpecFieldModel(key: 'sound_level', label: 'Noise Level', unit: 'dBA @ 7m', fieldType: 'number'),
+      ],
+    ),
+    CategoryModel(
+      id: '7436c584-29c1-4e02-993f-f4af41fb2c9d',
+      name: 'Cleaning Equipment',
+      description: 'Industrial high-pressure washers, vacuum cleaners, and scrubbers',
+      iconUrl: 'https://cdn.rentatool.lk/icons/washer.svg',
+      specificationSchema: [
+        CategorySpecFieldModel(key: 'working_pressure', label: 'Operating Pressure', unit: 'Bar / PSI', fieldType: 'text', isRequired: true),
+        CategorySpecFieldModel(key: 'flow_rate', label: 'Water Flow Rate', unit: 'L/min', fieldType: 'number'),
+        CategorySpecFieldModel(key: 'tank_capacity', label: 'Solution Tank Capacity', unit: 'Liters', fieldType: 'number'),
+        CategorySpecFieldModel(key: 'power_source', label: 'Power Source', fieldType: 'select', isRequired: true, options: ['230V Electric', '400V 3-Phase', 'Petrol Engine', 'Diesel Engine']),
+      ],
+    ),
+  ];
+
+  /// Retrieves list of equipment categories and their technical specification schemas.
+  /// Gracefully falls back to seeded categories if the backend does not host the /categories endpoint yet.
+  Future<List<CategoryModel>> getCategories({bool activeOnly = true}) async {
+    try {
+      final response = await _dio.get(
+        ApiConstants.categories,
+        queryParameters: {'activeOnly': activeOnly},
+      );
+      final data = response.data;
+      final List<dynamic> items = data is List ? data : (data['items'] ?? []);
+      final list = items.map((e) => CategoryModel.fromJson(e as Map<String, dynamic>)).toList();
+      return list.isNotEmpty ? list : defaultCategories;
+    } catch (_) {
+      return defaultCategories;
+    }
+  }
+
+  /// Retrieves a specific category by ID with its specification schema
+  Future<CategoryModel> getCategoryById(String id) async {
+    try {
+      final response = await _dio.get(ApiConstants.categoryById(id));
+      return CategoryModel.fromJson(response.data as Map<String, dynamic>);
+    } catch (_) {
+      return defaultCategories.firstWhere(
+        (c) => c.id == id,
+        orElse: () => CategoryModel(id: id, name: 'General Equipment'),
+      );
+    }
+  }
+
+  /// Creates a new category with dynamic specification schema (Admin only)
+  Future<CategoryModel> createCategory({
+    required String name,
+    String description = '',
+    String iconUrl = '',
+    List<CategorySpecFieldModel> specificationSchema = const [],
+  }) async {
+    final response = await _dio.post(
+      ApiConstants.categories,
+      data: {
+        'name': name.trim(),
+        'description': description.trim(),
+        'iconUrl': iconUrl.trim(),
+        'specificationSchema': specificationSchema.map((s) => s.toJson()).toList(),
+      },
+    );
+    return CategoryModel.fromJson(response.data as Map<String, dynamic>);
+  }
+
+  /// Updates an existing category and its specification schema (Admin only)
+  Future<CategoryModel> updateCategory({
+    required String id,
+    required String name,
+    String description = '',
+    String iconUrl = '',
+    bool isActive = true,
+    List<CategorySpecFieldModel> specificationSchema = const [],
+  }) async {
+    final response = await _dio.put(
+      ApiConstants.categoryById(id),
+      data: {
+        'name': name.trim(),
+        'description': description.trim(),
+        'iconUrl': iconUrl.trim(),
+        'isActive': isActive,
+        'specificationSchema': specificationSchema.map((s) => s.toJson()).toList(),
+      },
+    );
+    return CategoryModel.fromJson(response.data as Map<String, dynamic>);
   }
 }

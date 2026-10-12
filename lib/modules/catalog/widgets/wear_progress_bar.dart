@@ -13,6 +13,8 @@ class WearProgressBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
     final double ratio = (daysAccumulated / thresholdDays).clamp(0.0, 1.0);
     final bool isCritical = daysAccumulated >= thresholdDays;
     final bool isWarning = daysAccumulated >= (thresholdDays * 0.75);
@@ -22,6 +24,9 @@ class WearProgressBar extends StatelessWidget {
         : isWarning
             ? AppColors.wearWarning
             : AppColors.wearNormal;
+
+    final secondaryText = isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary;
+    final trackColor = isDark ? AppColors.darkSurfaceElevated : const Color(0xFFE2E8F0);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -34,7 +39,7 @@ class WearProgressBar extends StatelessWidget {
               style: TextStyle(
                 fontSize: 11,
                 fontWeight: FontWeight.w600,
-                color: isCritical ? AppColors.wearLockout : AppColors.textSecondary,
+                color: isCritical ? AppColors.wearLockout : secondaryText,
               ),
             ),
             if (isCritical)
@@ -53,7 +58,7 @@ class WearProgressBar extends StatelessWidget {
           borderRadius: BorderRadius.circular(3),
           child: LinearProgressIndicator(
             value: ratio,
-            backgroundColor: AppColors.surfaceElevated,
+            backgroundColor: trackColor,
             valueColor: AlwaysStoppedAnimation<Color>(progressColor),
             minHeight: 6,
           ),

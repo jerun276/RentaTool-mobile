@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../identity/providers/auth_provider.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
+import '../../../core/services/cloudinary_service.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/theme_provider.dart';
 import '../../../core/widgets/app_button.dart';
 import '../../../core/widgets/app_text_field.dart';
 import '../providers/escrow_provider.dart';
@@ -31,6 +34,10 @@ class _FileClaimScreenState extends ConsumerState<FileClaimScreen> {
     if (widget.bookingId != null) {
       _bookingIdController.text = widget.bookingId!;
     }
+    final user = ref.read(authProvider).user;
+    if (user != null) {
+      _userIdController.text = user.id;
+    }
   }
 
   @override
@@ -47,11 +54,20 @@ class _FileClaimScreenState extends ConsumerState<FileClaimScreen> {
     setState(() => _isSubmitting = true);
     try {
       final service = ref.read(escrowServiceProvider);
+      List<String> evidencePhotos = [];
+      if (_selectedImage != null) {
+        final uploadedUrl = await ref.read(cloudinaryServiceProvider).uploadImage(
+          _selectedImage!.path,
+          folder: 'rentatool/claims',
+        );
+        evidencePhotos = [uploadedUrl];
+      }
+
       await service.fileClaim(
         bookingId: _bookingIdController.text.trim(),
         filedByUserId: _userIdController.text.trim(),
         damageDescription: _descController.text.trim(),
-        evidencePhotos: _selectedImage != null ? [_selectedImage!.path] : [],
+        evidencePhotos: evidencePhotos,
       );
 
       ref.read(escrowProvider.notifier).fetchClaims();
@@ -80,6 +96,10 @@ class _FileClaimScreenState extends ConsumerState<FileClaimScreen> {
 
   @override
   Widget build(BuildContext context) {
+    ref.watch(themeProvider);
+    final theme = Theme.of(context);
+    final textPrimary = theme.colorScheme.onSurface;
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('File Damage Dispute'),
@@ -98,14 +118,14 @@ class _FileClaimScreenState extends ConsumerState<FileClaimScreen> {
                   borderRadius: BorderRadius.circular(10),
                   border: Border.all(color: AppColors.warning.withValues(alpha: 0.3)),
                 ),
-                child: const Row(
+                child: Row(
                   children: [
-                    Icon(Icons.gavel_outlined, color: Color(0xFFFFB95F), size: 22),
-                    SizedBox(width: 12),
+                    const Icon(Icons.gavel_outlined, color: Color(0xFFFFB95F), size: 22),
+                    const SizedBox(width: 12),
                     Expanded(
                       child: Text(
                         'Claims are assessed against pre-rental inspection baseline images to differentiate normal 60-day wear from operator misuse.',
-                        style: TextStyle(fontSize: 12, color: AppColors.textPrimary),
+                        style: TextStyle(fontSize: 12, color: textPrimary),
                       ),
                     ),
                   ],
@@ -117,6 +137,7 @@ class _FileClaimScreenState extends ConsumerState<FileClaimScreen> {
                 controller: _bookingIdController,
                 label: 'Rental Booking ID',
                 hintText: 'e.g. 33333333-3333-3333-3333-333333333301',
+                readOnly: true,
                 validator: (v) => v == null || v.isEmpty ? 'Booking ID is required' : null,
               ),
               const SizedBox(height: 16),
@@ -125,6 +146,7 @@ class _FileClaimScreenState extends ConsumerState<FileClaimScreen> {
                 controller: _userIdController,
                 label: 'Your User ID',
                 hintText: 'e.g. 11111111-1111-1111-1111-111111111101',
+                readOnly: true,
                 validator: (v) => v == null || v.isEmpty ? 'User ID is required' : null,
               ),
               const SizedBox(height: 16),

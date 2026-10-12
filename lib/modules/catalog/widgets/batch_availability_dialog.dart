@@ -81,7 +81,7 @@ class _BatchAvailabilityDialogState extends ConsumerState<BatchAvailabilityDialo
       builder: (context, child) {
         return Theme(
           data: ThemeData.dark().copyWith(
-            colorScheme: const ColorScheme.dark(
+            colorScheme: ColorScheme.dark(
               primary: AppColors.primary,
               onPrimary: Colors.white,
               surface: AppColors.surface,
@@ -138,7 +138,7 @@ class _BatchAvailabilityDialogState extends ConsumerState<BatchAvailabilityDialo
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Column(
+              Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
@@ -254,7 +254,7 @@ class _BatchAvailabilityDialogState extends ConsumerState<BatchAvailabilityDialo
                         Expanded(
                           child: Text(
                             item.title,
-                            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: AppColors.textPrimary),
+                            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: AppColors.textPrimary),
                           ),
                         ),
                         const StatusBadge(label: 'BLOCKED', style: BadgeStyle.error),
@@ -268,7 +268,7 @@ class _BatchAvailabilityDialogState extends ConsumerState<BatchAvailabilityDialo
                     const SizedBox(height: 2),
                     Text(
                       item.requiredAction,
-                      style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
+                      style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
                     ),
                   ],
                 ),
@@ -277,7 +277,7 @@ class _BatchAvailabilityDialogState extends ConsumerState<BatchAvailabilityDialo
         ],
 
         // Available Items List
-        const Text(
+        Text(
           'DISPATCH READY MACHINES',
           style: TextStyle(
             fontSize: 11,
@@ -308,7 +308,7 @@ class _BatchAvailabilityDialogState extends ConsumerState<BatchAvailabilityDialo
                         ),
                         Text(
                           'Wear: ${item.accumulatedDays} days accumulated',
-                          style: const TextStyle(fontSize: 11, color: AppColors.textSecondary),
+                          style: TextStyle(fontSize: 11, color: AppColors.textSecondary),
                         ),
                       ],
                     ),

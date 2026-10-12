@@ -9,13 +9,16 @@ import '../../modules/identity/screens/login_screen.dart';
 import '../../modules/identity/screens/register_screen.dart';
 import '../../modules/identity/screens/profile_screen.dart';
 import '../../modules/identity/screens/kyc_submission_screen.dart';
+import '../../modules/identity/providers/auth_provider.dart';
 
 // Component 2 (Catalog)
 import '../../modules/catalog/screens/equipment_catalog_screen.dart';
+import '../../modules/catalog/screens/admin_category_screen.dart';
 import '../../modules/catalog/screens/equipment_detail_screen.dart';
 import '../../modules/catalog/screens/add_equipment_screen.dart';
 import '../../modules/catalog/screens/condition_inspection_screen.dart';
 import '../../modules/catalog/screens/equipment_history_screen.dart';
+import '../../modules/catalog/screens/my_equipment_screen.dart';
 
 // Component 3 (Booking)
 import '../../modules/booking/screens/active_bookings_screen.dart';
@@ -30,10 +33,25 @@ import '../../modules/catalog/models/equipment_model.dart';
 import '../../modules/escrow/screens/escrow_overview_screen.dart';
 import '../../modules/escrow/screens/claim_detail_screen.dart';
 import '../../modules/escrow/screens/file_claim_screen.dart';
+import '../../modules/escrow/screens/pre_authorize_screen.dart';
 
 final _rootNavigatorKey = GlobalKey<NavigatorState>();
 
 final appRouterProvider = Provider<GoRouter>((ref) {
+  final router = _buildRouter();
+
+  // Auto-logout: when an authenticated session is dropped (e.g. expired JWT),
+  // send the user straight to the login screen.
+  ref.listen<AuthState>(authProvider, (previous, next) {
+    if (previous != null && previous.isAuthenticated && !next.isAuthenticated) {
+      router.go('/login');
+    }
+  });
+
+  return router;
+});
+
+GoRouter _buildRouter() {
   return GoRouter(
     navigatorKey: _rootNavigatorKey,
     initialLocation: '/catalog',
@@ -50,6 +68,10 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/kyc-submit',
         builder: (context, state) => const KycSubmissionScreen(),
+      ),
+      GoRoute(
+        path: '/admin/categories',
+        builder: (context, state) => const AdminCategoryScreen(),
       ),
 
       // Main Navigation Shell (4 Component Branches)
@@ -91,6 +113,10 @@ final appRouterProvider = Provider<GoRouter>((ref) {
                     },
                   ),
                   GoRoute(
+                    path: 'my-fleet',
+                    builder: (context, state) => const MyEquipmentScreen(),
+                  ),
+                  GoRoute(
                     path: ':id',
                     builder: (context, state) {
                       final id = state.pathParameters['id'] ?? '';
@@ -130,7 +156,18 @@ final appRouterProvider = Provider<GoRouter>((ref) {
                   ),
                   GoRoute(
                     path: 'scan',
-                    builder: (context, state) => const QrScannerScreen(),
+                    builder: (context, state) {
+                      final bId = state.uri.queryParameters['bookingId'] ??
+                          (state.extra is String ? state.extra as String : null);
+                      return QrScannerScreen(bookingId: bId);
+                    },
+                  ),
+                  GoRoute(
+                    path: 'scan/:id',
+                    builder: (context, state) {
+                      final id = state.pathParameters['id'];
+                      return QrScannerScreen(bookingId: id);
+                    },
                   ),
                   GoRoute(
                     path: 'create',
@@ -164,7 +201,25 @@ final appRouterProvider = Provider<GoRouter>((ref) {
                   ),
                   GoRoute(
                     path: 'claim-new',
-                    builder: (context, state) => const FileClaimScreen(),
+                    builder: (context, state) {
+                      final bId = state.uri.queryParameters['bookingId'];
+                      return FileClaimScreen(bookingId: bId);
+                    },
+                  ),
+                  GoRoute(
+                    path: 'pre-authorize',
+                    builder: (context, state) {
+                      final bId = state.uri.queryParameters['bookingId'];
+                      final rId = state.uri.queryParameters['renterId'];
+                      final oId = state.uri.queryParameters['ownerId'];
+                      final dep = double.tryParse(state.uri.queryParameters['deposit'] ?? '');
+                      return PreAuthorizeScreen(
+                        bookingId: bId,
+                        renterId: rId,
+                        ownerId: oId,
+                        depositAmount: dep,
+                      );
+                    },
                   ),
                 ],
               ),
@@ -184,4 +239,4 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       ),
     ],
   );
-});
+}

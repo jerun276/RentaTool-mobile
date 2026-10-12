@@ -42,6 +42,15 @@ class BookingService {
     }
   }
 
+  /// Confirms a booking after escrow authorization is successful.
+  Future<void> confirmBooking(String id) async {
+    try {
+      await _dio.post('/bookings/$id/confirm');
+    } on DioException catch (e) {
+      throw _parseDioError(e, defaultMessage: 'Failed to confirm booking.');
+    }
+  }
+
   /// 2. Returns all active and confirmed bookings for the authenticated user.
   Future<List<BookingModel>> getActiveBookings() async {
     try {

@@ -3,28 +3,33 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/damage_claim_model.dart';
 import '../models/escrow_hold_model.dart';
 import '../services/escrow_service.dart';
+import '../../booking/providers/booking_provider.dart';
 
 // ─── Escrow / Claims List State ───────────────────────────────────────────────
 
 class EscrowState {
   final bool isLoading;
   final List<DamageClaimModel> claims;
+  final List<EscrowHoldModel> holds;
   final String? errorMessage;
 
   const EscrowState({
     this.isLoading = false,
     this.claims = const [],
+    this.holds = const [],
     this.errorMessage,
   });
 
   EscrowState copyWith({
     bool? isLoading,
     List<DamageClaimModel>? claims,
+    List<EscrowHoldModel>? holds,
     String? errorMessage,
   }) {
     return EscrowState(
       isLoading: isLoading ?? this.isLoading,
       claims: claims ?? this.claims,
+      holds: holds ?? this.holds,
       errorMessage: errorMessage,
     );
   }
@@ -33,7 +38,7 @@ class EscrowState {
 class EscrowNotifier extends Notifier<EscrowState> {
   @override
   EscrowState build() {
-    // Fetch claims on init
+    // Fetch claims & holds on init
     Future.microtask(() => fetchClaims());
     return const EscrowState();
   }
@@ -42,7 +47,25 @@ class EscrowNotifier extends Notifier<EscrowState> {
     state = state.copyWith(isLoading: true, errorMessage: null);
     try {
       final items = await ref.read(escrowServiceProvider).getClaims();
-      state = state.copyWith(isLoading: false, claims: items);
+
+      // Fetch escrow holds for active bookings
+      final bookingNotifier = ref.read(bookingProvider.notifier);
+      await bookingNotifier.fetchActiveBookings();
+      final activeList = ref.read(bookingProvider).activeBookings;
+
+      final List<EscrowHoldModel> loadedHolds = [];
+      for (final b in activeList) {
+        final hold = await ref.read(escrowServiceProvider).getEscrowByBooking(b.id);
+        if (hold != null) {
+          loadedHolds.add(hold);
+        }
+      }
+
+      state = state.copyWith(
+        isLoading: false,
+        claims: items,
+        holds: loadedHolds,
+      );
     } on DioException catch (e) {
       state = state.copyWith(
         isLoading: false,
@@ -54,6 +77,18 @@ class EscrowNotifier extends Notifier<EscrowState> {
         errorMessage: 'Unable to load claims. Check server connection.',
       );
     }
+  }
+
+  Future<void> refreshHolds() async {
+    final activeList = ref.read(bookingProvider).activeBookings;
+    final List<EscrowHoldModel> loadedHolds = [];
+    for (final b in activeList) {
+      final hold = await ref.read(escrowServiceProvider).getEscrowByBooking(b.id);
+      if (hold != null) {
+        loadedHolds.add(hold);
+      }
+    }
+    state = state.copyWith(holds: loadedHolds);
   }
 }
 
