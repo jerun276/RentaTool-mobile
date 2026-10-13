@@ -139,10 +139,10 @@ class _BookingDetailScreenState extends ConsumerState<BookingDetailScreen> {
 
     final bool isPickup = b.status.toLowerCase() == 'confirmed';
     final bool isReturn = b.status.toLowerCase() == 'active';
-    // For Pickup: Owner generates (shows), Renter scans.
-    // For Return: Renter generates (shows), Owner scans.
-    final bool canShowQR = isAdmin || (isOwner && isPickup) || (isRenter && isReturn);
-    final bool canScanQR = isAdmin || (isRenter && isPickup) || (isOwner && isReturn);
+    final bool isParticipant = isOwner || isRenter || isAdmin;
+    // Both Owner and Renter can show/display QR and scan QR in Confirmed (Pickup) and Active (Return) states
+    final bool canShowQR = isParticipant && (isPickup || isReturn);
+    final bool canScanQR = isParticipant && (isPickup || isReturn);
 
     return Scaffold(
       appBar: AppBar(
