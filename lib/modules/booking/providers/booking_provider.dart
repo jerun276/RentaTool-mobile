@@ -17,9 +17,29 @@ class BookingState {
     this.errorMessage,
   });
 
-  /// Computed list based on active filter chip and search query
+  static int _statusRank(String status) {
+    switch (status.toLowerCase()) {
+      case 'requested':
+        return 0; // needs owner action - show first
+      case 'confirmed':
+        return 1;
+      case 'active':
+        return 2;
+      case 'disputed':
+        return 3;
+      case 'completed':
+        return 4;
+      case 'cancelled':
+        return 5;
+      default:
+        return 6;
+    }
+  }
+
+  /// Computed list based on active filter chip and search query,
+  /// ordered by status priority (Requested first) then newest first.
   List<BookingModel> get filteredBookings {
-    return activeBookings.where((b) {
+    final list = activeBookings.where((b) {
       // 1. Status Filter
       if (selectedFilter != 'All') {
         if (b.status.toLowerCase() != selectedFilter.toLowerCase()) {
@@ -38,6 +58,15 @@ class BookingState {
 
       return true;
     }).toList();
+
+    list.sort((a, b) {
+      final byStatus = _statusRank(a.status).compareTo(_statusRank(b.status));
+      if (byStatus != 0) return byStatus;
+      final aCreated = DateTime.tryParse(a.createdAtUtc ?? '') ?? a.startDate;
+      final bCreated = DateTime.tryParse(b.createdAtUtc ?? '') ?? b.startDate;
+      return bCreated.compareTo(aCreated);
+    });
+    return list;
   }
 
   BookingState copyWith({

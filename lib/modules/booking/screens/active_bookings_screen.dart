@@ -177,7 +177,7 @@ class _ActiveBookingsScreenState extends ConsumerState<ActiveBookingsScreen> {
                 SingleChildScrollView(
                   scrollDirection: Axis.horizontal,
                   child: Row(
-                    children: ['All', 'Confirmed', 'Active', 'Completed'].map((filter) {
+                    children: ['All', 'Requested', 'Confirmed', 'Active', 'Completed'].map((filter) {
                       final isSelected = bookingState.selectedFilter == filter;
                       return Padding(
                         padding: const EdgeInsets.only(right: 8.0),

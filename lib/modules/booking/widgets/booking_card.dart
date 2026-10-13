@@ -51,12 +51,20 @@ class BookingCard extends StatelessWidget {
         badgeStyle = BadgeStyle.warning;
     }
 
+    final isPending = booking.isRequested;
+    final canUseQR = booking.isConfirmed || booking.isActive;
+
     return Card(
       margin: const EdgeInsets.only(bottom: 14),
-      elevation: 2,
+      elevation: isPending ? 4 : 2,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(14),
-        side: BorderSide(color: isDark ? AppColors.darkBorder : AppColors.lightBorder),
+        side: BorderSide(
+          color: isPending
+              ? AppColors.warning.withValues(alpha: 0.7)
+              : (isDark ? AppColors.darkBorder : AppColors.lightBorder),
+          width: isPending ? 1.5 : 1,
+        ),
       ),
       child: InkWell(
         onTap: onTap,
@@ -90,7 +98,29 @@ class BookingCard extends StatelessWidget {
               ),
               const SizedBox(height: 12),
 
-              // Date Range & Duration
+              if (isPending) ...[
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                  margin: const EdgeInsets.only(bottom: 12),
+                  decoration: BoxDecoration(
+                    color: AppColors.warning.withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.hourglass_top_rounded, size: 14, color: AppColors.warning),
+                      const SizedBox(width: 6),
+                      Expanded(
+                        child: Text(
+                          'Awaiting owner approval',
+                          style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: AppColors.warning),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
               Row(
                 children: [
                   const Icon(Icons.date_range_outlined, size: 16, color: AppColors.primaryLight),
@@ -167,13 +197,13 @@ class BookingCard extends StatelessWidget {
                   ),
                   Row(
                     children: [
-                      if (onShowQR != null && !['completed', 'cancelled'].contains(booking.status.toLowerCase()))
+                      if (onShowQR != null && canUseQR)
                         IconButton.filledTonal(
                           icon: const Icon(Icons.qr_code, size: 18),
                           tooltip: 'Show Handover QR',
                           onPressed: onShowQR,
                         ),
-                      if (onScanQR != null && !['completed', 'cancelled'].contains(booking.status.toLowerCase())) ...[
+                      if (onScanQR != null && canUseQR) ...[
                         const SizedBox(width: 8),
                         IconButton.filled(
                           icon: const Icon(Icons.qr_code_scanner, size: 18),
