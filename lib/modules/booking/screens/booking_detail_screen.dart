@@ -139,10 +139,12 @@ class _BookingDetailScreenState extends ConsumerState<BookingDetailScreen> {
 
     final bool isPickup = b.status.toLowerCase() == 'confirmed';
     final bool isReturn = b.status.toLowerCase() == 'active';
-    // For Pickup: Owner generates (shows), Renter scans.
-    // For Return: Renter generates (shows), Owner scans.
-    final bool canShowQR = isAdmin || (isOwner && isPickup) || (isRenter && isReturn);
-    final bool canScanQR = isAdmin || (isRenter && isPickup) || (isOwner && isReturn);
+    final bool canUseQR = isPickup || isReturn;
+
+    // Owner always shows QR (Pickup when Confirmed, Return when Active).
+    // Renter always scans QR (Pickup when Confirmed, Return when Active).
+    final bool canShowQR = canUseQR && (isOwner || isAdmin);
+    final bool canScanQR = canUseQR && (isRenter || isAdmin);
 
     return Scaffold(
       appBar: AppBar(
@@ -354,7 +356,7 @@ class _BookingDetailScreenState extends ConsumerState<BookingDetailScreen> {
                           if (canScanQR)
                             Expanded(
                               child: AppButton(
-                                text: 'Scan Handover QR',
+                                text: isReturn ? 'Scan Return QR' : 'Scan Handover QR',
                                 variant: AppButtonVariant.outline,
                                 icon: Icons.qr_code_scanner,
                                 fontSize: 12,

@@ -161,7 +161,7 @@ class _QrHandoverScreenState extends ConsumerState<QrHandoverScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Handover QR Verification'),
+        title: Text(_eventType == 'Return' ? 'Return QR Verification' : 'Handover QR Verification'),
       ),
       body: Center(
         child: SingleChildScrollView(

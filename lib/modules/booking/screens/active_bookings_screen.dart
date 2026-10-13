@@ -289,10 +289,12 @@ class _ActiveBookingsScreenState extends ConsumerState<ActiveBookingsScreen> {
                       final bool isItemRenter = (currentUser != null && currentUser.id == item.renterId) || isRenter;
                       final bool isAdmin = currentUser?.role == UserRole.admin;
 
-                      // Pickup: Owner shows QR, Renter scans QR.
-                      // Return: Renter shows QR, Owner scans QR.
-                      final bool canShow = isAdmin || (isItemOwner && isPickup) || (isItemRenter && isReturn);
-                      final bool canScan = isAdmin || (isItemRenter && isPickup) || (isItemOwner && isReturn);
+                      final bool canUseQR = isPickup || isReturn;
+
+                      // Owner always shows QR (Pickup when Confirmed, Return when Active).
+                      // Renter always scans QR (Pickup when Confirmed, Return when Active).
+                      final bool canShow = canUseQR && (isItemOwner || isAdmin);
+                      final bool canScan = canUseQR && (isItemRenter || isAdmin);
 
                       return BookingCard(
                         key: ValueKey('${item.id}_${isDark ? 'dark' : 'light'}'),

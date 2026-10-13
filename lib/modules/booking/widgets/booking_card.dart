@@ -200,14 +200,14 @@ class BookingCard extends StatelessWidget {
                       if (onShowQR != null && canUseQR)
                         IconButton.filledTonal(
                           icon: const Icon(Icons.qr_code, size: 18),
-                          tooltip: 'Show Handover QR',
+                          tooltip: booking.isActive ? 'Show Return QR' : 'Show Handover QR',
                           onPressed: onShowQR,
                         ),
                       if (onScanQR != null && canUseQR) ...[
                         const SizedBox(width: 8),
                         IconButton.filled(
                           icon: const Icon(Icons.qr_code_scanner, size: 18),
-                          tooltip: 'Scan Handover QR',
+                          tooltip: booking.isActive ? 'Scan Return QR' : 'Scan Handover QR',
                           onPressed: onScanQR,
                         ),
                       ],
