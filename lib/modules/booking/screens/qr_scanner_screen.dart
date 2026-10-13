@@ -9,7 +9,6 @@ import 'package:mobile_scanner/mobile_scanner.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/widgets/app_button.dart';
 import '../../../core/widgets/app_text_field.dart';
-import '../models/booking_model.dart';
 import '../models/handover_verification_model.dart';
 import '../providers/booking_provider.dart';
 import '../services/booking_service.dart';
@@ -41,30 +40,12 @@ class _QrScannerScreenState extends ConsumerState<QrScannerScreen> {
       _bookingIdController.text = widget.bookingId!;
     }
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      ref.read(bookingProvider.notifier).fetchActiveBookings().then((_) async {
-        if (!mounted) return;
-        final bookings = ref.read(bookingProvider).activeBookings;
-        if (_bookingIdController.text.isEmpty && bookings.isNotEmpty) {
-          setState(() {
-            _bookingIdController.text = bookings.first.id;
-          });
-        }
-
-        final targetId = _bookingIdController.text.trim();
-        if (targetId.isNotEmpty) {
-          BookingModel? target = bookings.where((b) => b.id == targetId).firstOrNull;
-          if (target == null) {
-            try {
-              target = await ref.read(bookingServiceProvider).getBookingById(targetId);
-            } catch (_) {}
-          }
-          if (mounted && target != null) {
+      ref.read(bookingProvider.notifier).fetchActiveBookings().then((_) {
+        if (mounted && _bookingIdController.text.isEmpty) {
+          final bookings = ref.read(bookingProvider).activeBookings;
+          if (bookings.isNotEmpty) {
             setState(() {
-              if (target!.status.toLowerCase() == 'active' || target.pickupVerified) {
-                _eventType = 'Return';
-              } else {
-                _eventType = 'Pickup';
-              }
+              _bookingIdController.text = bookings.first.id;
             });
           }
         }
@@ -508,14 +489,8 @@ class _QrScannerScreenState extends ConsumerState<QrScannerScreen> {
                           }).toList(),
                           onChanged: (val) {
                             if (val != null) {
-                              final sel = activeBookings.where((b) => b.id == val).firstOrNull;
                               setState(() {
                                 _bookingIdController.text = val;
-                                if (sel != null && (sel.status.toLowerCase() == 'active' || sel.pickupVerified)) {
-                                  _eventType = 'Return';
-                                } else {
-                                  _eventType = 'Pickup';
-                                }
                               });
                             }
                           },
