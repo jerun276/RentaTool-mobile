@@ -111,7 +111,11 @@ class _BookingDetailScreenState extends ConsumerState<BookingDetailScreen> {
     final b = _booking!;
     final authState = ref.watch(authProvider);
     final currentUser = authState.user;
-    final isOwnerOrAdmin = currentUser?.role == UserRole.owner || currentUser?.role == UserRole.admin;
+    final isOwner = (currentUser != null && currentUser.id == b.ownerId) || currentUser?.role == UserRole.owner;
+    final isRenter = (currentUser != null && currentUser.id == b.renterId) || currentUser?.role == UserRole.renter;
+    final isAdmin = currentUser?.role == UserRole.admin;
+    final isOwnerOrAdmin = isOwner || isAdmin;
+    final canExtendSchedule = b.canExtendSchedule && (isRenter || isAdmin) && !isOwner;
     final currencyFormatter = NumberFormat.currency(locale: 'en_LK', symbol: 'LKR ', decimalDigits: 0);
     final dateFormatter = DateFormat('EEEE, MMM dd, yyyy');
 
@@ -373,8 +377,8 @@ class _BookingDetailScreenState extends ConsumerState<BookingDetailScreen> {
               ),
             ],
 
-            // 6. Dynamic Surge Schedule Extension
-            if (b.canExtendSchedule)
+            // 6. Dynamic Surge Schedule Extension (Only available to Renter or Admin)
+            if (canExtendSchedule)
               OutlinedButton.icon(
                 icon: const Icon(Icons.calendar_month, size: 18),
                 label: const Text('Extend Schedule (Dynamic Surge Preview)'),
