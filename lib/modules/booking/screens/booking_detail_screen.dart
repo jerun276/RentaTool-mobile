@@ -62,6 +62,36 @@ class _BookingDetailScreenState extends ConsumerState<BookingDetailScreen> {
     });
   }
 
+  bool _isActing = false;
+
+  Future<void> _respond({required bool accept}) async {
+    setState(() => _isActing = true);
+    try {
+      final service = ref.read(bookingServiceProvider);
+      if (accept) {
+        await service.confirmBooking(widget.bookingId);
+      } else {
+        await service.rejectBooking(widget.bookingId);
+      }
+      await _fetchBooking();
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          backgroundColor: accept ? AppColors.success : AppColors.warning,
+          content: Text(accept ? 'Booking accepted. Renter can now collect via QR.' : 'Booking rejected. Dates are free again.'),
+        ));
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          backgroundColor: AppColors.error,
+          content: Text(e.toString().replaceFirst('Exception: ', '')),
+        ));
+      }
+    } finally {
+      if (mounted) setState(() => _isActing = false);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     if (_isLoading) {
@@ -255,6 +285,40 @@ class _BookingDetailScreenState extends ConsumerState<BookingDetailScreen> {
               ),
             ),
             const SizedBox(height: 24),
+
+            // 4b. Owner Accept / Reject for pending requests
+            if (b.isRequested && currentUser != null && currentUser.id == b.ownerId) ...[
+              Row(
+                children: [
+                  Expanded(
+                    child: AppButton(
+                      text: 'Accept Request',
+                      icon: Icons.check_circle_outline,
+                      onPressed: _isActing ? null : () => _respond(accept: true),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: AppButton(
+                      text: 'Reject',
+                      variant: AppButtonVariant.outline,
+                      icon: Icons.cancel_outlined,
+                      onPressed: _isActing ? null : () => _respond(accept: false),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+            ] else if (b.isRequested) ...[
+              Padding(
+                padding: const EdgeInsets.only(bottom: 16),
+                child: Text(
+                  'Waiting for the owner to accept your request.',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(fontSize: 12, color: AppColors.textMuted),
+                ),
+              ),
+            ],
 
             // 5. Handover QR Action Buttons
             if (['confirmed', 'active'].contains(b.status.toLowerCase())) ...[

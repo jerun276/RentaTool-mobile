@@ -42,12 +42,21 @@ class BookingService {
     }
   }
 
-  /// Confirms a booking after escrow authorization is successful.
+  /// Owner accepts a Requested booking (Requested -> Confirmed).
   Future<void> confirmBooking(String id) async {
     try {
       await _dio.post('/bookings/$id/confirm');
     } on DioException catch (e) {
       throw _parseDioError(e, defaultMessage: 'Failed to confirm booking.');
+    }
+  }
+
+  /// Owner rejects a Requested booking; dates are freed.
+  Future<void> rejectBooking(String id, {String? reason}) async {
+    try {
+      await _dio.post('/bookings/$id/reject', data: {'reason': reason});
+    } on DioException catch (e) {
+      throw _parseDioError(e, defaultMessage: 'Failed to reject booking.');
     }
   }
 

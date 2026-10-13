@@ -149,7 +149,7 @@ class _CreateBookingScreenState extends ConsumerState<CreateBookingScreen> {
             ownerId: ownId,
             depositAmount: depositAmount > 0 ? depositAmount : 15000.0,
           );
-          await service.confirmBooking(newBooking.id);
+          // Booking intentionally stays 'Requested' until the owner accepts it.
         }
       } catch (err) {
         debugPrint('Auto escrow pre-auth notice: $err');
@@ -162,7 +162,7 @@ class _CreateBookingScreenState extends ConsumerState<CreateBookingScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             backgroundColor: AppColors.success,
-            content: Text('Reservation confirmed & deposit pre-authorized in Escrow! Ready for pickup.'),
+            content: Text('Booking request sent! Waiting for the owner to accept.'),
           ),
         );
 
