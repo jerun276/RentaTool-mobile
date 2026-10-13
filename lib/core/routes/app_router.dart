@@ -124,6 +124,13 @@ GoRouter _buildRouter() {
                     builder: (context, state) => const MyEquipmentScreen(),
                   ),
                   GoRoute(
+                    path: 'detail/:id',
+                    builder: (context, state) {
+                      final id = state.pathParameters['id'] ?? '';
+                      return EquipmentDetailScreen(equipmentId: id);
+                    },
+                  ),
+                  GoRoute(
                     path: ':id',
                     builder: (context, state) {
                       final id = state.pathParameters['id'] ?? '';

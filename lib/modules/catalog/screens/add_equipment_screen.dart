@@ -350,7 +350,7 @@ class _AddEquipmentScreenState extends ConsumerState<AddEquipmentScreen> {
               backgroundColor: AppColors.success,
             ),
           );
-          context.pop();
+          context.pop(true);
         }
       } else {
         await service.createEquipment(
@@ -372,7 +372,7 @@ class _AddEquipmentScreenState extends ConsumerState<AddEquipmentScreen> {
               backgroundColor: AppColors.success,
             ),
           );
-          context.pop();
+          context.pop(true);
         }
       }
     } catch (e) {

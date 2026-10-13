@@ -11,6 +11,7 @@ import '../../../core/widgets/loading_indicator.dart';
 import '../../../core/widgets/status_badge.dart';
 import '../models/equipment_model.dart';
 import '../services/catalog_service.dart';
+import '../providers/catalog_provider.dart';
 import '../widgets/batch_availability_dialog.dart';
 import '../widgets/wear_progress_bar.dart';
 import '../../identity/providers/auth_provider.dart';
@@ -106,6 +107,14 @@ class _EquipmentDetailScreenState extends ConsumerState<EquipmentDetailScreen> {
         title: Text(eq.title),
         actions: [
           IconButton(
+            icon: const Icon(Icons.refresh_rounded, size: 22),
+            tooltip: 'Refresh',
+            onPressed: () async {
+              await _fetchDetail();
+              ref.read(catalogProvider.notifier).fetchEquipment(isRefresh: true);
+            },
+          ),
+          IconButton(
             icon: const Icon(Icons.history_outlined, size: 22),
             tooltip: 'Maintenance History',
             onPressed: () => context.push('/catalog/history/${eq.id}'),
@@ -117,9 +126,15 @@ class _EquipmentDetailScreenState extends ConsumerState<EquipmentDetailScreen> {
           ),
         ],
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(20.0),
-        child: Column(
+      body: RefreshIndicator(
+        onRefresh: () async {
+          await _fetchDetail();
+          ref.read(catalogProvider.notifier).fetchEquipment(isRefresh: true);
+        },
+        child: SingleChildScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          padding: const EdgeInsets.all(20.0),
+          child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             // Image Preview Container
@@ -494,7 +509,13 @@ class _EquipmentDetailScreenState extends ConsumerState<EquipmentDetailScreen> {
                 text: 'Edit Machinery Details',
                 variant: AppButtonVariant.secondary,
                 icon: Icons.edit_outlined,
-                onPressed: () => context.push('/catalog/edit/${eq.id}', extra: eq),
+                onPressed: () async {
+                  final updated = await context.push<bool>('/catalog/edit/${eq.id}', extra: eq);
+                  if (updated == true) {
+                    await _fetchDetail();
+                    ref.read(catalogProvider.notifier).fetchEquipment(isRefresh: true);
+                  }
+                },
               ),
               const SizedBox(height: 10),
               AppButton(
@@ -580,6 +601,7 @@ class _EquipmentDetailScreenState extends ConsumerState<EquipmentDetailScreen> {
             const SizedBox(height: 20),
           ],
         ),
+      ),
       ),
     );
   }

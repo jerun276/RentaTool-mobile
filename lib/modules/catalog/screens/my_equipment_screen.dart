@@ -92,7 +92,12 @@ class _MyEquipmentScreenState extends ConsumerState<MyEquipmentScreen> {
           IconButton(
             icon: const Icon(Icons.add, size: 24),
             tooltip: 'Add Machinery',
-            onPressed: () => context.push('/catalog/add'),
+            onPressed: () async {
+              final created = await context.push<bool>('/catalog/add');
+              if (created == true) {
+                ref.read(catalogProvider.notifier).fetchEquipment(isRefresh: true);
+              }
+            },
           ),
           IconButton(
             icon: const Icon(Icons.refresh_rounded, size: 22),
@@ -407,7 +412,10 @@ class _MyEquipmentScreenState extends ConsumerState<MyEquipmentScreen> {
       color: isDark ? AppColors.darkSurface : AppColors.lightSurface,
       clipBehavior: Clip.antiAlias,
       child: InkWell(
-        onTap: () => context.push('/catalog/detail/${equipment.id}'),
+        onTap: () async {
+          await context.push('/catalog/${equipment.id}');
+          ref.read(catalogProvider.notifier).fetchEquipment(isRefresh: true);
+        },
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -553,7 +561,12 @@ class _MyEquipmentScreenState extends ConsumerState<MyEquipmentScreen> {
                             padding: const EdgeInsets.symmetric(vertical: 8),
                             textStyle: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold),
                           ),
-                          onPressed: () => context.push('/catalog/edit/${equipment.id}', extra: equipment),
+                          onPressed: () async {
+                            final updated = await context.push<bool>('/catalog/edit/${equipment.id}', extra: equipment);
+                            if (updated == true) {
+                              ref.read(catalogProvider.notifier).fetchEquipment(isRefresh: true);
+                            }
+                          },
                         ),
                       ),
                       const SizedBox(width: 6),
