@@ -20,6 +20,28 @@ class EscrowState {
     this.errorMessage,
   });
 
+  /// Damage claims sorted date-wise descending (newest first).
+  List<DamageClaimModel> get sortedClaims {
+    final list = List<DamageClaimModel>.from(claims);
+    list.sort((a, b) {
+      final aDate = DateTime.tryParse(a.createdAtUtc ?? '') ?? DateTime.fromMillisecondsSinceEpoch(0);
+      final bDate = DateTime.tryParse(b.createdAtUtc ?? '') ?? DateTime.fromMillisecondsSinceEpoch(0);
+      return bDate.compareTo(aDate);
+    });
+    return list;
+  }
+
+  /// Escrow holds sorted date-wise descending (newest first).
+  List<EscrowHoldModel> get sortedHolds {
+    final list = List<EscrowHoldModel>.from(holds);
+    list.sort((a, b) {
+      final aDate = DateTime.tryParse(a.heldAtUtc ?? a.settledAtUtc ?? '') ?? DateTime.fromMillisecondsSinceEpoch(0);
+      final bDate = DateTime.tryParse(b.heldAtUtc ?? b.settledAtUtc ?? '') ?? DateTime.fromMillisecondsSinceEpoch(0);
+      return bDate.compareTo(aDate);
+    });
+    return list;
+  }
+
   EscrowState copyWith({
     bool? isLoading,
     List<DamageClaimModel>? claims,
@@ -61,6 +83,25 @@ class EscrowNotifier extends Notifier<EscrowState> {
         }
       }
 
+      // Stably sort claims date-wise descending (newest first)
+      items.sort((a, b) {
+        final aDate = DateTime.tryParse(a.createdAtUtc ?? '') ?? DateTime.fromMillisecondsSinceEpoch(0);
+        final bDate = DateTime.tryParse(b.createdAtUtc ?? '') ?? DateTime.fromMillisecondsSinceEpoch(0);
+        return bDate.compareTo(aDate);
+      });
+
+      // Stably sort holds date-wise descending (newest first)
+      loadedHolds.sort((a, b) {
+        final aBooking = activeList.where((x) => x.id == a.bookingId).firstOrNull;
+        final bBooking = activeList.where((x) => x.id == b.bookingId).firstOrNull;
+
+        final aDate = DateTime.tryParse(a.heldAtUtc ?? a.settledAtUtc ?? '') ??
+            (aBooking != null ? (DateTime.tryParse(aBooking.createdAtUtc ?? '') ?? aBooking.startDate) : DateTime.fromMillisecondsSinceEpoch(0));
+        final bDate = DateTime.tryParse(b.heldAtUtc ?? b.settledAtUtc ?? '') ??
+            (bBooking != null ? (DateTime.tryParse(bBooking.createdAtUtc ?? '') ?? bBooking.startDate) : DateTime.fromMillisecondsSinceEpoch(0));
+        return bDate.compareTo(aDate);
+      });
+
       state = state.copyWith(
         isLoading: false,
         claims: items,
@@ -88,6 +129,16 @@ class EscrowNotifier extends Notifier<EscrowState> {
         loadedHolds.add(hold);
       }
     }
+    loadedHolds.sort((a, b) {
+      final aBooking = activeList.where((x) => x.id == a.bookingId).firstOrNull;
+      final bBooking = activeList.where((x) => x.id == b.bookingId).firstOrNull;
+
+      final aDate = DateTime.tryParse(a.heldAtUtc ?? a.settledAtUtc ?? '') ??
+          (aBooking != null ? (DateTime.tryParse(aBooking.createdAtUtc ?? '') ?? aBooking.startDate) : DateTime.fromMillisecondsSinceEpoch(0));
+      final bDate = DateTime.tryParse(b.heldAtUtc ?? b.settledAtUtc ?? '') ??
+          (bBooking != null ? (DateTime.tryParse(bBooking.createdAtUtc ?? '') ?? bBooking.startDate) : DateTime.fromMillisecondsSinceEpoch(0));
+      return bDate.compareTo(aDate);
+    });
     state = state.copyWith(holds: loadedHolds);
   }
 }

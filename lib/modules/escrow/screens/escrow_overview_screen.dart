@@ -7,6 +7,7 @@ import '../../../core/theme/theme_provider.dart';
 import '../../../core/widgets/error_view.dart';
 import '../../../core/widgets/loading_indicator.dart';
 import '../../../core/widgets/status_badge.dart';
+import '../../booking/models/booking_model.dart';
 import '../../booking/providers/booking_provider.dart';
 import '../models/damage_claim_model.dart';
 import '../models/escrow_hold_model.dart';
@@ -33,10 +34,20 @@ class EscrowOverviewScreen extends ConsumerWidget {
     final isOwnerOrAdmin = currentUser?.role == UserRole.owner || currentUser?.role == UserRole.admin;
     final isRenter = currentUser?.role == UserRole.renter;
 
-    // Check if there are active bookings that don't have an escrow hold yet
+    final sortedHolds = escrowState.sortedHolds;
+    final sortedClaims = escrowState.sortedClaims;
+
+    // Check if there are active bookings that don't have an escrow hold yet, stably sorted newest first
     final unheldBookings = bookingState.activeBookings.where((b) {
-      return !escrowState.holds.any((h) => h.bookingId == b.id);
+      return !sortedHolds.any((h) => h.bookingId == b.id);
     }).toList();
+    unheldBookings.sort((a, b) {
+      final aDate = DateTime.tryParse(a.createdAtUtc ?? '') ?? a.startDate;
+      final bDate = DateTime.tryParse(b.createdAtUtc ?? '') ?? b.startDate;
+      final cmp = bDate.compareTo(aDate);
+      if (cmp != 0) return cmp;
+      return b.startDate.compareTo(a.startDate);
+    });
 
     return Scaffold(
       appBar: AppBar(
@@ -117,7 +128,7 @@ class EscrowOverviewScreen extends ConsumerWidget {
                       const Icon(Icons.lock_outline, size: 12, color: Color(0xFF10B981)),
                       const SizedBox(width: 4),
                       Text(
-                        '${escrowState.holds.length} VAULT HOLDS',
+                        '${sortedHolds.length} VAULT HOLDS',
                         style: const TextStyle(
                           fontSize: 10,
                           fontWeight: FontWeight.bold,
@@ -132,10 +143,11 @@ class EscrowOverviewScreen extends ConsumerWidget {
             const SizedBox(height: 10),
 
             // Render Active Escrow Holds
-            if (escrowState.holds.isNotEmpty)
-              ...escrowState.holds.map((hold) => _escrowHoldCard(
+            if (sortedHolds.isNotEmpty)
+              ...sortedHolds.map((hold) => _escrowHoldCard(
                     context,
                     hold,
+                    bookingState.activeBookings,
                     currencyFormatter,
                     isDark: isDark,
                     textPrimary: textPrimary,
@@ -153,10 +165,11 @@ class EscrowOverviewScreen extends ConsumerWidget {
                     isDark: isDark,
                     textPrimary: textPrimary,
                     textSecondary: textSecondary,
+                    textMuted: textMuted,
                   )),
 
             // Empty state if no holds and no pending bookings
-            if (escrowState.holds.isEmpty && unheldBookings.isEmpty)
+            if (sortedHolds.isEmpty && unheldBookings.isEmpty)
               _emptyEscrowVaultCard(isDark, textPrimary, textSecondary, isRenter),
 
             const SizedBox(height: 24),
@@ -211,18 +224,18 @@ class EscrowOverviewScreen extends ConsumerWidget {
             // Claims List
             Builder(
               builder: (context) {
-                if (escrowState.isLoading && escrowState.claims.isEmpty) {
+                if (escrowState.isLoading && sortedClaims.isEmpty) {
                   return const LoadingIndicator(message: 'Loading disputes & claims...');
                 }
 
-                if (escrowState.errorMessage != null && escrowState.claims.isEmpty) {
+                if (escrowState.errorMessage != null && sortedClaims.isEmpty) {
                   return ErrorView(
                     message: escrowState.errorMessage!,
                     onRetry: () => ref.read(escrowProvider.notifier).fetchClaims(),
                   );
                 }
 
-                if (escrowState.claims.isEmpty) {
+                if (sortedClaims.isEmpty) {
                   return Container(
                     padding: const EdgeInsets.all(24),
                     decoration: BoxDecoration(
@@ -256,10 +269,18 @@ class EscrowOverviewScreen extends ConsumerWidget {
                 return ListView.builder(
                   shrinkWrap: true,
                   physics: const NeverScrollableScrollPhysics(),
-                  itemCount: escrowState.claims.length,
+                  itemCount: sortedClaims.length,
                   itemBuilder: (context, index) {
-                    final claim = escrowState.claims[index];
-                    return _claimCard(context, claim, currencyFormatter, textPrimary: textPrimary, textMuted: textMuted);
+                    final claim = sortedClaims[index];
+                    return _claimCard(
+                      context,
+                      claim,
+                      currencyFormatter,
+                      isDark: isDark,
+                      textPrimary: textPrimary,
+                      textSecondary: textSecondary,
+                      textMuted: textMuted,
+                    );
                   },
                 );
               },
@@ -273,6 +294,7 @@ class EscrowOverviewScreen extends ConsumerWidget {
   Widget _escrowHoldCard(
     BuildContext context,
     EscrowHoldModel hold,
+    List<BookingModel> bookings,
     NumberFormat formatter, {
     required bool isDark,
     required Color textPrimary,
@@ -280,6 +302,20 @@ class EscrowOverviewScreen extends ConsumerWidget {
     required Color textSecondary,
   }) {
     final shortBooking = hold.bookingId.length > 8 ? hold.bookingId.substring(0, 8) : hold.bookingId;
+    final matchingBooking = bookings.where((b) => b.id == hold.bookingId).firstOrNull;
+
+    final dateFormatter = DateFormat('MMM dd, yyyy');
+    DateTime? holdDate = hold.heldAtUtc != null && hold.heldAtUtc!.isNotEmpty
+        ? DateTime.tryParse(hold.heldAtUtc!)?.toLocal()
+        : null;
+    DateTime? settledDate = hold.settledAtUtc != null && hold.settledAtUtc!.isNotEmpty
+        ? DateTime.tryParse(hold.settledAtUtc!)?.toLocal()
+        : null;
+
+    if (holdDate == null && matchingBooking != null) {
+      holdDate = DateTime.tryParse(matchingBooking.createdAtUtc ?? '')?.toLocal() ?? matchingBooking.startDate;
+    }
+
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(16),
@@ -338,6 +374,50 @@ class EscrowOverviewScreen extends ConsumerWidget {
                 label: hold.rawStatus.toUpperCase(),
                 style: BadgeStyle.success,
               ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          Row(
+            children: [
+              const Icon(Icons.date_range_outlined, size: 15, color: AppColors.primaryLight),
+              const SizedBox(width: 6),
+              Expanded(
+                child: Text(
+                  holdDate != null
+                      ? 'Held on ${dateFormatter.format(holdDate)}'
+                      : 'Security Deposit Active',
+                  style: TextStyle(
+                    color: textPrimary,
+                    fontWeight: FontWeight.w600,
+                    fontSize: 12,
+                  ),
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+              if (settledDate != null)
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: isDark ? AppColors.darkSurfaceElevated : AppColors.lightSurfaceElevated,
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                  child: Text(
+                    'Settled ${dateFormatter.format(settledDate)}',
+                    style: TextStyle(fontSize: 10, color: textMuted, fontWeight: FontWeight.bold),
+                  ),
+                )
+              else if (matchingBooking != null)
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: isDark ? AppColors.darkSurfaceElevated : AppColors.lightSurfaceElevated,
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                  child: Text(
+                    '${matchingBooking.durationInDays}d rental',
+                    style: TextStyle(fontSize: 10, color: textMuted, fontWeight: FontWeight.bold),
+                  ),
+                ),
             ],
           ),
           const Divider(height: 20),
@@ -400,13 +480,15 @@ class EscrowOverviewScreen extends ConsumerWidget {
   Widget _unheldBookingCard(
     BuildContext context,
     WidgetRef ref,
-    dynamic b,
+    BookingModel b,
     NumberFormat formatter, {
     required bool isDark,
     required Color textPrimary,
     required Color textSecondary,
+    required Color textMuted,
   }) {
     final displayCode = b.displayCode.isNotEmpty ? b.displayCode : (b.id.length > 8 ? b.id.substring(0, 8) : b.id);
+    final dateFormatter = DateFormat('MMM dd, yyyy');
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(16),
@@ -428,7 +510,36 @@ class EscrowOverviewScreen extends ConsumerWidget {
               const StatusBadge(label: 'PRE-AUTH READY', style: BadgeStyle.warning),
             ],
           ),
-          const SizedBox(height: 6),
+          const SizedBox(height: 10),
+          Row(
+            children: [
+              const Icon(Icons.date_range_outlined, size: 15, color: AppColors.primaryLight),
+              const SizedBox(width: 6),
+              Expanded(
+                child: Text(
+                  '${dateFormatter.format(b.startDate)} → ${dateFormatter.format(b.endDate)}',
+                  style: TextStyle(
+                    color: textPrimary,
+                    fontWeight: FontWeight.w600,
+                    fontSize: 12,
+                  ),
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                decoration: BoxDecoration(
+                  color: isDark ? AppColors.darkSurfaceElevated : AppColors.lightSurfaceElevated,
+                  borderRadius: BorderRadius.circular(4),
+                ),
+                child: Text(
+                  '${b.durationInDays}d',
+                  style: TextStyle(fontSize: 10, color: textMuted, fontWeight: FontWeight.bold),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
           Text(
             'Security deposit pre-authorization is required before equipment handover.',
             style: TextStyle(fontSize: 12, color: textSecondary),
@@ -501,7 +612,15 @@ class EscrowOverviewScreen extends ConsumerWidget {
     );
   }
 
-  Widget _claimCard(BuildContext context, DamageClaimModel claim, NumberFormat formatter, {required Color textPrimary, required Color textMuted}) {
+  Widget _claimCard(
+    BuildContext context,
+    DamageClaimModel claim,
+    NumberFormat formatter, {
+    required bool isDark,
+    required Color textPrimary,
+    required Color textSecondary,
+    required Color textMuted,
+  }) {
     BadgeStyle badgeStyle;
     switch (claim.status.name.toLowerCase()) {
       case 'approved':
@@ -521,6 +640,14 @@ class EscrowOverviewScreen extends ConsumerWidget {
       default:
         badgeStyle = BadgeStyle.info;
     }
+
+    final dateFormatter = DateFormat('MMM dd, yyyy');
+    DateTime? filedDate = claim.createdAtUtc != null && claim.createdAtUtc!.isNotEmpty
+        ? DateTime.tryParse(claim.createdAtUtc!)?.toLocal()
+        : null;
+    DateTime? adjudicatedDate = claim.adjudicatedAtUtc != null && claim.adjudicatedAtUtc!.isNotEmpty
+        ? DateTime.tryParse(claim.adjudicatedAtUtc!)?.toLocal()
+        : null;
 
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
@@ -547,11 +674,43 @@ class EscrowOverviewScreen extends ConsumerWidget {
                 ],
               ),
               const SizedBox(height: 8),
+              Row(
+                children: [
+                  const Icon(Icons.date_range_outlined, size: 15, color: AppColors.primaryLight),
+                  const SizedBox(width: 6),
+                  Expanded(
+                    child: Text(
+                      filedDate != null
+                          ? 'Filed on ${dateFormatter.format(filedDate)}'
+                          : 'Date not recorded',
+                      style: TextStyle(
+                        color: textPrimary,
+                        fontWeight: FontWeight.w600,
+                        fontSize: 12,
+                      ),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                  if (adjudicatedDate != null)
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: isDark ? AppColors.darkSurfaceElevated : AppColors.lightSurfaceElevated,
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                      child: Text(
+                        'Adjudicated ${dateFormatter.format(adjudicatedDate)}',
+                        style: TextStyle(fontSize: 10, color: textMuted, fontWeight: FontWeight.bold),
+                      ),
+                    ),
+                ],
+              ),
+              const SizedBox(height: 8),
               Text(
                 claim.damageDescription,
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
-                style: TextStyle(fontSize: 13, color: textPrimary),
+                style: TextStyle(fontSize: 13, color: textSecondary),
               ),
               const SizedBox(height: 12),
               Row(
