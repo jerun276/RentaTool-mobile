@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -17,11 +18,12 @@ class RegisterScreen extends ConsumerStatefulWidget {
 
 class _RegisterScreenState extends ConsumerState<RegisterScreen> {
   final _formKey = GlobalKey<FormState>();
-  final _name = TextEditingController();
-  final _email = TextEditingController();
-  final _phone = TextEditingController();
-  final _password = TextEditingController();
-  final _confirmPassword = TextEditingController();
+  // DEBUG: pre-filled defaults. Never shown in release builds.
+  final _name = TextEditingController(text: kDebugMode ? 'Test User' : '');
+  final _email = TextEditingController(text: kDebugMode ? 'newuser@example.com' : '');
+  final _phone = TextEditingController(text: kDebugMode ? '0771234567' : '');
+  final _password = TextEditingController(text: kDebugMode ? 'Test@1234' : '');
+  final _confirmPassword = TextEditingController(text: kDebugMode ? 'Test@1234' : '');
   final _photoService = LocalProfilePhotoService();
   String _role = 'Renter';
   String? _photoPath;
@@ -131,6 +133,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
               ),
               const SizedBox(height: 8),
               AppTextField(
+                key: const Key('reg_name_field'),
                 controller: _name,
                 label: _role == 'Owner'
                     ? 'Full name / business name'
@@ -152,6 +155,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
               ),
               const SizedBox(height: 14),
               AppTextField(
+                key: const Key('reg_email_field'),
                 controller: _email,
                 label: 'Email address',
                 hintText: 'you@example.com',
@@ -169,6 +173,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
               ),
               const SizedBox(height: 14),
               AppTextField(
+                key: const Key('reg_phone_field'),
                 controller: _phone,
                 label: 'Sri Lankan mobile number',
                 hintText: '0771234567 or +94771234567',
@@ -187,6 +192,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
               ),
               const SizedBox(height: 14),
               AppTextField(
+                key: const Key('reg_password_field'),
                 controller: _password,
                 label: 'Password',
                 hintText: 'Min 8 chars with letter & number',
@@ -217,6 +223,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
               ),
               const SizedBox(height: 14),
               AppTextField(
+                key: const Key('reg_confirm_password_field'),
                 controller: _confirmPassword,
                 label: 'Confirm Password',
                 hintText: 'Re-enter your password',

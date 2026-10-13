@@ -1,4 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:dio/dio.dart';
 import '../../../core/services/token_storage_service.dart';
 import '../models/user_model.dart';
 import '../models/trust_score_model.dart';
@@ -138,12 +139,38 @@ class AuthNotifier extends StateNotifier<AuthState> {
     } catch (e) {
       state = state.copyWith(
         isLoading: false,
-        errorMessage: e.toString().contains('Invalid')
-            ? 'Invalid email or password.'
-            : 'Failed to connect to authentication server.',
+        errorMessage: _loginErrorMessage(e),
       );
       return false;
     }
+  }
+
+  String _loginErrorMessage(Object error) {
+    if (error is DioException) {
+      final response = error.response;
+      final body = response?.data;
+      final serverMessage = body is Map
+          ? (body['message'] ?? body['detail'] ?? body['title'])?.toString()
+          : null;
+
+      if (response?.statusCode == 401) {
+        return serverMessage ?? 'Invalid email or password.';
+      }
+      if (response?.statusCode == 403) {
+        return serverMessage ?? 'This account is not allowed to sign in.';
+      }
+      if (response != null) {
+        return serverMessage ??
+            'Sign in failed (server error ${response.statusCode}).';
+      }
+      if (error.type == DioExceptionType.connectionTimeout ||
+          error.type == DioExceptionType.receiveTimeout ||
+          error.type == DioExceptionType.sendTimeout) {
+        return 'The server took too long to respond. Check that the API is running and try again.';
+      }
+      return 'Cannot reach the authentication server. Check the API address and that the backend is running.';
+    }
+    return 'Sign in failed. Please try again.';
   }
 
   Future<bool> register({

@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -15,8 +16,11 @@ class LoginScreen extends ConsumerStatefulWidget {
 
 class _LoginScreenState extends ConsumerState<LoginScreen> {
   final _formKey = GlobalKey<FormState>();
-  final _emailController = TextEditingController();
-  final _passwordController = TextEditingController();
+  // DEBUG: pre-filled defaults. Never shown in release builds.
+  final _emailController = TextEditingController(
+      text: kDebugMode ? 'renter@rentatool.com' : '');
+  final _passwordController = TextEditingController(
+      text: kDebugMode ? 'Renter@123' : '');
   bool _obscurePassword = true;
 
   @override
@@ -124,6 +128,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     obscureText: _obscurePassword,
                     prefixIcon: const Icon(Icons.lock_outline, size: 18),
                     suffixIcon: IconButton(
+                      tooltip: _obscurePassword ? 'Show password' : 'Hide password',
                       icon: Icon(
                         _obscurePassword ? Icons.visibility_outlined : Icons.visibility_off_outlined,
                         size: 18,

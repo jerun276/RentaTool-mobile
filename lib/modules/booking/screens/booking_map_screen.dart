@@ -271,35 +271,48 @@ class _BookingMapScreenState extends ConsumerState<BookingMapScreen> {
                       ],
                     ),
                     child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Row(
-                          children: [
-                            const Icon(Icons.radar, color: AppColors.primaryLight, size: 20),
-                            const SizedBox(width: 8),
-                            Text(
-                              'Radius: ${_radiusKm.toInt()} km',
-                              style: TextStyle(
-                                fontWeight: FontWeight.bold,
-                                fontSize: 13,
-                                color: AppColors.textPrimary,
+                        Expanded(
+                          flex: 2,
+                          child: Row(
+                            children: [
+                              const Icon(Icons.radar, color: AppColors.primaryLight, size: 20),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
+                                  'Radius: ${_radiusKm.toInt()} km',
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 13,
+                                    color: AppColors.textPrimary,
+                                  ),
+                                ),
                               ),
-                            ),
-                          ],
+                            ],
+                          ),
                         ),
-                        Row(
-                          children: [5.0, 10.0, 15.0, 25.0].map((r) {
-                            final isSel = _radiusKm == r;
-                            return Padding(
-                              padding: const EdgeInsets.only(left: 6),
-                              child: ChoiceChip(
-                                label: Text('${r.toInt()}km', style: const TextStyle(fontSize: 11)),
-                                selected: isSel,
-                                onSelected: (_) => _onRadiusChanged(r),
-                                visualDensity: VisualDensity.compact,
-                              ),
-                            );
-                          }).toList(),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          flex: 3,
+                          child: SingleChildScrollView(
+                            scrollDirection: Axis.horizontal,
+                            child: Row(
+                              children: [5.0, 10.0, 15.0, 25.0].map((r) {
+                                final isSel = _radiusKm == r;
+                                return Padding(
+                                  padding: const EdgeInsets.only(left: 6),
+                                  child: ChoiceChip(
+                                    label: Text('${r.toInt()}km', style: const TextStyle(fontSize: 11)),
+                                    selected: isSel,
+                                    onSelected: (_) => _onRadiusChanged(r),
+                                    visualDensity: VisualDensity.compact,
+                                  ),
+                                );
+                              }).toList(),
+                            ),
+                          ),
                         ),
                       ],
                     ),

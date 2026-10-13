@@ -130,8 +130,9 @@ class _QrHandoverScreenState extends ConsumerState<QrHandoverScreen> {
                   borderRadius: BorderRadius.circular(30),
                   border: Border.all(color: AppColors.border),
                 ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
+                child: Wrap(
+                  alignment: WrapAlignment.center,
+                  spacing: 8,
                   children: [
                     ChoiceChip(
                       label: const Text('Pickup Verification'),
@@ -143,7 +144,6 @@ class _QrHandoverScreenState extends ConsumerState<QrHandoverScreen> {
                         }
                       },
                     ),
-                    const SizedBox(width: 8),
                     ChoiceChip(
                       label: const Text('Return Verification'),
                       selected: _eventType == 'Return',
@@ -257,14 +257,18 @@ class _QrHandoverScreenState extends ConsumerState<QrHandoverScreen> {
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Text(
-                          _tokenModel!.token,
-                          style: const TextStyle(
-                            fontFamily: 'monospace',
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                            color: AppColors.primaryLight,
-                            letterSpacing: 1.2,
+                        Flexible(
+                          child: Text(
+                            _tokenModel!.token,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              fontFamily: 'monospace',
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                              color: AppColors.primaryLight,
+                              letterSpacing: 1.2,
+                            ),
                           ),
                         ),
                         const SizedBox(width: 8),

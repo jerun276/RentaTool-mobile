@@ -17,14 +17,5 @@ final apiClientProvider = Provider<Dio>((ref) {
   );
 
   dio.interceptors.add(AuthInterceptor(tokenStorage));
-  dio.interceptors.add(
-    LogInterceptor(
-      requestBody: true,
-      responseBody: true,
-      requestHeader: true,
-      error: true,
-    ),
-  );
-
   return dio;
 });
