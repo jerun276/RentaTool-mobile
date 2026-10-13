@@ -17,27 +17,8 @@ class BookingState {
     this.errorMessage,
   });
 
-  static int _statusRank(String status) {
-    switch (status.toLowerCase()) {
-      case 'requested':
-        return 0; // needs owner action - show first
-      case 'confirmed':
-        return 1;
-      case 'active':
-        return 2;
-      case 'disputed':
-        return 3;
-      case 'completed':
-        return 4;
-      case 'cancelled':
-        return 5;
-      default:
-        return 6;
-    }
-  }
-
   /// Computed list based on active filter chip and search query,
-  /// ordered by status priority (Requested first) then newest first.
+  /// ordered stably by date (newest first) so items do not jump around when status changes.
   List<BookingModel> get filteredBookings {
     final list = activeBookings.where((b) {
       // 1. Status Filter
@@ -60,11 +41,11 @@ class BookingState {
     }).toList();
 
     list.sort((a, b) {
-      final byStatus = _statusRank(a.status).compareTo(_statusRank(b.status));
-      if (byStatus != 0) return byStatus;
-      final aCreated = DateTime.tryParse(a.createdAtUtc ?? '') ?? a.startDate;
-      final bCreated = DateTime.tryParse(b.createdAtUtc ?? '') ?? b.startDate;
-      return bCreated.compareTo(aCreated);
+      final aDate = DateTime.tryParse(a.createdAtUtc ?? '') ?? a.startDate;
+      final bDate = DateTime.tryParse(b.createdAtUtc ?? '') ?? b.startDate;
+      final cmp = bDate.compareTo(aDate);
+      if (cmp != 0) return cmp;
+      return b.startDate.compareTo(a.startDate);
     });
     return list;
   }
