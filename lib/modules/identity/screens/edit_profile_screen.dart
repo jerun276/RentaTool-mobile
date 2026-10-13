@@ -1,6 +1,8 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:image_picker/image_picker.dart';
+import '../../../core/services/cloudinary_service.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/widgets/app_button.dart';
 import '../../../core/widgets/app_text_field.dart';
@@ -23,6 +25,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
   late final TextEditingController _phoneController;
   final _photoService = LocalProfilePhotoService();
   String? _photoPath;
+  bool _isUploadingPhoto = false;
 
   @override
   void initState() {
@@ -38,24 +41,60 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
     super.dispose();
   }
 
+  ImageProvider? _resolveImage(String? path) {
+    if (path == null || path.isEmpty) return null;
+    if (path.startsWith('http://') || path.startsWith('https://')) {
+      return NetworkImage(path);
+    }
+    return FileImage(File(path));
+  }
+
   Future<void> _save() async {
     if (!_formKey.currentState!.validate()) return;
+
+    String? photoUrl = widget.user.profilePhotoPath;
+
+    if (_photoPath != null && !_photoPath!.startsWith('http')) {
+      setState(() => _isUploadingPhoto = true);
+      try {
+        final cloudinary = ref.read(cloudinaryServiceProvider);
+        photoUrl = await cloudinary.uploadImage(
+          _photoPath!,
+          folder: 'rentatool/profiles',
+        );
+      } catch (e) {
+        if (!mounted) return;
+        setState(() => _isUploadingPhoto = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to upload photo to Cloudinary: $e')),
+        );
+        return;
+      }
+      if (!mounted) return;
+      setState(() => _isUploadingPhoto = false);
+    }
 
     final saved = await ref.read(authProvider.notifier).updateProfile(
           name: _nameController.text.trim(),
           phoneNumber: _phoneController.text.trim(),
+          profilePhotoUrl: photoUrl,
         );
     if (!mounted) return;
 
     if (saved) {
-      if (_photoPath != null) {
+      if (photoUrl != null && photoUrl.isNotEmpty) {
+        await ref
+            .read(authProvider.notifier)
+            .saveLocalProfilePhoto(photoUrl);
+      } else if (_photoPath != null) {
         await ref
             .read(authProvider.notifier)
             .saveLocalProfilePhoto(_photoPath!);
       }
+      await ref.read(authProvider.notifier).refreshProfile();
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Profile updated.')),
+        const SnackBar(content: Text('Profile updated successfully.')),
       );
       Navigator.of(context).pop();
       return;
@@ -68,22 +107,63 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
     );
   }
 
-  Future<void> _choosePhoto() async {
+  Future<void> _choosePhoto({ImageSource source = ImageSource.gallery}) async {
     try {
-      final path = await _photoService.chooseAndSave();
+      final path = await _photoService.chooseAndSave(source: source);
       if (path != null && mounted) setState(() => _photoPath = path);
     } catch (_) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Could not open your photo gallery.')),
+          const SnackBar(content: Text('Could not open camera or gallery.')),
         );
       }
     }
   }
 
+  void _showPhotoOptions() {
+    showModalBottomSheet<void>(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 16),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text(
+                'Change Profile Photo',
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+              ),
+              const SizedBox(height: 12),
+              ListTile(
+                leading: const Icon(Icons.camera_alt_outlined, color: AppColors.primary),
+                title: const Text('Take Photo (Camera)'),
+                onTap: () {
+                  Navigator.of(ctx).pop();
+                  _choosePhoto(source: ImageSource.camera);
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.photo_library_outlined, color: AppColors.primary),
+                title: const Text('Choose from Gallery'),
+                onTap: () {
+                  Navigator.of(ctx).pop();
+                  _choosePhoto(source: ImageSource.gallery);
+                },
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final auth = ref.watch(authProvider);
+    final displayPhoto = _photoPath ?? widget.user.profilePhotoPath;
 
     return Scaffold(
       appBar: AppBar(title: const Text('Edit profile')),
@@ -102,28 +182,22 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                       CircleAvatar(
                         radius: 48,
                         backgroundColor: AppColors.surfaceLight,
-                        backgroundImage: (_photoPath ??
-                                    widget.user.profilePhotoPath) ==
-                                null
-                            ? null
-                            : FileImage(File(
-                                _photoPath ?? widget.user.profilePhotoPath!)),
-                        child:
-                            (_photoPath ?? widget.user.profilePhotoPath) == null
-                                ? Icon(Icons.person_outline,
-                                    size: 44, color: AppColors.textSecondary)
-                                : null,
+                        backgroundImage: _resolveImage(displayPhoto),
+                        child: displayPhoto == null
+                            ? Icon(Icons.person_outline,
+                                size: 44, color: AppColors.textSecondary)
+                            : null,
                       ),
                       IconButton.filled(
                         tooltip: 'Choose profile photo',
-                        onPressed: _choosePhoto,
+                        onPressed: _showPhotoOptions,
                         icon: const Icon(Icons.camera_alt_outlined, size: 18),
                       ),
                     ]),
                     TextButton.icon(
-                      onPressed: _choosePhoto,
-                      icon: const Icon(Icons.photo_library_outlined),
-                      label: const Text('Choose photo from gallery'),
+                      onPressed: _showPhotoOptions,
+                      icon: const Icon(Icons.add_a_photo_outlined),
+                      label: const Text('Change photo (Camera / Gallery)'),
                     ),
                   ]),
                 ),
@@ -184,9 +258,9 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                 ),
                 const SizedBox(height: 20),
                 AppButton(
-                  text: 'Save changes',
+                  text: _isUploadingPhoto ? 'Uploading photo...' : 'Save changes',
                   icon: Icons.check,
-                  isLoading: auth.isLoading,
+                  isLoading: auth.isLoading || _isUploadingPhoto,
                   onPressed: _save,
                 ),
               ],

@@ -7,6 +7,8 @@ import '../../../core/widgets/app_button.dart';
 import '../../../core/widgets/error_view.dart';
 import '../../../core/widgets/loading_indicator.dart';
 import '../../../core/widgets/status_badge.dart';
+import '../../identity/providers/auth_provider.dart';
+import '../../identity/models/user_model.dart';
 import '../models/damage_claim_model.dart';
 import '../providers/escrow_provider.dart';
 
@@ -18,6 +20,8 @@ class ClaimDetailScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final state = ref.watch(claimDetailProvider(claimId));
+    final authState = ref.watch(authProvider);
+    final isAdmin = authState.user?.role == UserRole.admin;
 
     // Surface snackbar messages reactively
     ref.listen(claimDetailProvider(claimId), (prev, next) {
@@ -308,7 +312,7 @@ class ClaimDetailScreen extends ConsumerWidget {
             ],
 
             // ── Actions ──────────────────────────────────────────────────
-            if (c.status.canAdjudicate) ...[
+            if (isAdmin && c.status.canAdjudicate) ...[
               const _SectionLabel('ADJUDICATION CONTROLS'),
               const SizedBox(height: 10),
               Row(
@@ -351,7 +355,7 @@ class ClaimDetailScreen extends ConsumerWidget {
               const SizedBox(height: 16),
             ],
 
-            if (c.status.canPayout) ...[
+            if (isAdmin && c.status.canPayout) ...[
               AppButton(
                 text: 'Disburse Payout & Settle Escrow',
                 variant: AppButtonVariant.secondary,

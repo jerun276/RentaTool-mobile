@@ -12,6 +12,8 @@ import '../models/booking_model.dart';
 import '../services/booking_service.dart';
 import '../widgets/booking_timeline_widget.dart';
 import '../widgets/surge_extension_sheet.dart';
+import '../../identity/providers/auth_provider.dart';
+import '../../identity/models/user_model.dart';
 
 class BookingDetailScreen extends ConsumerStatefulWidget {
   final String bookingId;
@@ -77,6 +79,9 @@ class _BookingDetailScreenState extends ConsumerState<BookingDetailScreen> {
     }
 
     final b = _booking!;
+    final authState = ref.watch(authProvider);
+    final currentUser = authState.user;
+    final isOwnerOrAdmin = currentUser?.role == UserRole.owner || currentUser?.role == UserRole.admin;
     final currencyFormatter = NumberFormat.currency(locale: 'en_LK', symbol: 'LKR ', decimalDigits: 0);
     final dateFormatter = DateFormat('EEEE, MMM dd, yyyy');
 
@@ -252,27 +257,57 @@ class _BookingDetailScreenState extends ConsumerState<BookingDetailScreen> {
             const SizedBox(height: 24),
 
             // 5. Handover QR Action Buttons
-            Row(
-              children: [
-                Expanded(
-                  child: AppButton(
-                    text: 'Show Handover QR',
-                    icon: Icons.qr_code,
-                    onPressed: () => context.push('/bookings/qr/${b.id}'),
-                  ),
-                ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: AppButton(
-                    text: 'Scan Counterpart QR',
-                    variant: AppButtonVariant.outline,
-                    icon: Icons.qr_code_scanner,
-                    onPressed: () => context.push('/bookings/scan'),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 12),
+            if (['confirmed', 'active'].contains(b.status.toLowerCase())) ...[
+              Builder(
+                builder: (context) {
+                  final bool isPickup = b.status.toLowerCase() == 'confirmed';
+                  final bool isReturn = b.status.toLowerCase() == 'active';
+                  final bool isOwner = currentUser?.role == UserRole.owner;
+                  final bool isRenter = currentUser?.role == UserRole.renter;
+                  final bool isAdmin = currentUser?.role == UserRole.admin;
+
+                  // For Pickup: Owner generates (shows), Renter scans.
+                  // For Return: Renter generates (shows), Owner scans.
+                  final bool canShowQR = isAdmin || (isOwner && isPickup) || (isRenter && isReturn);
+                  final bool canScanQR = isAdmin || (isRenter && isPickup) || (isOwner && isReturn);
+
+                  if (!canShowQR && !canScanQR) return const SizedBox.shrink();
+
+                  return Column(
+                    children: [
+                      Row(
+                        children: [
+                          if (canShowQR)
+                            Expanded(
+                              child: AppButton(
+                                text: 'Show Handover QR',
+                                icon: Icons.qr_code,
+                                fontSize: 12,
+                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 12),
+                                onPressed: () => context.push('/bookings/qr/${b.id}'),
+                              ),
+                            ),
+                          if (canShowQR && canScanQR)
+                            const SizedBox(width: 8),
+                          if (canScanQR)
+                            Expanded(
+                              child: AppButton(
+                                text: 'Scan Handover QR',
+                                variant: AppButtonVariant.outline,
+                                icon: Icons.qr_code_scanner,
+                                fontSize: 12,
+                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 12),
+                                onPressed: () => context.push('/bookings/scan?bookingId=${b.id}'),
+                              ),
+                            ),
+                        ],
+                      ),
+                      const SizedBox(height: 12),
+                    ],
+                  );
+                },
+              ),
+            ],
 
             // 6. Dynamic Surge Schedule Extension
             if (b.canExtendSchedule)
@@ -287,12 +322,12 @@ class _BookingDetailScreenState extends ConsumerState<BookingDetailScreen> {
               ),
             const SizedBox(height: 12),
 
-            // 7. Damage Claim Dispute Link (Component 4 Bridge)
-            if (b.canDispute)
+            // 7. Damage Claim Dispute Link (Only available to Equipment Owner or Admin)
+            if (b.canDispute && isOwnerOrAdmin)
               TextButton.icon(
                 icon: const Icon(Icons.report_problem_outlined, size: 18, color: AppColors.warning),
                 label: const Text('File Damage Claim / Escrow Dispute', style: TextStyle(color: AppColors.warning)),
-                onPressed: () => context.push('/escrow/claim/${b.id}'),
+                onPressed: () => context.push('/escrow/claim-new?bookingId=${b.id}'),
               ),
           ],
         ),

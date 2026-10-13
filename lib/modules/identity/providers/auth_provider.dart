@@ -1,5 +1,7 @@
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:dio/dio.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'dart:async';
+import '../../../core/network/auth_interceptor.dart' show SessionEvents;
 import '../../../core/services/token_storage_service.dart';
 import '../models/user_model.dart';
 import '../models/trust_score_model.dart';
@@ -37,12 +39,30 @@ class AuthNotifier extends StateNotifier<AuthState> {
   final IdentityService _identityService;
   final TokenStorageService _tokenStorage;
 
+  StreamSubscription<void>? _sessionSub;
+
   AuthNotifier(this._identityService, this._tokenStorage)
       : super(const AuthState()) {
+    _sessionSub = SessionEvents.onExpired.listen((_) {
+      if (state.isAuthenticated) {
+        state = const AuthState(
+          errorMessage: 'Your session expired. Please sign in again.',
+        );
+      }
+    });
     checkCurrentSession();
   }
 
+  @override
+  void dispose() {
+    _sessionSub?.cancel();
+    super.dispose();
+  }
+
   Future<UserModel> _withLocalPhoto(UserModel user) async {
+    if (user.profilePhotoPath != null && user.profilePhotoPath!.isNotEmpty) {
+      return user;
+    }
     final path = await _tokenStorage.getProfilePhoto(user.id);
     return user.copyWith(profilePhotoPath: path);
   }
@@ -215,9 +235,16 @@ class AuthNotifier extends StateNotifier<AuthState> {
       );
       return true;
     } catch (e) {
+      String message = 'Registration failed. Please check your details.';
+      if (e is DioException && e.response?.statusCode == 409) {
+        final data = e.response?.data;
+        if (data is Map && data['message'] != null) {
+          message = data['message'].toString();
+        }
+      }
       state = state.copyWith(
         isLoading: false,
-        errorMessage: 'Registration failed. Please check your details.',
+        errorMessage: message,
       );
       return false;
     }
@@ -245,6 +272,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
   Future<bool> updateProfile({
     required String name,
     required String phoneNumber,
+    String? profilePhotoUrl,
   }) async {
     final user = state.user;
     if (user == null) return false;
@@ -255,8 +283,10 @@ class AuthNotifier extends StateNotifier<AuthState> {
         userId: user.id,
         name: name,
         phoneNumber: phoneNumber,
+        profilePhotoUrl: profilePhotoUrl,
       );
-      final photoPath = await _tokenStorage.getProfilePhoto(updatedUser.id);
+      final photoPath = updatedUser.profilePhotoPath ??
+          await _tokenStorage.getProfilePhoto(updatedUser.id);
       state = state.copyWith(
         isLoading: false,
         user: updatedUser.copyWith(profilePhotoPath: photoPath),
@@ -299,5 +329,21 @@ final authProvider = StateNotifierProvider<AuthNotifier, AuthState>((ref) {
 
 final trustScoreProvider = FutureProvider.autoDispose
     .family<TrustScoreModel, String>((ref, userId) async {
-  return ref.watch(identityServiceProvider).getTrustScore(userId);
+  final tokenStorage = ref.read(tokenStorageServiceProvider);
+  try {
+    final score = await ref.watch(identityServiceProvider).getTrustScore(userId);
+    await tokenStorage.saveTrustScore(userId, score.score, score.tier);
+    return score;
+  } catch (e) {
+    final cachedScore = await tokenStorage.getTrustScore(userId);
+    final cachedTier = await tokenStorage.getTrustTier(userId);
+    if (cachedScore != null && cachedTier != null) {
+      return TrustScoreModel(
+        userId: userId,
+        score: cachedScore,
+        tier: cachedTier,
+      );
+    }
+    rethrow;
+  }
 });

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../identity/providers/auth_provider.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 import '../../../core/services/cloudinary_service.dart';
@@ -32,6 +33,10 @@ class _FileClaimScreenState extends ConsumerState<FileClaimScreen> {
     super.initState();
     if (widget.bookingId != null) {
       _bookingIdController.text = widget.bookingId!;
+    }
+    final user = ref.read(authProvider).user;
+    if (user != null) {
+      _userIdController.text = user.id;
     }
   }
 
@@ -132,6 +137,7 @@ class _FileClaimScreenState extends ConsumerState<FileClaimScreen> {
                 controller: _bookingIdController,
                 label: 'Rental Booking ID',
                 hintText: 'e.g. 33333333-3333-3333-3333-333333333301',
+                readOnly: true,
                 validator: (v) => v == null || v.isEmpty ? 'Booking ID is required' : null,
               ),
               const SizedBox(height: 16),
@@ -140,6 +146,7 @@ class _FileClaimScreenState extends ConsumerState<FileClaimScreen> {
                 controller: _userIdController,
                 label: 'Your User ID',
                 hintText: 'e.g. 11111111-1111-1111-1111-111111111101',
+                readOnly: true,
                 validator: (v) => v == null || v.isEmpty ? 'User ID is required' : null,
               ),
               const SizedBox(height: 16),

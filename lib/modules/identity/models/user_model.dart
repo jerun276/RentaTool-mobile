@@ -63,6 +63,7 @@ class UserModel {
       isActive: json['isActive'] ?? true,
       suspensionReason: json['suspensionReason'],
       trustScore: json['trustScore'] ?? 50,
+      profilePhotoPath: json['profilePhotoUrl'] ?? json['profilePhotoPath'],
     );
   }
 
@@ -77,6 +78,7 @@ class UserModel {
       'isActive': isActive,
       'suspensionReason': suspensionReason,
       'trustScore': trustScore,
+      'profilePhotoUrl': profilePhotoPath,
     };
   }
 

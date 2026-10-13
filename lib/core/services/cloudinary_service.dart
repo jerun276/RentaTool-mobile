@@ -46,7 +46,8 @@ class CloudinaryService {
     return cName.isNotEmpty &&
         cName != 'your_cloudinary_cloud_name' &&
         preset.isNotEmpty &&
-        preset != 'rentatool_preset';
+        preset != 'your_cloudinary_upload_preset' &&
+        preset != 'your_upload_preset';
   }
 
   /// Uploads a single image to Cloudinary and returns its secure HTTPS URL.
