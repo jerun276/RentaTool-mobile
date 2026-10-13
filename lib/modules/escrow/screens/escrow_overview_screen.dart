@@ -301,32 +301,39 @@ class EscrowOverviewScreen extends ConsumerWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF10B981).withValues(alpha: 0.15),
-                      shape: BoxShape.circle,
+              Expanded(
+                child: Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF10B981).withValues(alpha: 0.15),
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(Icons.shield, color: Color(0xFF10B981), size: 18),
                     ),
-                    child: const Icon(Icons.shield, color: Color(0xFF10B981), size: 18),
-                  ),
-                  const SizedBox(width: 10),
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Booking #$shortBooking',
-                        style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: textPrimary),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Booking #$shortBooking',
+                            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: textPrimary),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          Text(
+                            'Security Deposit Pre-Auth',
+                            style: TextStyle(fontSize: 11, color: textMuted),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ],
                       ),
-                      Text(
-                        'Security Deposit Pre-Auth',
-                        style: TextStyle(fontSize: 11, color: textMuted),
-                      ),
-                    ],
-                  ),
-                ],
+                    ),
+                  ],
+                ),
               ),
+              const SizedBox(width: 8),
               StatusBadge(
                 label: hold.rawStatus.toUpperCase(),
                 style: BadgeStyle.success,
@@ -338,9 +345,14 @@ class EscrowOverviewScreen extends ConsumerWidget {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text('Locked Deposit in Vault', style: TextStyle(fontSize: 12, color: textMuted)),
-              Text(
-                formatter.format(hold.depositAmount),
-                style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: Color(0xFF10B981)),
+              const SizedBox(width: 8),
+              Flexible(
+                child: Text(
+                  formatter.format(hold.depositAmount),
+                  style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: Color(0xFF10B981)),
+                  overflow: TextOverflow.ellipsis,
+                  textAlign: TextAlign.end,
+                ),
               ),
             ],
           ),
@@ -349,9 +361,14 @@ class EscrowOverviewScreen extends ConsumerWidget {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text('Gateway Transaction Ref', style: TextStyle(fontSize: 11, color: textMuted)),
-              Text(
-                hold.preAuthTransactionId.isNotEmpty ? hold.preAuthTransactionId : 'PA-LK-SECURE-VAULT',
-                style: TextStyle(fontSize: 11, fontFamily: 'monospace', fontWeight: FontWeight.w600, color: textPrimary),
+              const SizedBox(width: 8),
+              Flexible(
+                child: Text(
+                  hold.preAuthTransactionId.isNotEmpty ? hold.preAuthTransactionId : 'PA-LK-SECURE-VAULT',
+                  style: TextStyle(fontSize: 10, fontFamily: 'monospace', fontWeight: FontWeight.w600, color: textPrimary),
+                  overflow: TextOverflow.ellipsis,
+                  textAlign: TextAlign.end,
+                ),
               ),
             ],
           ),
@@ -404,7 +421,10 @@ class EscrowOverviewScreen extends ConsumerWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text('Booking #$displayCode', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: textPrimary)),
+              Expanded(
+                child: Text('Booking #$displayCode', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: textPrimary), overflow: TextOverflow.ellipsis),
+              ),
+              const SizedBox(width: 8),
               const StatusBadge(label: 'PRE-AUTH READY', style: BadgeStyle.warning),
             ],
           ),
@@ -515,10 +535,14 @@ class EscrowOverviewScreen extends ConsumerWidget {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text(
-                    'CLAIM-${claim.claimId.isNotEmpty ? claim.claimId.substring(0, claim.claimId.length >= 4 ? 4 : claim.claimId.length).toUpperCase() : '0000'}',
-                    style: const TextStyle(fontFamily: 'monospace', fontWeight: FontWeight.bold, fontSize: 12),
+                  Expanded(
+                    child: Text(
+                      'CLAIM-${claim.claimId.isNotEmpty ? claim.claimId.substring(0, claim.claimId.length >= 4 ? 4 : claim.claimId.length).toUpperCase() : '0000'}',
+                      style: const TextStyle(fontFamily: 'monospace', fontWeight: FontWeight.bold, fontSize: 12),
+                      overflow: TextOverflow.ellipsis,
+                    ),
                   ),
+                  const SizedBox(width: 8),
                   StatusBadge(label: claim.status.displayLabel, style: badgeStyle),
                 ],
               ),
