@@ -547,7 +547,19 @@ class _MyEquipmentScreenState extends ConsumerState<MyEquipmentScreen> {
                     children: [
                       Expanded(
                         child: OutlinedButton.icon(
-                          icon: const Icon(Icons.history, size: 15),
+                          icon: const Icon(Icons.edit_outlined, size: 14),
+                          label: const Text('Edit'),
+                          style: OutlinedButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(vertical: 8),
+                            textStyle: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold),
+                          ),
+                          onPressed: () => context.push('/catalog/edit/${equipment.id}', extra: equipment),
+                        ),
+                      ),
+                      const SizedBox(width: 6),
+                      Expanded(
+                        child: OutlinedButton.icon(
+                          icon: const Icon(Icons.history, size: 14),
                           label: const Text('History'),
                           style: OutlinedButton.styleFrom(
                             padding: const EdgeInsets.symmetric(vertical: 8),
@@ -556,10 +568,10 @@ class _MyEquipmentScreenState extends ConsumerState<MyEquipmentScreen> {
                           onPressed: () => context.push('/catalog/history/${equipment.id}'),
                         ),
                       ),
-                      const SizedBox(width: 8),
+                      const SizedBox(width: 6),
                       Expanded(
                         child: ElevatedButton.icon(
-                          icon: const Icon(Icons.fact_check_outlined, size: 15),
+                          icon: const Icon(Icons.fact_check_outlined, size: 14),
                           label: const Text('Inspect'),
                           style: ElevatedButton.styleFrom(
                             backgroundColor: AppColors.primary,

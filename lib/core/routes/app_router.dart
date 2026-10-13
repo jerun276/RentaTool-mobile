@@ -99,6 +99,13 @@ GoRouter _buildRouter() {
                     builder: (context, state) => const AddEquipmentScreen(),
                   ),
                   GoRoute(
+                    path: 'edit/:id',
+                    builder: (context, state) {
+                      final equipment = state.extra as EquipmentModel?;
+                      return AddEquipmentScreen(equipmentToEdit: equipment);
+                    },
+                  ),
+                  GoRoute(
                     path: 'inspection/:id',
                     builder: (context, state) {
                       final id = state.pathParameters['id'] ?? '';

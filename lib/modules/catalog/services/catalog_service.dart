@@ -78,6 +78,34 @@ class CatalogService {
     return EquipmentModel.fromJson(response.data as Map<String, dynamic>);
   }
 
+  /// Updates an existing machinery / equipment listing
+  Future<EquipmentModel> updateEquipment({
+    required String id,
+    required String title,
+    required String description,
+    required String categoryId,
+    required double dailyRate,
+    required double replacementValue,
+    required String location,
+    String specificationsJson = '{}',
+    List<ToolImageModel> images = const [],
+  }) async {
+    final response = await _dio.put(
+      '${ApiConstants.equipment}/$id',
+      data: {
+        'title': title,
+        'description': description,
+        'categoryId': categoryId,
+        'dailyRate': dailyRate,
+        'replacementValue': replacementValue,
+        'location': location,
+        'specificationsJson': specificationsJson,
+        if (images.isNotEmpty) 'images': images.map((img) => img.toJson()).toList(),
+      },
+    );
+    return EquipmentModel.fromJson(response.data as Map<String, dynamic>);
+  }
+
   /// Records pre/post-rental condition inspection with multi-angle photographic evidence
   Future<InspectionLogModel> createInspectionLog({
     required String equipmentId,

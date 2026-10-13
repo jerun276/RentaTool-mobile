@@ -491,6 +491,13 @@ class _EquipmentDetailScreenState extends ConsumerState<EquipmentDetailScreen> {
             // Action Buttons (Tailored for Owner vs Renter)
             if (isAssetOwner) ...[
               AppButton(
+                text: 'Edit Machinery Details',
+                variant: AppButtonVariant.secondary,
+                icon: Icons.edit_outlined,
+                onPressed: () => context.push('/catalog/edit/${eq.id}', extra: eq),
+              ),
+              const SizedBox(height: 10),
+              AppButton(
                 text: 'Log Pre-Dispatch Inspection',
                 variant: AppButtonVariant.primary,
                 icon: Icons.document_scanner_outlined,
