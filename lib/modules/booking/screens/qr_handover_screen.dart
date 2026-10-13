@@ -9,6 +9,7 @@ import '../../../core/theme/app_colors.dart';
 import '../../../core/widgets/app_button.dart';
 import '../../../core/widgets/error_view.dart';
 import '../../../core/widgets/loading_indicator.dart';
+import '../models/booking_model.dart';
 import '../models/handover_token_model.dart';
 import '../services/booking_service.dart';
 import '../providers/booking_provider.dart';
@@ -24,6 +25,7 @@ class QrHandoverScreen extends ConsumerStatefulWidget {
 
 class _QrHandoverScreenState extends ConsumerState<QrHandoverScreen> {
   HandoverTokenModel? _tokenModel;
+  BookingModel? _loadedBooking;
   bool _isLoading = true;
   String? _error;
   String _eventType = 'Pickup';
@@ -33,15 +35,34 @@ class _QrHandoverScreenState extends ConsumerState<QrHandoverScreen> {
   @override
   void initState() {
     super.initState();
+    _initAndGenerate();
+  }
+
+  Future<void> _initAndGenerate() async {
     final bookings = ref.read(bookingProvider).activeBookings;
+    BookingModel? b;
     try {
-      final booking = bookings.firstWhere((b) => b.id == widget.bookingId);
-      if (!booking.pickupVerified) {
-        _eventType = 'Pickup';
-      } else if (!booking.returnVerified) {
-        _eventType = 'Return';
-      }
+      b = bookings.firstWhere((item) => item.id == widget.bookingId);
     } catch (_) {}
+
+    if (b == null) {
+      try {
+        final service = ref.read(bookingServiceProvider);
+        b = await service.getBookingById(widget.bookingId);
+      } catch (_) {}
+    }
+
+    if (mounted && b != null) {
+      setState(() {
+        _loadedBooking = b;
+        if (b!.status.toLowerCase() == 'active' || b.pickupVerified) {
+          _eventType = 'Return';
+        } else {
+          _eventType = 'Pickup';
+        }
+      });
+    }
+
     _generateToken();
   }
 
@@ -126,11 +147,17 @@ class _QrHandoverScreenState extends ConsumerState<QrHandoverScreen> {
     bool showPickup = true;
     bool showReturn = true;
     
+    BookingModel? booking;
     try {
-      final booking = bookings.firstWhere((b) => b.id == widget.bookingId);
+      booking = bookings.firstWhere((b) => b.id == widget.bookingId);
+    } catch (_) {
+      booking = _loadedBooking;
+    }
+
+    if (booking != null) {
       showPickup = booking.canGeneratePickupToken;
       showReturn = booking.canGenerateReturnToken;
-    } catch (_) {}
+    }
 
     return Scaffold(
       appBar: AppBar(

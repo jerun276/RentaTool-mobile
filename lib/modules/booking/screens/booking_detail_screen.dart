@@ -137,15 +137,23 @@ class _BookingDetailScreenState extends ConsumerState<BookingDetailScreen> {
         badgeStyle = BadgeStyle.warning;
     }
 
+    final bool isPickup = b.status.toLowerCase() == 'confirmed';
+    final bool isReturn = b.status.toLowerCase() == 'active';
+    // For Pickup: Owner generates (shows), Renter scans.
+    // For Return: Renter generates (shows), Owner scans.
+    final bool canShowQR = isAdmin || (isOwner && isPickup) || (isRenter && isReturn);
+    final bool canScanQR = isAdmin || (isRenter && isPickup) || (isOwner && isReturn);
+
     return Scaffold(
       appBar: AppBar(
         title: Text(b.displayCode),
         actions: [
-          IconButton(
-            icon: const Icon(Icons.qr_code, size: 20),
-            tooltip: 'Show Handover QR',
-            onPressed: () => context.push('/bookings/qr/${b.id}'),
-          ),
+          if (canShowQR)
+            IconButton(
+              icon: const Icon(Icons.qr_code, size: 20),
+              tooltip: isReturn ? 'Show Return QR' : 'Show Handover QR',
+              onPressed: () => context.push('/bookings/qr/${b.id}'),
+            ),
           IconButton(
             icon: const Icon(Icons.refresh, size: 20),
             tooltip: 'Refresh',
@@ -326,35 +334,21 @@ class _BookingDetailScreenState extends ConsumerState<BookingDetailScreen> {
 
             // 5. Handover QR Action Buttons
             if (['confirmed', 'active'].contains(b.status.toLowerCase())) ...[
-              Builder(
-                builder: (context) {
-                  final bool isPickup = b.status.toLowerCase() == 'confirmed';
-                  final bool isReturn = b.status.toLowerCase() == 'active';
-                  final bool isOwner = currentUser?.role == UserRole.owner;
-                  final bool isRenter = currentUser?.role == UserRole.renter;
-                  final bool isAdmin = currentUser?.role == UserRole.admin;
-
-                  // For Pickup: Owner generates (shows), Renter scans.
-                  // For Return: Renter generates (shows), Owner scans.
-                  final bool canShowQR = isAdmin || (isOwner && isPickup) || (isRenter && isReturn);
-                  final bool canScanQR = isAdmin || (isRenter && isPickup) || (isOwner && isReturn);
-
-                  if (!canShowQR && !canScanQR) return const SizedBox.shrink();
-
-                  return Column(
-                    children: [
-                      Row(
-                        children: [
-                          if (canShowQR)
-                            Expanded(
-                              child: AppButton(
-                                text: 'Show Handover QR',
-                                icon: Icons.qr_code,
-                                fontSize: 12,
-                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 12),
-                                onPressed: () => context.push('/bookings/qr/${b.id}'),
-                              ),
+              if (canShowQR || canScanQR)
+                Column(
+                  children: [
+                    Row(
+                      children: [
+                        if (canShowQR)
+                          Expanded(
+                            child: AppButton(
+                              text: isReturn ? 'Show Return QR' : 'Show Handover QR',
+                              icon: Icons.qr_code,
+                              fontSize: 12,
+                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 12),
+                              onPressed: () => context.push('/bookings/qr/${b.id}'),
                             ),
+                          ),
                           if (canShowQR && canScanQR)
                             const SizedBox(width: 8),
                           if (canScanQR)
@@ -372,9 +366,7 @@ class _BookingDetailScreenState extends ConsumerState<BookingDetailScreen> {
                       ),
                       const SizedBox(height: 12),
                     ],
-                  );
-                },
-              ),
+                  ),
             ],
 
             // 6. Dynamic Surge Schedule Extension (Only available to Renter or Admin)

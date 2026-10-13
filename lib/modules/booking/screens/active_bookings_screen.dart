@@ -283,12 +283,23 @@ class _ActiveBookingsScreenState extends ConsumerState<ActiveBookingsScreen> {
                     itemCount: filtered.length,
                     itemBuilder: (context, index) {
                       final item = filtered[index];
+                      final isPickup = item.status.toLowerCase() == 'confirmed';
+                      final isReturn = item.status.toLowerCase() == 'active';
+                      final bool isItemOwner = (currentUser != null && currentUser.id == item.ownerId) || isOwner;
+                      final bool isItemRenter = (currentUser != null && currentUser.id == item.renterId) || isRenter;
+                      final bool isAdmin = currentUser?.role == UserRole.admin;
+
+                      // Pickup: Owner shows QR, Renter scans QR.
+                      // Return: Renter shows QR, Owner scans QR.
+                      final bool canShow = isAdmin || (isItemOwner && isPickup) || (isItemRenter && isReturn);
+                      final bool canScan = isAdmin || (isItemRenter && isPickup) || (isItemOwner && isReturn);
+
                       return BookingCard(
                         key: ValueKey('${item.id}_${isDark ? 'dark' : 'light'}'),
                         booking: item,
                         onTap: () => context.push('/bookings/detail/${item.id}'),
-                        onShowQR: isOwner ? () => context.push('/bookings/qr/${item.id}') : null,
-                        onScanQR: isRenter ? () => context.push('/bookings/scan?bookingId=${item.id}') : null,
+                        onShowQR: canShow ? () => context.push('/bookings/qr/${item.id}') : null,
+                        onScanQR: canScan ? () => context.push('/bookings/scan?bookingId=${item.id}') : null,
                       );
                     },
                   ),
