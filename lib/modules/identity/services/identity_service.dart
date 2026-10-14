@@ -87,12 +87,12 @@ class IdentityService {
     String? frontImagePath,
     String? backImagePath,
   }) async {
-    String frontUrl = 'https://res.cloudinary.com/rentatool-demo/image/upload/v1/kyc/front.jpg';
+    if (frontImagePath == null || frontImagePath.isEmpty) {
+      throw Exception('Front photo of your identification document is required.');
+    }
+    final frontUrl = await _cloudinary.uploadImage(frontImagePath, folder: 'rentatool/kyc');
     String? backUrl;
 
-    if (frontImagePath != null && frontImagePath.isNotEmpty) {
-      frontUrl = await _cloudinary.uploadImage(frontImagePath, folder: 'rentatool/kyc');
-    }
     if (backImagePath != null && backImagePath.isNotEmpty) {
       backUrl = await _cloudinary.uploadImage(backImagePath, folder: 'rentatool/kyc');
     }
