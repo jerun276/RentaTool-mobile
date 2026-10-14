@@ -71,6 +71,33 @@ class BookingService {
     }
   }
 
+  /// Retrieves all fleet bookings for a specific equipment to display unavailable dates on renter calendar.
+  Future<List<BookingModel>> getBookingsForEquipment(String equipmentId) async {
+    try {
+      final response = await _dio.get(
+        ApiConstants.activeBookings,
+        options: Options(
+          headers: {
+            'X-User-Id': '00000000-0000-0000-0000-000000000000',
+          },
+          extra: {
+            'skipAuth': true,
+          },
+        ),
+      );
+      final List<dynamic> items = response.data is List ? response.data : [];
+      final list = items.map((e) => BookingModel.fromJson(e)).toList();
+      return list.where((b) => b.equipmentId.toLowerCase() == equipmentId.toLowerCase()).toList();
+    } catch (_) {
+      try {
+        final all = await getActiveBookings();
+        return all.where((b) => b.equipmentId.toLowerCase() == equipmentId.toLowerCase()).toList();
+      } catch (_) {
+        return [];
+      }
+    }
+  }
+
   /// 3. Issues a single-use cryptographically hashed handover token for pickup or return.
   Future<HandoverTokenModel> generateHandoverToken({
     required String bookingId,

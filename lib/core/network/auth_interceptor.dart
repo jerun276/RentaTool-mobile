@@ -23,14 +23,17 @@ class AuthInterceptor extends Interceptor {
     RequestOptions options,
     RequestInterceptorHandler handler,
   ) async {
-    final token = await _tokenStorage.getAccessToken();
-    if (token != null && token.isNotEmpty) {
-      options.headers['Authorization'] = 'Bearer $token';
-    }
+    final bool skipAuth = options.extra['skipAuth'] == true;
+    if (!skipAuth) {
+      final token = await _tokenStorage.getAccessToken();
+      if (token != null && token.isNotEmpty) {
+        options.headers['Authorization'] = 'Bearer $token';
+      }
 
-    final userId = await _tokenStorage.getUserId();
-    if (userId != null && userId.isNotEmpty) {
-      options.headers['X-User-Id'] = userId;
+      final userId = await _tokenStorage.getUserId();
+      if (userId != null && userId.isNotEmpty && !options.headers.containsKey('X-User-Id')) {
+        options.headers['X-User-Id'] = userId;
+      }
     }
 
     options.headers['Content-Type'] = 'application/json';
