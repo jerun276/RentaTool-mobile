@@ -21,14 +21,6 @@ class EquipmentCatalogScreen extends ConsumerStatefulWidget {
 class _EquipmentCatalogScreenState extends ConsumerState<EquipmentCatalogScreen> {
   final _scrollController = ScrollController();
 
-  static const List<String> _defaultCategories = [
-    'All',
-    'Heavy Machinery',
-    'Power Tools',
-    'Generators & Power',
-    'Cleaning Equipment',
-  ];
-
   final List<String> _statusFilters = [
     'All',
     'Available',
@@ -320,7 +312,7 @@ class _EquipmentCatalogScreenState extends ConsumerState<EquipmentCatalogScreen>
               final dynamicCategories = categoriesAsync.valueOrNull;
               final categoriesList = (dynamicCategories != null && dynamicCategories.isNotEmpty)
                   ? ['All', ...dynamicCategories.map((c) => c.name)]
-                  : _defaultCategories;
+                  : const ['All'];
 
               return SizedBox(
                 height: 38,
