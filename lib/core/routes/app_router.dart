@@ -67,6 +67,7 @@ GoRouter _buildRouter() {
       ),
       GoRoute(
         path: '/kyc-submit',
+        parentNavigatorKey: _rootNavigatorKey,
         builder: (context, state) => const KycSubmissionScreen(),
       ),
       GoRoute(

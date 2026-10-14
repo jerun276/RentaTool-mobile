@@ -97,15 +97,34 @@ class IdentityService {
       backUrl = await _cloudinary.uploadImage(backImagePath, folder: 'rentatool/kyc');
     }
 
-    await _dio.post(
-      ApiConstants.kycSubmission,
-      data: {
-        'documentType': documentType,
-        'documentNumber': documentNumber,
-        'frontImageUrl': frontUrl,
-        if (backUrl != null) 'backImageUrl': backUrl,
-      },
-    );
+    try {
+      await _dio.post(
+        ApiConstants.kycSubmission,
+        data: {
+          'documentType': documentType,
+          'documentNumber': documentNumber,
+          'frontImageUrl': frontUrl,
+          if (backUrl != null) 'backImageUrl': backUrl,
+        },
+      );
+    } on DioException catch (e) {
+      String message = 'Failed to submit document.';
+      if (e.response?.data is Map) {
+        final data = e.response!.data as Map<String, dynamic>;
+        if (data['message'] != null && data['message'].toString().isNotEmpty) {
+          message = data['message'].toString();
+        } else if (data['detail'] != null && data['detail'].toString().isNotEmpty) {
+          message = data['detail'].toString();
+        } else if (data['title'] != null && data['title'].toString().isNotEmpty) {
+          message = data['title'].toString();
+        }
+      } else if (e.response?.statusCode == 409) {
+        message = 'This document number is already registered, or your account already has an active verification.';
+      } else if (e.message != null && e.message!.isNotEmpty) {
+        message = e.message!;
+      }
+      throw Exception(message);
+    }
   }
 
   /// Updates KYC approval state in the authorised verification workflow.
