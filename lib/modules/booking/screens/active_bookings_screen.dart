@@ -34,11 +34,19 @@ class _ActiveBookingsScreenState extends ConsumerState<ActiveBookingsScreen> {
     final isDark = theme.brightness == Brightness.dark;
     final bookingState = ref.watch(bookingProvider);
     final notifier = ref.read(bookingProvider.notifier);
-    final filtered = bookingState.filteredBookings;
     final authState = ref.watch(authProvider);
     final currentUser = authState.user;
     final isOwner = currentUser?.role == UserRole.owner;
     final isRenter = currentUser?.role == UserRole.renter;
+    final isAdmin = currentUser?.role == UserRole.admin;
+
+    final userActiveBookings = isAdmin
+        ? bookingState.activeBookings
+        : bookingState.activeBookings.where((b) => b.renterId == currentUser?.id || b.ownerId == currentUser?.id).toList();
+
+    final filtered = isAdmin
+        ? bookingState.filteredBookings
+        : bookingState.filteredBookings.where((b) => b.renterId == currentUser?.id || b.ownerId == currentUser?.id).toList();
 
     return Scaffold(
       appBar: AppBar(
@@ -199,11 +207,11 @@ class _ActiveBookingsScreenState extends ConsumerState<ActiveBookingsScreen> {
           Expanded(
             child: Builder(
               builder: (context) {
-                if (bookingState.isLoading && bookingState.activeBookings.isEmpty) {
+                if (bookingState.isLoading && userActiveBookings.isEmpty) {
                   return const LoadingIndicator(message: 'Loading active rental reservations...');
                 }
 
-                if (bookingState.errorMessage != null && bookingState.activeBookings.isEmpty) {
+                if (bookingState.errorMessage != null && userActiveBookings.isEmpty) {
                   return ErrorView(
                     message: bookingState.errorMessage!,
                     onRetry: () => notifier.fetchActiveBookings(),
@@ -220,7 +228,7 @@ class _ActiveBookingsScreenState extends ConsumerState<ActiveBookingsScreen> {
                           Icon(Icons.calendar_today_outlined, size: 48, color: AppColors.textMuted),
                           const SizedBox(height: 16),
                           Text(
-                            bookingState.activeBookings.isEmpty
+                            userActiveBookings.isEmpty
                                 ? (isOwner
                                     ? 'No Fleet Dispatches Found'
                                     : (isRenter
@@ -235,7 +243,7 @@ class _ActiveBookingsScreenState extends ConsumerState<ActiveBookingsScreen> {
                           ),
                           const SizedBox(height: 8),
                           Text(
-                            bookingState.activeBookings.isEmpty
+                            userActiveBookings.isEmpty
                                 ? (isOwner
                                     ? 'No contractors have currently reserved your machinery. List more equipment or check back soon.'
                                     : 'Browse the equipment catalog or locate nearby machinery on the interactive map.')

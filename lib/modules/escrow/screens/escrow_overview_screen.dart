@@ -34,11 +34,35 @@ class EscrowOverviewScreen extends ConsumerWidget {
     final isOwnerOrAdmin = currentUser?.role == UserRole.owner || currentUser?.role == UserRole.admin;
     final isRenter = currentUser?.role == UserRole.renter;
 
-    final sortedHolds = escrowState.sortedHolds;
-    final sortedClaims = escrowState.sortedClaims;
+    final isAdmin = currentUser?.role == UserRole.admin;
+
+    final sortedHolds = isAdmin
+        ? escrowState.sortedHolds
+        : escrowState.sortedHolds.where((h) {
+            final b = bookingState.activeBookings.where((x) => x.id == h.bookingId).firstOrNull;
+            if (b != null) {
+              return b.renterId == currentUser?.id || b.ownerId == currentUser?.id;
+            }
+            return false;
+          }).toList();
+
+    final sortedClaims = isAdmin
+        ? escrowState.sortedClaims
+        : escrowState.sortedClaims.where((c) {
+            if (c.filedByUserId == currentUser?.id) return true;
+            final b = bookingState.activeBookings.where((x) => x.id == c.bookingId).firstOrNull;
+            if (b != null) {
+              return b.renterId == currentUser?.id || b.ownerId == currentUser?.id;
+            }
+            return false;
+          }).toList();
+
+    final scopedBookings = isAdmin
+        ? bookingState.activeBookings
+        : bookingState.activeBookings.where((b) => b.renterId == currentUser?.id || b.ownerId == currentUser?.id).toList();
 
     // Check if there are active bookings that don't have an escrow hold yet, stably sorted newest first
-    final unheldBookings = bookingState.activeBookings.where((b) {
+    final unheldBookings = scopedBookings.where((b) {
       return !sortedHolds.any((h) => h.bookingId == b.id);
     }).toList();
     unheldBookings.sort((a, b) {
@@ -147,7 +171,7 @@ class EscrowOverviewScreen extends ConsumerWidget {
               ...sortedHolds.map((hold) => _escrowHoldCard(
                     context,
                     hold,
-                    bookingState.activeBookings,
+                    scopedBookings,
                     currencyFormatter,
                     isDark: isDark,
                     textPrimary: textPrimary,
