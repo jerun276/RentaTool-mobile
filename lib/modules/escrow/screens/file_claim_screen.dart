@@ -136,7 +136,7 @@ class _FileClaimScreenState extends ConsumerState<FileClaimScreen> {
               AppTextField(
                 controller: _bookingIdController,
                 label: 'Rental Booking ID',
-                hintText: 'e.g. 33333333-3333-3333-3333-333333333301',
+                hintText: 'Select or provide booking ID',
                 readOnly: true,
                 validator: (v) => v == null || v.isEmpty ? 'Booking ID is required' : null,
               ),
@@ -145,7 +145,7 @@ class _FileClaimScreenState extends ConsumerState<FileClaimScreen> {
               AppTextField(
                 controller: _userIdController,
                 label: 'Your User ID',
-                hintText: 'e.g. 11111111-1111-1111-1111-111111111101',
+                hintText: 'User ID',
                 readOnly: true,
                 validator: (v) => v == null || v.isEmpty ? 'User ID is required' : null,
               ),

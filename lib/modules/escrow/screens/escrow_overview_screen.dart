@@ -167,34 +167,41 @@ class EscrowOverviewScreen extends ConsumerWidget {
             const SizedBox(height: 10),
 
             // Render Active Escrow Holds
-            if (sortedHolds.isNotEmpty)
-              ...sortedHolds.map((hold) => _escrowHoldCard(
-                    context,
-                    hold,
-                    scopedBookings,
-                    currencyFormatter,
-                    isDark: isDark,
-                    textPrimary: textPrimary,
-                    textMuted: textMuted,
-                    textSecondary: textSecondary,
-                  )),
+            if (escrowState.isLoading && sortedHolds.isEmpty && unheldBookings.isEmpty)
+              const Padding(
+                padding: EdgeInsets.symmetric(vertical: 24.0),
+                child: LoadingIndicator(message: 'Checking vault holds...'),
+              )
+            else ...[
+              if (sortedHolds.isNotEmpty)
+                ...sortedHolds.map((hold) => _escrowHoldCard(
+                      context,
+                      hold,
+                      scopedBookings,
+                      currencyFormatter,
+                      isDark: isDark,
+                      textPrimary: textPrimary,
+                      textMuted: textMuted,
+                      textSecondary: textSecondary,
+                    )),
 
-            // Pending Pre-Authorization Action Cards for active bookings without holds
-            if (unheldBookings.isNotEmpty)
-              ...unheldBookings.map((b) => _unheldBookingCard(
-                    context,
-                    ref,
-                    b,
-                    currencyFormatter,
-                    isDark: isDark,
-                    textPrimary: textPrimary,
-                    textSecondary: textSecondary,
-                    textMuted: textMuted,
-                  )),
+              // Pending Pre-Authorization Action Cards for active bookings without holds
+              if (unheldBookings.isNotEmpty)
+                ...unheldBookings.map((b) => _unheldBookingCard(
+                      context,
+                      ref,
+                      b,
+                      currencyFormatter,
+                      isDark: isDark,
+                      textPrimary: textPrimary,
+                      textSecondary: textSecondary,
+                      textMuted: textMuted,
+                    )),
 
-            // Empty state if no holds and no pending bookings
-            if (sortedHolds.isEmpty && unheldBookings.isEmpty)
-              _emptyEscrowVaultCard(isDark, textPrimary, textSecondary, isRenter),
+              // Empty state if no holds and no pending bookings
+              if (sortedHolds.isEmpty && unheldBookings.isEmpty)
+                _emptyEscrowVaultCard(isDark, textPrimary, textSecondary, isRenter),
+            ],
 
             const SizedBox(height: 24),
 

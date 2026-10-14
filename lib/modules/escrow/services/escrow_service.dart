@@ -15,18 +15,6 @@ class EscrowService {
 
   EscrowService(this._dio);
 
-  static final List<DamageClaimModel> _fallbackClaims = [
-    const DamageClaimModel(
-      claimId: 'c_999001',
-      bookingId: '33333333-3333-3333-3333-333333333301',
-      filedByUserId: 'u_777',
-      damageDescription: 'Baseline demo claim for testing dispute resolution.',
-      proposedDeduction: 15000.0,
-      status: ClaimStatus.filed,
-      rawStatus: 'Filed',
-    )
-  ];
-
   /// Fetches authoritative escrow hold status for a specific booking from backend.
   Future<EscrowHoldModel?> getEscrowByBooking(String bookingId) async {
     try {
@@ -43,7 +31,7 @@ class EscrowService {
     return null;
   }
 
-  /// Pre-authorizes and locks security deposit funds via simulated gateway in backend.
+  /// Pre-authorizes and locks security deposit funds via gateway in backend.
   Future<EscrowHoldModel> preAuthorizeDeposit({
     required String bookingId,
     required String renterId,
@@ -62,20 +50,13 @@ class EscrowService {
       if (res.data != null && res.data is Map<String, dynamic>) {
         return EscrowHoldModel.fromJson(res.data as Map<String, dynamic>);
       }
+      throw Exception('Pre-authorization returned invalid response format.');
+    } on DioException {
+      rethrow;
     } catch (e) {
       debugPrint('preAuthorizeDeposit backend error: $e');
+      rethrow;
     }
-
-    // Safe fallback if offline
-    return EscrowHoldModel(
-      id: 'escrow-${DateTime.now().millisecondsSinceEpoch}',
-      bookingId: bookingId,
-      depositAmount: depositAmount > 0 ? depositAmount : 15000.0,
-      preAuthTransactionId: 'GATEWAY-PREAUTH-${DateTime.now().millisecondsSinceEpoch.toRadixString(16).toUpperCase()}',
-      status: EscrowStatus.held,
-      rawStatus: 'Held',
-      heldAtUtc: DateTime.now().toUtc().toIso8601String(),
-    );
   }
 
   /// Retrieves all damage claims from authoritative backend.
@@ -87,10 +68,14 @@ class EscrowService {
             .map((c) => DamageClaimModel.fromJson(c as Map<String, dynamic>))
             .toList();
       }
+      return const [];
+    } on DioException catch (e) {
+      debugPrint('getClaims backend error: $e');
+      rethrow;
     } catch (e) {
-      debugPrint('getClaims backend notice: $e');
+      debugPrint('getClaims notice: $e');
+      return const [];
     }
-    return [..._fallbackClaims];
   }
 
   /// Retrieves a specific damage claim with AI telemetry.
@@ -100,10 +85,13 @@ class EscrowService {
       if (res.data != null && res.data is Map<String, dynamic>) {
         return DamageClaimModel.fromJson(res.data as Map<String, dynamic>);
       }
+      throw Exception('Claim not found.');
+    } on DioException {
+      rethrow;
     } catch (e) {
-      debugPrint('getClaimById backend notice: $e');
+      debugPrint('getClaimById backend error: $e');
+      rethrow;
     }
-    return _fallbackClaims.firstWhere((c) => c.claimId == id, orElse: () => _fallbackClaims.first);
   }
 
   /// Files a photographic damage claim upon tool return.
@@ -123,22 +111,13 @@ class EscrowService {
       if (res.data != null && res.data is Map<String, dynamic>) {
         return DamageClaimModel.fromJson(res.data as Map<String, dynamic>);
       }
+      throw Exception('Failed to file claim.');
+    } on DioException {
+      rethrow;
     } catch (e) {
       debugPrint('fileClaim backend notice: $e');
+      rethrow;
     }
-
-    final newClaim = DamageClaimModel(
-      claimId: 'c_${DateTime.now().millisecondsSinceEpoch}',
-      bookingId: bookingId,
-      filedByUserId: filedByUserId,
-      damageDescription: damageDescription,
-      proposedDeduction: 0.0,
-      evidencePhotos: evidencePhotos,
-      status: ClaimStatus.underAIEvaluation,
-      rawStatus: 'UnderAIEvaluation',
-    );
-    _fallbackClaims.add(newClaim);
-    return newClaim;
   }
 
   /// Adjudicates a claim via staff decision.
@@ -159,32 +138,13 @@ class EscrowService {
       if (res.data != null && res.data is Map<String, dynamic>) {
         return DamageClaimModel.fromJson(res.data as Map<String, dynamic>);
       }
+      throw Exception('Failed to adjudicate claim.');
+    } on DioException {
+      rethrow;
     } catch (e) {
       debugPrint('adjudicateClaim backend notice: $e');
+      rethrow;
     }
-
-    final index = _fallbackClaims.indexWhere((c) => c.claimId == claimId);
-    if (index == -1) throw Exception('Claim not found');
-    
-    final old = _fallbackClaims[index];
-    final status = decision == 'Approve' ? ClaimStatus.approved : (decision == 'Reject' ? ClaimStatus.rejected : ClaimStatus.revised);
-    
-    final updated = DamageClaimModel(
-      claimId: old.claimId,
-      bookingId: old.bookingId,
-      filedByUserId: old.filedByUserId,
-      damageDescription: old.damageDescription,
-      evidencePhotos: old.evidencePhotos,
-      proposedDeduction: old.proposedDeduction,
-      finalDeduction: revisedDeduction ?? old.proposedDeduction,
-      status: status,
-      rawStatus: status.name,
-      adjudicationNotes: notes,
-      adjudicatedByUserId: adjudicatorId,
-      adjudicatedAtUtc: DateTime.now().toIso8601String(),
-    );
-    _fallbackClaims[index] = updated;
-    return updated;
   }
 
   /// Disburses final settlement payments.
@@ -194,18 +154,12 @@ class EscrowService {
       if (res.data != null && res.data is Map<String, dynamic>) {
         return PayoutClaimResponse.fromJson(res.data as Map<String, dynamic>);
       }
+      throw Exception('Failed to process payout.');
+    } on DioException {
+      rethrow;
     } catch (e) {
       debugPrint('processPayout backend notice: $e');
+      rethrow;
     }
-
-    return PayoutClaimResponse(
-      claimId: claimId,
-      bookingId: 'mock_booking',
-      ownerPayoutAmount: 15000.0,
-      renterRefundAmount: 0.0,
-      status: 'Settled',
-      settlementReference: 'SET-${DateTime.now().millisecondsSinceEpoch}',
-      settledAtUtc: DateTime.now().toIso8601String(),
-    );
   }
 }
