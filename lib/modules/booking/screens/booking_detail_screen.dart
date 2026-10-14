@@ -278,11 +278,12 @@ class _BookingDetailScreenState extends ConsumerState<BookingDetailScreen> {
                           ),
                         ],
                       ),
-                      OutlinedButton.icon(
-                        icon: const Icon(Icons.shield_outlined, size: 16),
-                        label: const Text('Escrow Ledger'),
-                        onPressed: () => context.push('/escrow'),
-                      ),
+                      if (!b.isRequested && !b.isCancelled)
+                        OutlinedButton.icon(
+                          icon: const Icon(Icons.shield_outlined, size: 16),
+                          label: const Text('Escrow Ledger'),
+                          onPressed: () => context.push('/escrow'),
+                        ),
                     ],
                   ),
                   if (b.dailyRate > 0) ...[

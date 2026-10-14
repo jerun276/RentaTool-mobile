@@ -13,7 +13,7 @@ class BookingTimelineWidget extends StatelessWidget {
     final isCancelled = booking.isCancelled;
     final isDisputed = booking.isDisputed;
 
-    final step1Done = !isCancelled; // Booking Requested & Confirmed
+    final step1Done = !isCancelled && !booking.isRequested;
     final step2Done = booking.pickupVerified || booking.isActive || booking.isCompleted;
     final step3Done = booking.isActive || booking.isCompleted;
     final step4Done = booking.returnVerified || booking.isCompleted;
@@ -50,10 +50,12 @@ class BookingTimelineWidget extends StatelessWidget {
 
           _timelineStep(
             index: '1',
-            title: 'Reservation Confirmed',
-            desc: 'Booking schedules locked in system; escrow pre-auth deposit verified.',
+            title: booking.isRequested ? 'Rental Requested' : 'Reservation Confirmed',
+            desc: booking.isRequested
+                ? 'Awaiting owner approval before booking is confirmed.'
+                : 'Booking schedules locked in system; escrow pre-auth deposit verified.',
             isCompleted: step1Done,
-            isCurrent: booking.isRequested || booking.isConfirmed && !booking.pickupVerified,
+            isCurrent: booking.isRequested || (booking.isConfirmed && !booking.pickupVerified),
           ),
           _stepConnector(step1Done && step2Done),
 

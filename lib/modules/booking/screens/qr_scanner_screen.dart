@@ -524,7 +524,7 @@ class _QrScannerScreenState extends ConsumerState<QrScannerScreen> {
                       ],
                       AppTextField(
                         controller: _bookingIdController,
-                        hintText: 'Booking ID (e.g. 33333333-3333-...)',
+                        hintText: 'Enter Booking ID',
                       ),
                       const SizedBox(height: 10),
                     ],

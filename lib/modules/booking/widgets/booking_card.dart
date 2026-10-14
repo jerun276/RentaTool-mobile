@@ -107,10 +107,10 @@ class BookingCard extends StatelessWidget {
                     color: AppColors.warning.withValues(alpha: 0.12),
                     borderRadius: BorderRadius.circular(8),
                   ),
-                  child: Row(
+                  child: const Row(
                     children: [
-                      const Icon(Icons.hourglass_top_rounded, size: 14, color: AppColors.warning),
-                      const SizedBox(width: 6),
+                      Icon(Icons.hourglass_top_rounded, size: 14, color: AppColors.warning),
+                      SizedBox(width: 6),
                       Expanded(
                         child: Text(
                           'Awaiting owner approval',

@@ -47,10 +47,9 @@ class _CreateBookingScreenState extends ConsumerState<CreateBookingScreen> {
       _ownerIdController.text = widget.equipment!.ownerId;
       _dailyRateController.text = widget.equipment!.dailyRate.toStringAsFixed(0);
     } else {
-      // Fallback deterministic dev IDs for testing
-      _equipmentIdController.text = '22222222-2222-2222-2222-222222222222';
-      _ownerIdController.text = '11111111-1111-1111-1111-111111111111';
-      _dailyRateController.text = '3500';
+      _equipmentIdController.text = '';
+      _ownerIdController.text = '';
+      _dailyRateController.text = '';
     }
     _loadBookedDates();
   }
@@ -470,13 +469,13 @@ class _CreateBookingScreenState extends ConsumerState<CreateBookingScreen> {
               AppTextField(
                 controller: _equipmentIdController,
                 label: 'Equipment ID (GUID)',
-                hintText: 'e.g. 22222222-2222-2222-2222-222222222222',
+                hintText: 'Enter Equipment ID',
               ),
               const SizedBox(height: 12),
               AppTextField(
                 controller: _ownerIdController,
                 label: 'Equipment Owner ID (GUID)',
-                hintText: 'e.g. 11111111-1111-1111-1111-111111111111',
+                hintText: 'Enter Equipment Owner ID',
               ),
               const SizedBox(height: 12),
               AppTextField(
