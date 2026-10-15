@@ -26,7 +26,6 @@ import '../../modules/booking/screens/booking_detail_screen.dart';
 import '../../modules/booking/screens/qr_handover_screen.dart';
 import '../../modules/booking/screens/qr_scanner_screen.dart';
 import '../../modules/booking/screens/create_booking_screen.dart';
-import '../../modules/booking/screens/booking_map_screen.dart';
 import '../../modules/catalog/models/equipment_model.dart';
 
 // Component 4 (Escrow)
@@ -195,10 +194,6 @@ GoRouter _buildRouter() {
                       final equipment = state.extra is EquipmentModel ? state.extra as EquipmentModel : null;
                       return CreateBookingScreen(equipment: equipment);
                     },
-                  ),
-                  GoRoute(
-                    path: 'map',
-                    builder: (context, state) => const BookingMapScreen(),
                   ),
                 ],
               ),

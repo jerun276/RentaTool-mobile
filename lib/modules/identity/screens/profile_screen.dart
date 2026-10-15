@@ -1207,14 +1207,6 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                     ),
                     const SizedBox(height: 10),
                     _profileActionTile(
-                      icon: Icons.radar,
-                      iconColor: const Color(0xFF10B981),
-                      title: 'Nearby Machinery Map',
-                      subtitle: 'Find equipment within your target radius in Sri Lanka',
-                      onTap: () => context.push('/bookings/map'),
-                    ),
-                    const SizedBox(height: 10),
-                    _profileActionTile(
                       icon: Icons.shield_outlined,
                       iconColor: const Color(0xFF6366F1),
                       title: 'Escrow Security Deposit Holds',

@@ -57,11 +57,6 @@ class _ActiveBookingsScreenState extends ConsumerState<ActiveBookingsScreen> {
         ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.map_outlined, size: 22),
-            tooltip: 'Interactive Radius Map',
-            onPressed: () => context.push('/bookings/map'),
-          ),
-          IconButton(
             icon: const Icon(Icons.qr_code_scanner, size: 22),
             tooltip: 'Scan Handover QR',
             onPressed: () => context.push('/bookings/scan'),
@@ -72,14 +67,6 @@ class _ActiveBookingsScreenState extends ConsumerState<ActiveBookingsScreen> {
             onPressed: () => notifier.fetchActiveBookings(),
           ),
         ],
-      ),
-      floatingActionButton: FloatingActionButton.extended(
-        heroTag: 'map_radius_fab',
-        backgroundColor: AppColors.primary,
-        foregroundColor: Colors.white,
-        icon: const Icon(Icons.radar),
-        label: const Text('Nearby Map Search', style: TextStyle(fontWeight: FontWeight.bold)),
-        onPressed: () => context.push('/bookings/map'),
       ),
       body: Column(
         children: [
@@ -267,12 +254,6 @@ class _ActiveBookingsScreenState extends ConsumerState<ActiveBookingsScreen> {
                                   label: const Text('Browse Catalog'),
                                   onPressed: () => context.go('/catalog'),
                                 ),
-                              const SizedBox(width: 12),
-                              OutlinedButton.icon(
-                                icon: const Icon(Icons.map, size: 18),
-                                label: const Text('Radius Map'),
-                                onPressed: () => context.push('/bookings/map'),
-                              ),
                             ],
                           ),
                         ],
