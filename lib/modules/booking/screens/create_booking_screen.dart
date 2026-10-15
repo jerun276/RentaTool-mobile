@@ -258,6 +258,15 @@ class _CreateBookingScreenState extends ConsumerState<CreateBookingScreen> {
     return _rentalDays * _dailyRate;
   }
 
+  double get _calculatedDeposit {
+    if (widget.equipment != null && widget.equipment!.replacementValue > 0) {
+      return widget.equipment!.replacementValue * 0.15;
+    }
+    final rate = _dailyRate > 0 ? _dailyRate : (widget.equipment?.dailyRate ?? 5000.0);
+    return rate * 3;
+  }
+
+
   Future<void> _pickDateRange() async {
     final now = DateTime.now();
     final picked = await showDateRangePicker(
@@ -504,6 +513,24 @@ class _CreateBookingScreenState extends ConsumerState<CreateBookingScreen> {
                       Text('${currencyFormatter.format(_dailyRate)} / day', style: const TextStyle(fontWeight: FontWeight.w600)),
                     ],
                   ),
+                  const SizedBox(height: 8),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(Icons.shield_outlined, size: 14, color: Color(0xFF10B981)),
+                          const SizedBox(width: 4),
+                          Text('Refundable Deposit (Escrow Hold)', style: TextStyle(color: AppColors.textSecondary, fontSize: 13)),
+                        ],
+                      ),
+                      Text(
+                        currencyFormatter.format(_calculatedDeposit),
+                        style: const TextStyle(fontWeight: FontWeight.w600, color: Color(0xFF10B981)),
+                      ),
+                    ],
+                  ),
                   const Padding(padding: EdgeInsets.symmetric(vertical: 8), child: Divider()),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -531,18 +558,18 @@ class _CreateBookingScreenState extends ConsumerState<CreateBookingScreen> {
             Container(
               padding: const EdgeInsets.all(14),
               decoration: BoxDecoration(
-                color: AppColors.primary.withValues(alpha: 0.08),
+                color: const Color(0xFF10B981).withValues(alpha: 0.08),
                 borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: AppColors.primaryLight.withValues(alpha: 0.2)),
+                border: Border.all(color: const Color(0xFF10B981).withValues(alpha: 0.25)),
               ),
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Icon(Icons.shield_outlined, color: AppColors.primaryLight, size: 20),
+                  const Icon(Icons.shield_outlined, color: Color(0xFF10B981), size: 20),
                   const SizedBox(width: 10),
                   Expanded(
                     child: Text(
-                      'Escrow Pre-Authorization: A refundable security deposit hold will be authorized upon booking. Funds are protected in escrow and released after return inspection.',
+                      'Escrow Pre-Authorization: A refundable security deposit hold of ${currencyFormatter.format(_calculatedDeposit)} will be secured in escrow upon booking. Funds are 100% returned upon safe equipment handover and return inspection.',
                       style: TextStyle(fontSize: 11, color: AppColors.textSecondary, height: 1.4),
                     ),
                   ),

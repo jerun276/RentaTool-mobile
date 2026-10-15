@@ -14,6 +14,7 @@ import '../widgets/booking_timeline_widget.dart';
 import '../widgets/surge_extension_sheet.dart';
 import '../../identity/providers/auth_provider.dart';
 import '../../identity/models/user_model.dart';
+import '../../escrow/providers/escrow_provider.dart';
 
 class BookingDetailScreen extends ConsumerStatefulWidget {
   final String bookingId;
@@ -118,6 +119,11 @@ class _BookingDetailScreenState extends ConsumerState<BookingDetailScreen> {
     final canExtendSchedule = b.canExtendSchedule && (isRenter || isAdmin) && !isOwner;
     final currencyFormatter = NumberFormat.currency(locale: 'en_LK', symbol: 'LKR ', decimalDigits: 0);
     final dateFormatter = DateFormat('EEEE, MMM dd, yyyy');
+
+    final escrowState = ref.watch(escrowProvider);
+    final hold = escrowState.holds.where((h) => h.bookingId == b.id).firstOrNull;
+    final estimatedDeposit = (b.dailyRate > 0) ? (b.dailyRate * 3) : 15000.0;
+    final depositAmount = (hold != null && hold.depositAmount > 0) ? hold.depositAmount : estimatedDeposit;
 
     BadgeStyle badgeStyle;
     switch (b.status.toLowerCase()) {
@@ -296,6 +302,24 @@ class _BookingDetailScreenState extends ConsumerState<BookingDetailScreen> {
                       ],
                     ),
                   ],
+                  const Divider(height: 16),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(Icons.shield_outlined, size: 14, color: Color(0xFF10B981)),
+                          const SizedBox(width: 4),
+                          Text('Refundable Security Deposit', style: TextStyle(fontSize: 11, color: AppColors.textMuted)),
+                        ],
+                      ),
+                      Text(
+                        currencyFormatter.format(depositAmount),
+                        style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Color(0xFF10B981)),
+                      ),
+                    ],
+                  ),
                 ],
               ),
             ),
