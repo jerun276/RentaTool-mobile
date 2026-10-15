@@ -289,7 +289,14 @@ class _EquipmentDetailScreenState extends ConsumerState<EquipmentDetailScreen> {
                 const SizedBox(width: 12),
                 Icon(Icons.location_on_outlined, size: 16, color: textMuted),
                 const SizedBox(width: 4),
-                Text(eq.location, style: TextStyle(color: textSecondary, fontSize: 13)),
+                Expanded(
+                  child: Text(
+                    eq.location,
+                    style: TextStyle(color: textSecondary, fontSize: 13),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
               ],
             ),
             const SizedBox(height: 18),
@@ -719,27 +726,33 @@ class _EquipmentDetailScreenState extends ConsumerState<EquipmentDetailScreen> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(
-                    eq.ownerIsVerified ? Icons.verified_user : Icons.person_pin_outlined,
-                    size: 14,
-                    color: eq.ownerIsVerified ? const Color(0xFF10B981) : AppColors.textMuted,
-                  ),
-                  const SizedBox(width: 6),
-                  Text(
-                    'EQUIPMENT OWNER & TRUST PROFILE',
-                    style: TextStyle(
-                      fontSize: 10,
-                      fontWeight: FontWeight.bold,
-                      letterSpacing: 0.8,
-                      color: AppColors.textMuted,
+              Expanded(
+                child: Row(
+                  children: [
+                    Icon(
+                      eq.ownerIsVerified ? Icons.verified_user : Icons.person_pin_outlined,
+                      size: 14,
+                      color: eq.ownerIsVerified ? const Color(0xFF10B981) : AppColors.textMuted,
                     ),
-                  ),
-                ],
+                    const SizedBox(width: 6),
+                    Expanded(
+                      child: Text(
+                        'EQUIPMENT OWNER & TRUST PROFILE',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontSize: 10,
+                          fontWeight: FontWeight.bold,
+                          letterSpacing: 0.8,
+                          color: AppColors.textMuted,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
               ),
-              if (eq.ownerIsVerified)
+              if (eq.ownerIsVerified) ...[
+                const SizedBox(width: 8),
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                   decoration: BoxDecoration(
@@ -763,6 +776,7 @@ class _EquipmentDetailScreenState extends ConsumerState<EquipmentDetailScreen> {
                     ],
                   ),
                 ),
+              ],
             ],
           ),
           const SizedBox(height: 14),
