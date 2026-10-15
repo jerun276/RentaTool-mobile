@@ -7,6 +7,8 @@ import '../../../core/widgets/app_button.dart';
 import '../../../core/widgets/error_view.dart';
 import '../../../core/widgets/loading_indicator.dart';
 import '../../../core/widgets/status_badge.dart';
+import '../../booking/providers/booking_provider.dart';
+import '../../catalog/providers/catalog_provider.dart';
 import '../../identity/providers/auth_provider.dart';
 import '../../identity/models/user_model.dart';
 import '../models/damage_claim_model.dart';
@@ -66,6 +68,13 @@ class ClaimDetailScreen extends ConsumerWidget {
     }
 
     final c = state.claim!;
+    final bookingState = ref.watch(bookingProvider);
+    final catalogState = ref.watch(catalogProvider);
+    final matchingBooking = bookingState.activeBookings.where((b) => b.id == c.bookingId).firstOrNull;
+    final equipment = catalogState.items.where((e) => e.id.toLowerCase() == matchingBooking?.equipmentId.toLowerCase()).firstOrNull;
+    final equipmentTitle = equipment?.title ?? c.equipmentTitle ?? 'Rental Fleet Asset';
+    final equipmentCategory = equipment?.categoryName ?? 'Heavy Machinery';
+    final equipmentImage = equipment?.primaryImageUrl ?? '';
     final currency = NumberFormat.currency(
         locale: 'en_LK', symbol: 'LKR ', decimalDigits: 2);
 
@@ -125,19 +134,113 @@ class ClaimDetailScreen extends ConsumerWidget {
             ),
             const SizedBox(height: 16),
 
-            // ── Booking Reference ────────────────────────────────────────
+            // ── Booking & Equipment Dossier ──────────────────────────────
             _InfoCard(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const _SectionLabel('BOOKING REFERENCE'),
-                  const SizedBox(height: 6),
-                  Text(
-                    c.bookingId,
-                    style: TextStyle(
-                        fontFamily: 'monospace',
-                        fontSize: 13,
-                        color: AppColors.textPrimary),
+                  const _SectionLabel('BOOKING & EQUIPMENT DOSSIER'),
+                  const SizedBox(height: 10),
+                  Row(
+                    children: [
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(8),
+                        child: SizedBox(
+                          width: 48,
+                          height: 48,
+                          child: equipmentImage.isNotEmpty
+                              ? Image.network(
+                                  equipmentImage,
+                                  fit: BoxFit.cover,
+                                  errorBuilder: (_, __, ___) => Container(
+                                    color: AppColors.primaryLight.withValues(alpha: 0.15),
+                                    child: const Icon(Icons.construction, color: AppColors.primaryLight),
+                                  ),
+                                )
+                              : Container(
+                                  color: AppColors.primaryLight.withValues(alpha: 0.15),
+                                  child: const Icon(Icons.construction, color: AppColors.primaryLight),
+                                ),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              equipmentTitle,
+                              style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 14,
+                                color: AppColors.textPrimary,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                            const SizedBox(height: 3),
+                            Row(
+                              children: [
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                  decoration: BoxDecoration(
+                                    color: AppColors.primary.withValues(alpha: 0.15),
+                                    borderRadius: BorderRadius.circular(4),
+                                  ),
+                                  child: Text(
+                                    equipmentCategory.toUpperCase(),
+                                    style: const TextStyle(
+                                      fontSize: 9,
+                                      fontWeight: FontWeight.w700,
+                                      color: AppColors.primaryLight,
+                                      letterSpacing: 0.5,
+                                    ),
+                                  ),
+                                ),
+                                if (matchingBooking != null) ...[
+                                  const SizedBox(width: 8),
+                                  Text(
+                                    '${matchingBooking.durationInDays}d rental',
+                                    style: TextStyle(fontSize: 10, color: AppColors.textMuted, fontWeight: FontWeight.w600),
+                                  ),
+                                ],
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                  const Divider(height: 20),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text('Booking Reference', style: TextStyle(fontSize: 11, color: AppColors.textMuted)),
+                      Text(
+                        matchingBooking?.displayCode ?? (c.bookingId.length > 8 ? c.bookingId.substring(0, 8).toUpperCase() : c.bookingId),
+                        style: TextStyle(
+                          fontFamily: 'monospace',
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                          color: AppColors.textPrimary,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 4),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text('UUID', style: TextStyle(fontSize: 10, color: AppColors.textMuted)),
+                      Text(
+                        c.bookingId,
+                        style: TextStyle(
+                          fontFamily: 'monospace',
+                          fontSize: 10,
+                          color: AppColors.textMuted,
+                        ),
+                      ),
+                    ],
                   ),
                 ],
               ),

@@ -21,6 +21,14 @@ class EquipmentCatalogScreen extends ConsumerStatefulWidget {
 class _EquipmentCatalogScreenState extends ConsumerState<EquipmentCatalogScreen> {
   final _scrollController = ScrollController();
 
+  static const List<String> _defaultCategories = [
+    'All',
+    'Heavy Machinery',
+    'Power Tools',
+    'Generators & Power',
+    'Cleaning Equipment',
+  ];
+
   final List<String> _statusFilters = [
     'All',
     'Available',
@@ -310,9 +318,21 @@ class _EquipmentCatalogScreenState extends ConsumerState<EquipmentCatalogScreen>
             builder: (context) {
               final categoriesAsync = ref.watch(categoryListProvider);
               final dynamicCategories = categoriesAsync.valueOrNull;
-              final categoriesList = (dynamicCategories != null && dynamicCategories.isNotEmpty)
-                  ? ['All', ...dynamicCategories.map((c) => c.name)]
-                  : const ['All'];
+              final List<String> categoriesList;
+              if (dynamicCategories != null && dynamicCategories.isNotEmpty) {
+                final names = dynamicCategories.map((c) => c.name).where((name) => name.isNotEmpty).toSet();
+                categoriesList = ['All', ...names];
+              } else {
+                final itemCategories = catalogState.items
+                    .map((e) => e.categoryName)
+                    .where((c) => c.isNotEmpty && c != 'All')
+                    .toSet();
+                if (itemCategories.isNotEmpty) {
+                  categoriesList = ['All', ...itemCategories];
+                } else {
+                  categoriesList = _defaultCategories;
+                }
+              }
 
               return SizedBox(
                 height: 38,
@@ -574,6 +594,8 @@ class _EquipmentCatalogScreenState extends ConsumerState<EquipmentCatalogScreen>
 
     showModalBottomSheet(
       context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
       backgroundColor: isDark ? AppColors.darkSurfaceElevated : Colors.white,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
@@ -582,157 +604,162 @@ class _EquipmentCatalogScreenState extends ConsumerState<EquipmentCatalogScreen>
         final currentStatus = state.selectedStatus;
 
         return SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Handle Bar
-                Center(
-                  child: Container(
-                    width: 40,
-                    height: 4,
-                    decoration: BoxDecoration(
-                      color: isDark ? AppColors.darkBorder : AppColors.lightBorder,
-                      borderRadius: BorderRadius.circular(2),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 16),
-
-                // Header
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      'Filter Fleet Machinery',
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                        color: theme.colorScheme.onSurface,
+          child: ConstrainedBox(
+            constraints: BoxConstraints(
+              maxHeight: MediaQuery.sizeOf(context).height * 0.85,
+            ),
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Handle Bar
+                  Center(
+                    child: Container(
+                      width: 40,
+                      height: 4,
+                      decoration: BoxDecoration(
+                        color: isDark ? AppColors.darkBorder : AppColors.lightBorder,
+                        borderRadius: BorderRadius.circular(2),
                       ),
                     ),
-                    if (currentStatus != 'All' || state.selectedCategory != 'All')
-                      TextButton(
-                        onPressed: () {
-                          ref.read(catalogProvider.notifier).setStatus('All');
-                          ref.read(catalogProvider.notifier).setCategory('All');
+                  ),
+                  const SizedBox(height: 16),
+
+                  // Header
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        'Filter Fleet Machinery',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          color: theme.colorScheme.onSurface,
+                        ),
+                      ),
+                      if (currentStatus != 'All' || state.selectedCategory != 'All')
+                        TextButton(
+                          onPressed: () {
+                            ref.read(catalogProvider.notifier).setStatus('All');
+                            ref.read(catalogProvider.notifier).setCategory('All');
+                            Navigator.pop(ctx);
+                          },
+                          child: const Text('Reset', style: TextStyle(fontWeight: FontWeight.bold)),
+                        ),
+                    ],
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    'Select equipment availability and operational status',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary,
+                    ),
+                  ),
+                  const SizedBox(height: 18),
+
+                  // Status Options List
+                  ..._statusFilters.map((st) {
+                    final isSelected = currentStatus == st;
+                    String title;
+                    String subtitle;
+                    IconData icon;
+                    Color accentColor;
+
+                    switch (st) {
+                      case 'Available':
+                        title = 'Available for Rent';
+                        subtitle = 'Ready for immediate dispatch and job-site reservations';
+                        icon = Icons.check_circle_outline_rounded;
+                        accentColor = const Color(0xFF10B981);
+                        break;
+                      case 'UnderMaintenance':
+                        title = 'Under Maintenance';
+                        subtitle = 'Equipment undergoing scheduled wear service or lockout';
+                        icon = Icons.build_circle_outlined;
+                        accentColor = const Color(0xFFEF4444);
+                        break;
+                      case 'Rented':
+                        title = 'Currently Rented';
+                        subtitle = 'Machinery currently deployed on active contractor sites';
+                        icon = Icons.timelapse_rounded;
+                        accentColor = const Color(0xFFF59E0B);
+                        break;
+                      default:
+                        title = 'All Machinery';
+                        subtitle = 'Show all equipment across the entire Sri Lanka fleet';
+                        icon = Icons.apps_rounded;
+                        accentColor = AppColors.primary;
+                    }
+
+                    return Padding(
+                      padding: const EdgeInsets.only(bottom: 10),
+                      child: InkWell(
+                        onTap: () {
+                          ref.read(catalogProvider.notifier).setStatus(st);
                           Navigator.pop(ctx);
                         },
-                        child: const Text('Reset', style: TextStyle(fontWeight: FontWeight.bold)),
-                      ),
-                  ],
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  'Select equipment availability and operational status',
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary,
-                  ),
-                ),
-                const SizedBox(height: 18),
-
-                // Status Options List
-                ..._statusFilters.map((st) {
-                  final isSelected = currentStatus == st;
-                  String title;
-                  String subtitle;
-                  IconData icon;
-                  Color accentColor;
-
-                  switch (st) {
-                    case 'Available':
-                      title = 'Available for Rent';
-                      subtitle = 'Ready for immediate dispatch and job-site reservations';
-                      icon = Icons.check_circle_outline_rounded;
-                      accentColor = const Color(0xFF10B981);
-                      break;
-                    case 'UnderMaintenance':
-                      title = 'Under Maintenance';
-                      subtitle = 'Equipment undergoing scheduled wear service or lockout';
-                      icon = Icons.build_circle_outlined;
-                      accentColor = const Color(0xFFEF4444);
-                      break;
-                    case 'Rented':
-                      title = 'Currently Rented';
-                      subtitle = 'Machinery currently deployed on active contractor sites';
-                      icon = Icons.timelapse_rounded;
-                      accentColor = const Color(0xFFF59E0B);
-                      break;
-                    default:
-                      title = 'All Machinery';
-                      subtitle = 'Show all equipment across the entire Sri Lanka fleet';
-                      icon = Icons.apps_rounded;
-                      accentColor = AppColors.primary;
-                  }
-
-                  return Padding(
-                    padding: const EdgeInsets.only(bottom: 10),
-                    child: InkWell(
-                      onTap: () {
-                        ref.read(catalogProvider.notifier).setStatus(st);
-                        Navigator.pop(ctx);
-                      },
-                      borderRadius: BorderRadius.circular(12),
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-                        decoration: BoxDecoration(
-                          color: isSelected
-                              ? accentColor.withValues(alpha: isDark ? 0.2 : 0.1)
-                              : (isDark ? AppColors.darkSurface : AppColors.lightSurface),
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(
+                        borderRadius: BorderRadius.circular(12),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                          decoration: BoxDecoration(
                             color: isSelected
-                                ? accentColor
-                                : (isDark ? AppColors.darkBorder : AppColors.lightBorder),
-                            width: isSelected ? 1.5 : 1.0,
+                                ? accentColor.withValues(alpha: isDark ? 0.2 : 0.1)
+                                : (isDark ? AppColors.darkSurface : AppColors.lightSurface),
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(
+                              color: isSelected
+                                  ? accentColor
+                                  : (isDark ? AppColors.darkBorder : AppColors.lightBorder),
+                              width: isSelected ? 1.5 : 1.0,
+                            ),
+                          ),
+                          child: Row(
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.all(8),
+                                decoration: BoxDecoration(
+                                  color: accentColor.withValues(alpha: isDark ? 0.2 : 0.12),
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: Icon(icon, color: accentColor, size: 20),
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      title,
+                                      style: TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 13,
+                                        color: theme.colorScheme.onSurface,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 2),
+                                    Text(
+                                      subtitle,
+                                      style: TextStyle(
+                                        fontSize: 11,
+                                        color: isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              if (isSelected)
+                                Icon(Icons.check_rounded, color: accentColor, size: 20),
+                            ],
                           ),
                         ),
-                        child: Row(
-                          children: [
-                            Container(
-                              padding: const EdgeInsets.all(8),
-                              decoration: BoxDecoration(
-                                color: accentColor.withValues(alpha: isDark ? 0.2 : 0.12),
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              child: Icon(icon, color: accentColor, size: 20),
-                            ),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    title,
-                                    style: TextStyle(
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 13,
-                                      color: theme.colorScheme.onSurface,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 2),
-                                  Text(
-                                    subtitle,
-                                    style: TextStyle(
-                                      fontSize: 11,
-                                      color: isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                            if (isSelected)
-                              Icon(Icons.check_rounded, color: accentColor, size: 20),
-                          ],
-                        ),
                       ),
-                    ),
-                  );
-                }),
-              ],
+                    );
+                  }),
+                ],
+              ),
             ),
           ),
         );

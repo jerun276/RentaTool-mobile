@@ -198,6 +198,33 @@ class CatalogService {
     return BatchAvailabilityResultModel.fromJson(response.data as Map<String, dynamic>);
   }
 
+  static const List<CategoryModel> defaultSeedCategories = [
+    CategoryModel(
+      id: '352ea07e-bd97-481b-a287-027036658902',
+      name: 'Heavy Machinery',
+      description: 'Earthmoving, compaction, and civil construction equipment',
+      iconUrl: 'https://cdn.rentatool.lk/icons/excavator.svg',
+    ),
+    CategoryModel(
+      id: 'b25c3bf2-9d33-4df4-b3c9-02660a92d244',
+      name: 'Power Tools',
+      description: 'Heavy-duty electric & cordless drilling, fastening, and cutting tools',
+      iconUrl: 'https://cdn.rentatool.lk/icons/drill.svg',
+    ),
+    CategoryModel(
+      id: '64949df2-eb06-4447-920a-f0fbf1fa000a',
+      name: 'Generators & Power',
+      description: 'Silent diesel & petrol portable power generators',
+      iconUrl: 'https://cdn.rentatool.lk/icons/generator.svg',
+    ),
+    CategoryModel(
+      id: '8ca549e3-2fc5-48b3-aa2d-aa5d15a7cf93',
+      name: 'Cleaning Equipment',
+      description: 'Industrial high-pressure washers, vacuum cleaners, and scrubbers',
+      iconUrl: 'https://cdn.rentatool.lk/icons/washer.svg',
+    ),
+  ];
+
   /// Retrieves list of equipment categories and their technical specification schemas from the authoritative backend.
   Future<List<CategoryModel>> getCategories({bool activeOnly = true}) async {
     try {
@@ -207,12 +234,14 @@ class CatalogService {
       );
       final data = response.data;
       final List<dynamic> items = data is List ? data : (data['items'] ?? []);
-      return items.map((e) => CategoryModel.fromJson(e as Map<String, dynamic>)).toList();
-    } on DioException {
-      rethrow;
+      final parsed = items.map((e) => CategoryModel.fromJson(e as Map<String, dynamic>)).toList();
+      if (parsed.isNotEmpty) {
+        return parsed;
+      }
+      return defaultSeedCategories;
     } catch (e) {
-      debugPrint('getCategories error: $e');
-      return const [];
+      debugPrint('getCategories error (falling back to seeds): $e');
+      return defaultSeedCategories;
     }
   }
 

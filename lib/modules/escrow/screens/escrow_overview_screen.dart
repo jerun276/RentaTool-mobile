@@ -9,6 +9,8 @@ import '../../../core/widgets/loading_indicator.dart';
 import '../../../core/widgets/status_badge.dart';
 import '../../booking/models/booking_model.dart';
 import '../../booking/providers/booking_provider.dart';
+import '../../catalog/models/equipment_model.dart';
+import '../../catalog/providers/catalog_provider.dart';
 import '../models/damage_claim_model.dart';
 import '../models/escrow_hold_model.dart';
 import '../providers/escrow_provider.dart';
@@ -28,6 +30,8 @@ class EscrowOverviewScreen extends ConsumerWidget {
     final textMuted = isDark ? AppColors.darkTextMuted : AppColors.lightTextMuted;
     final escrowState = ref.watch(escrowProvider);
     final bookingState = ref.watch(bookingProvider);
+    final catalogState = ref.watch(catalogProvider);
+    final catalogItems = catalogState.items;
     final currencyFormatter = NumberFormat.currency(locale: 'en_LK', symbol: 'LKR ', decimalDigits: 0);
     final authState = ref.watch(authProvider);
     final currentUser = authState.user;
@@ -61,10 +65,13 @@ class EscrowOverviewScreen extends ConsumerWidget {
         ? bookingState.activeBookings
         : bookingState.activeBookings.where((b) => b.renterId == currentUser?.id || b.ownerId == currentUser?.id).toList();
 
-    // Check if there are active bookings that don't have an escrow hold yet, stably sorted newest first
-    final unheldBookings = scopedBookings.where((b) {
-      return !sortedHolds.any((h) => h.bookingId == b.id);
-    }).toList();
+    // Check if there are active bookings that don't have an escrow hold yet, stably sorted newest first.
+    // If escrow holds are still actively loading, defer evaluating unheld bookings to prevent UI flickering.
+    final unheldBookings = (escrowState.isLoading && sortedHolds.isEmpty)
+        ? <BookingModel>[]
+        : scopedBookings.where((b) {
+            return !sortedHolds.any((h) => h.bookingId == b.id);
+          }).toList();
     unheldBookings.sort((a, b) {
       final aDate = DateTime.tryParse(a.createdAtUtc ?? '') ?? a.startDate;
       final bDate = DateTime.tryParse(b.createdAtUtc ?? '') ?? b.startDate;
@@ -152,7 +159,9 @@ class EscrowOverviewScreen extends ConsumerWidget {
                       const Icon(Icons.lock_outline, size: 12, color: Color(0xFF10B981)),
                       const SizedBox(width: 4),
                       Text(
-                        '${sortedHolds.length} VAULT HOLDS',
+                        (escrowState.isLoading && sortedHolds.isEmpty)
+                            ? 'CHECKING...'
+                            : '${sortedHolds.length} VAULT HOLDS',
                         style: const TextStyle(
                           fontSize: 10,
                           fontWeight: FontWeight.bold,
@@ -167,7 +176,7 @@ class EscrowOverviewScreen extends ConsumerWidget {
             const SizedBox(height: 10),
 
             // Render Active Escrow Holds
-            if (escrowState.isLoading && sortedHolds.isEmpty && unheldBookings.isEmpty)
+            if (escrowState.isLoading && sortedHolds.isEmpty)
               const Padding(
                 padding: EdgeInsets.symmetric(vertical: 24.0),
                 child: LoadingIndicator(message: 'Checking vault holds...'),
@@ -179,6 +188,7 @@ class EscrowOverviewScreen extends ConsumerWidget {
                       hold,
                       scopedBookings,
                       currencyFormatter,
+                      catalogItems: catalogItems,
                       isDark: isDark,
                       textPrimary: textPrimary,
                       textMuted: textMuted,
@@ -192,6 +202,7 @@ class EscrowOverviewScreen extends ConsumerWidget {
                       ref,
                       b,
                       currencyFormatter,
+                      catalogItems: catalogItems,
                       isDark: isDark,
                       textPrimary: textPrimary,
                       textSecondary: textSecondary,
@@ -306,7 +317,9 @@ class EscrowOverviewScreen extends ConsumerWidget {
                     return _claimCard(
                       context,
                       claim,
+                      scopedBookings,
                       currencyFormatter,
+                      catalogItems: catalogItems,
                       isDark: isDark,
                       textPrimary: textPrimary,
                       textSecondary: textSecondary,
@@ -322,6 +335,136 @@ class EscrowOverviewScreen extends ConsumerWidget {
     );
   }
 
+  EquipmentModel? _findEquipment(String? equipmentId, List<EquipmentModel> catalogItems) {
+    if (equipmentId == null || equipmentId.isEmpty) return null;
+    return catalogItems.where((e) => e.id.toLowerCase() == equipmentId.toLowerCase()).firstOrNull;
+  }
+
+  Widget _equipmentHeader({
+    EquipmentModel? equipment,
+    String? fallbackTitle,
+    String? fallbackCategory,
+    required bool isDark,
+    required Color textPrimary,
+    required Color textSecondary,
+    required Color textMuted,
+  }) {
+    final title = (equipment != null && equipment.title.isNotEmpty)
+        ? equipment.title
+        : (fallbackTitle != null && fallbackTitle.isNotEmpty ? fallbackTitle : 'Rental Fleet Asset');
+    final category = (equipment != null && equipment.categoryName.isNotEmpty)
+        ? equipment.categoryName
+        : (fallbackCategory != null && fallbackCategory.isNotEmpty ? fallbackCategory : 'Heavy Machinery');
+    final imageUrl = equipment?.primaryImageUrl ?? '';
+
+    return Container(
+      padding: const EdgeInsets.all(10),
+      margin: const EdgeInsets.only(bottom: 12),
+      decoration: BoxDecoration(
+        color: isDark ? AppColors.darkSurfaceElevated : AppColors.lightSurfaceElevated,
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(
+          color: isDark ? AppColors.darkBorder : AppColors.lightBorder,
+          width: 0.8,
+        ),
+      ),
+      child: Row(
+        children: [
+          ClipRRect(
+            borderRadius: BorderRadius.circular(8),
+            child: SizedBox(
+              width: 44,
+              height: 44,
+              child: imageUrl.isNotEmpty
+                  ? Image.network(
+                      imageUrl,
+                      fit: BoxFit.cover,
+                      errorBuilder: (_, __, ___) => _fallbackEquipmentIcon(category, isDark),
+                    )
+                  : _fallbackEquipmentIcon(category, isDark),
+            ),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  title,
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 13,
+                    color: textPrimary,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                const SizedBox(height: 3),
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: AppColors.primary.withValues(alpha: isDark ? 0.2 : 0.12),
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                      child: Text(
+                        category.toUpperCase(),
+                        style: const TextStyle(
+                          fontSize: 9,
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.primaryLight,
+                          letterSpacing: 0.5,
+                        ),
+                      ),
+                    ),
+                    if (equipment != null && equipment.location.isNotEmpty) ...[
+                      const SizedBox(width: 6),
+                      Icon(Icons.location_on_outlined, size: 11, color: textMuted),
+                      const SizedBox(width: 2),
+                      Flexible(
+                        child: Text(
+                          equipment.location,
+                          style: TextStyle(fontSize: 10, color: textMuted),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _fallbackEquipmentIcon(String category, bool isDark) {
+    IconData icon;
+    final cat = category.toLowerCase();
+    if (cat.contains('heavy') || cat.contains('machinery')) {
+      icon = Icons.agriculture;
+    } else if (cat.contains('power') || cat.contains('drill') || cat.contains('tool')) {
+      icon = Icons.handyman;
+    } else if (cat.contains('generator') || cat.contains('power')) {
+      icon = Icons.bolt;
+    } else if (cat.contains('clean') || cat.contains('wash')) {
+      icon = Icons.cleaning_services;
+    } else {
+      icon = Icons.construction;
+    }
+
+    return Container(
+      color: isDark ? const Color(0xFF222733) : const Color(0xFFE2E8F0),
+      child: Center(
+        child: Icon(icon, color: AppColors.primaryLight, size: 22),
+      ),
+    );
+  }
+
   Widget _escrowHoldCard(
     BuildContext context,
     EscrowHoldModel hold,
@@ -331,9 +474,11 @@ class EscrowOverviewScreen extends ConsumerWidget {
     required Color textPrimary,
     required Color textMuted,
     required Color textSecondary,
+    required List<EquipmentModel> catalogItems,
   }) {
     final shortBooking = hold.bookingId.length > 8 ? hold.bookingId.substring(0, 8) : hold.bookingId;
     final matchingBooking = bookings.where((b) => b.id == hold.bookingId).firstOrNull;
+    final equipment = _findEquipment(matchingBooking?.equipmentId ?? hold.equipmentId, catalogItems);
 
     final dateFormatter = DateFormat('MMM dd, yyyy');
     DateTime? holdDate = hold.heldAtUtc != null && hold.heldAtUtc!.isNotEmpty
@@ -385,8 +530,8 @@ class EscrowOverviewScreen extends ConsumerWidget {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            'Booking #$shortBooking',
-                            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: textPrimary),
+                            matchingBooking != null ? matchingBooking.displayCode : 'Booking #$shortBooking',
+                            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: textPrimary, fontFamily: 'monospace'),
                             overflow: TextOverflow.ellipsis,
                           ),
                           Text(
@@ -407,7 +552,15 @@ class EscrowOverviewScreen extends ConsumerWidget {
               ),
             ],
           ),
-          const SizedBox(height: 10),
+          const SizedBox(height: 12),
+          _equipmentHeader(
+            equipment: equipment,
+            fallbackTitle: hold.equipmentTitle,
+            isDark: isDark,
+            textPrimary: textPrimary,
+            textSecondary: textSecondary,
+            textMuted: textMuted,
+          ),
           Row(
             children: [
               const Icon(Icons.date_range_outlined, size: 15, color: AppColors.primaryLight),
@@ -517,8 +670,10 @@ class EscrowOverviewScreen extends ConsumerWidget {
     required Color textPrimary,
     required Color textSecondary,
     required Color textMuted,
+    required List<EquipmentModel> catalogItems,
   }) {
     final displayCode = b.displayCode.isNotEmpty ? b.displayCode : (b.id.length > 8 ? b.id.substring(0, 8) : b.id);
+    final equipment = _findEquipment(b.equipmentId, catalogItems);
     final dateFormatter = DateFormat('MMM dd, yyyy');
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
@@ -535,13 +690,20 @@ class EscrowOverviewScreen extends ConsumerWidget {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Expanded(
-                child: Text('Booking #$displayCode', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: textPrimary), overflow: TextOverflow.ellipsis),
+                child: Text('Booking #$displayCode', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: textPrimary, fontFamily: 'monospace'), overflow: TextOverflow.ellipsis),
               ),
               const SizedBox(width: 8),
               const StatusBadge(label: 'PRE-AUTH READY', style: BadgeStyle.warning),
             ],
           ),
-          const SizedBox(height: 10),
+          const SizedBox(height: 12),
+          _equipmentHeader(
+            equipment: equipment,
+            isDark: isDark,
+            textPrimary: textPrimary,
+            textSecondary: textSecondary,
+            textMuted: textMuted,
+          ),
           Row(
             children: [
               const Icon(Icons.date_range_outlined, size: 15, color: AppColors.primaryLight),
@@ -646,12 +808,17 @@ class EscrowOverviewScreen extends ConsumerWidget {
   Widget _claimCard(
     BuildContext context,
     DamageClaimModel claim,
+    List<BookingModel> bookings,
     NumberFormat formatter, {
     required bool isDark,
     required Color textPrimary,
     required Color textSecondary,
     required Color textMuted,
+    required List<EquipmentModel> catalogItems,
   }) {
+    final matchingBooking = bookings.where((b) => b.id == claim.bookingId).firstOrNull;
+    final equipment = _findEquipment(matchingBooking?.equipmentId, catalogItems);
+
     BadgeStyle badgeStyle;
     switch (claim.status.name.toLowerCase()) {
       case 'approved':
@@ -704,7 +871,15 @@ class EscrowOverviewScreen extends ConsumerWidget {
                   StatusBadge(label: claim.status.displayLabel, style: badgeStyle),
                 ],
               ),
-              const SizedBox(height: 8),
+              const SizedBox(height: 12),
+              _equipmentHeader(
+                equipment: equipment,
+                fallbackTitle: claim.equipmentTitle,
+                isDark: isDark,
+                textPrimary: textPrimary,
+                textSecondary: textSecondary,
+                textMuted: textMuted,
+              ),
               Row(
                 children: [
                   const Icon(Icons.date_range_outlined, size: 15, color: AppColors.primaryLight),
