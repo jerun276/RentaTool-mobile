@@ -88,8 +88,8 @@ class BookingModel {
   /// Only Confirmed or Active bookings can be extended per backend business rules
   bool get canExtendSchedule => isConfirmed || isActive;
 
-  /// Damage disputes can be filed during active rental or after return
-  bool get canDispute => isActive || isCompleted;
+  /// Damage disputes can be filed during active rental or after return, provided not already disputed
+  bool get canDispute => (isActive || isCompleted) && !isDisputed;
 
   /// Short display code (e.g. BKG-A1B2C3D4)
   String get displayCode {

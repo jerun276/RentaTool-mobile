@@ -628,12 +628,34 @@ class _BookingDetailScreenState extends ConsumerState<BookingDetailScreen> {
               ),
             const SizedBox(height: 12),
 
-            // 7. Damage Claim Dispute Link (Only available to Equipment Owner or Admin)
+            // 7. Damage Claim Dispute Link (Only available to Equipment Owner or Admin when not yet disputed)
             if (b.canDispute && isOwnerOrAdmin)
               TextButton.icon(
                 icon: const Icon(Icons.report_problem_outlined, size: 18, color: AppColors.warning),
                 label: const Text('File Damage Claim / Escrow Dispute', style: TextStyle(color: AppColors.warning)),
                 onPressed: () => context.push('/escrow/claim-new?bookingId=${b.id}'),
+              ),
+            if (b.isDisputed)
+              Container(
+                margin: const EdgeInsets.symmetric(vertical: 4),
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                decoration: BoxDecoration(
+                  color: AppColors.warning.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(color: AppColors.warning.withValues(alpha: 0.3)),
+                ),
+                child: const Row(
+                  children: [
+                    Icon(Icons.shield_outlined, size: 18, color: AppColors.warning),
+                    SizedBox(width: 10),
+                    Expanded(
+                      child: Text(
+                        'A damage dispute is active for this booking. Multiple claims cannot be generated.',
+                        style: TextStyle(color: AppColors.warning, fontSize: 13, fontWeight: FontWeight.w500),
+                      ),
+                    ),
+                  ],
+                ),
               ),
           ],
         ),
