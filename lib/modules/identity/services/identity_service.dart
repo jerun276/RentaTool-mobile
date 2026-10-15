@@ -34,6 +34,17 @@ class IdentityService {
     return AuthResponse.fromJson(response.data);
   }
 
+  Future<AuthResponse> refreshToken(String token) async {
+    final response = await _dio.post(
+      ApiConstants.refreshToken,
+      data: {
+        'refreshToken': token.trim(),
+      },
+      options: Options(extra: {'skipAuth': true}),
+    );
+    return AuthResponse.fromJson(response.data);
+  }
+
   Future<AuthResponse> register({
     required String name,
     required String email,
