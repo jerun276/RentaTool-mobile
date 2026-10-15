@@ -57,11 +57,6 @@ class _ActiveBookingsScreenState extends ConsumerState<ActiveBookingsScreen> {
         ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.qr_code_scanner, size: 22),
-            tooltip: 'Scan Handover QR',
-            onPressed: () => context.push('/bookings/scan'),
-          ),
-          IconButton(
             icon: const Icon(Icons.refresh, size: 20),
             tooltip: 'Refresh',
             onPressed: () => notifier.fetchActiveBookings(),
