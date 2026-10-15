@@ -35,6 +35,12 @@ class ToolImageModel {
 class EquipmentModel {
   final String id;
   final String ownerId;
+  final String ownerName;
+  final String? ownerPhoneNumber;
+  final bool ownerIsVerified;
+  final int ownerTrustScore;
+  final String? ownerMemberSinceUtc;
+  final String? ownerProfilePhotoUrl;
   final String title;
   final String description;
   final String categoryId;
@@ -52,6 +58,12 @@ class EquipmentModel {
   const EquipmentModel({
     required this.id,
     required this.ownerId,
+    this.ownerName = '',
+    this.ownerPhoneNumber,
+    this.ownerIsVerified = false,
+    this.ownerTrustScore = 50,
+    this.ownerMemberSinceUtc,
+    this.ownerProfilePhotoUrl,
     required this.title,
     required this.description,
     required this.categoryId,
@@ -100,6 +112,12 @@ class EquipmentModel {
     return EquipmentModel(
       id: json['id'] ?? '',
       ownerId: json['ownerId'] ?? '',
+      ownerName: json['ownerName'] ?? '',
+      ownerPhoneNumber: json['ownerPhoneNumber'],
+      ownerIsVerified: json['ownerIsVerified'] ?? false,
+      ownerTrustScore: (json['ownerTrustScore'] as num?)?.toInt() ?? 50,
+      ownerMemberSinceUtc: json['ownerMemberSinceUtc']?.toString(),
+      ownerProfilePhotoUrl: json['ownerProfilePhotoUrl'],
       title: json['title'] ?? '',
       description: json['description'] ?? '',
       categoryId: json['categoryId'] ?? '',
@@ -120,6 +138,12 @@ class EquipmentModel {
     return {
       'id': id,
       'ownerId': ownerId,
+      'ownerName': ownerName,
+      'ownerPhoneNumber': ownerPhoneNumber,
+      'ownerIsVerified': ownerIsVerified,
+      'ownerTrustScore': ownerTrustScore,
+      'ownerMemberSinceUtc': ownerMemberSinceUtc,
+      'ownerProfilePhotoUrl': ownerProfilePhotoUrl,
       'title': title,
       'description': description,
       'categoryId': categoryId,

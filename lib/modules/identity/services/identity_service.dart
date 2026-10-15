@@ -92,6 +92,11 @@ class IdentityService {
     return TrustScoreModel.fromJson(response.data);
   }
 
+  Future<Map<String, dynamic>> getPublicProfile(String userId) async {
+    final response = await _dio.get('${ApiConstants.userById(userId)}/public-profile');
+    return response.data is Map<String, dynamic> ? response.data as Map<String, dynamic> : {};
+  }
+
   Future<void> submitKyc({
     required String documentNumber,
     required String documentType,
