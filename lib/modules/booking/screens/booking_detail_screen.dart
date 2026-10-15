@@ -15,6 +15,7 @@ import '../widgets/surge_extension_sheet.dart';
 import '../../identity/providers/auth_provider.dart';
 import '../../identity/models/user_model.dart';
 import '../../escrow/providers/escrow_provider.dart';
+import '../../catalog/providers/catalog_provider.dart';
 
 class BookingDetailScreen extends ConsumerStatefulWidget {
   final String bookingId;
@@ -125,6 +126,13 @@ class _BookingDetailScreenState extends ConsumerState<BookingDetailScreen> {
     final estimatedDeposit = (b.dailyRate > 0) ? (b.dailyRate * 3) : 15000.0;
     final depositAmount = (hold != null && hold.depositAmount > 0) ? hold.depositAmount : estimatedDeposit;
 
+    final catalogState = ref.watch(catalogProvider);
+    final equipmentFromCatalog = catalogState.items.where((e) => e.id == b.equipmentId).firstOrNull;
+    final equipmentTitle = b.equipmentTitle ?? equipmentFromCatalog?.title ?? 'Equipment #${b.equipmentId.length >= 8 ? b.equipmentId.substring(0, 8) : b.equipmentId}';
+    final equipmentImage = b.equipmentImageUrl ?? equipmentFromCatalog?.primaryImageUrl;
+    final equipmentCategory = b.equipmentCategory ?? equipmentFromCatalog?.categoryName;
+    final equipmentLocation = b.equipmentLocation ?? equipmentFromCatalog?.location;
+
     BadgeStyle badgeStyle;
     switch (b.status.toLowerCase()) {
       case 'active':
@@ -203,7 +211,218 @@ class _BookingDetailScreenState extends ConsumerState<BookingDetailScreen> {
                 ],
               ),
             ),
-            const SizedBox(height: 20),
+            const SizedBox(height: 16),
+
+            // 1b. Equipment Dossier Card
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: AppColors.surface,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: AppColors.border),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        'EQUIPMENT SPECIFICATION',
+                        style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: AppColors.textMuted),
+                      ),
+                      if (equipmentCategory != null)
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: AppColors.primary.withValues(alpha: 0.12),
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                          child: Text(
+                            equipmentCategory,
+                            style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: AppColors.primaryLight),
+                          ),
+                        ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(10),
+                        child: (equipmentImage != null && equipmentImage.isNotEmpty)
+                            ? Image.network(
+                                equipmentImage,
+                                width: 72,
+                                height: 72,
+                                fit: BoxFit.cover,
+                                errorBuilder: (_, __, ___) => _buildEquipmentPlaceholder(),
+                              )
+                            : _buildEquipmentPlaceholder(),
+                      ),
+                      const SizedBox(width: 14),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              equipmentTitle,
+                              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                            ),
+                            const SizedBox(height: 4),
+                            if (equipmentLocation != null && equipmentLocation.isNotEmpty) ...[
+                              Row(
+                                children: [
+                                  const Icon(Icons.location_on_outlined, size: 14, color: AppColors.primaryLight),
+                                  const SizedBox(width: 4),
+                                  Expanded(
+                                    child: Text(
+                                      equipmentLocation,
+                                      style: TextStyle(fontSize: 12, color: AppColors.textMuted),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 6),
+                            ],
+                            InkWell(
+                              onTap: () => context.push('/equipment/${b.equipmentId}'),
+                              child: const Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Text(
+                                    'View Full Equipment Listing',
+                                    style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: AppColors.primaryLight),
+                                  ),
+                                  SizedBox(width: 4),
+                                  Icon(Icons.arrow_forward_ios, size: 10, color: AppColors.primaryLight),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 16),
+
+            // 1c. Rental Parties (Renter & Owner) Dossier Card
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: AppColors.surface,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: AppColors.border),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'RENTAL PARTIES & CONTACT DOSSIER',
+                    style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: AppColors.textMuted),
+                  ),
+                  const SizedBox(height: 12),
+                  // Renter details
+                  Row(
+                    children: [
+                      Container(
+                        width: 38,
+                        height: 38,
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF0284C7).withValues(alpha: 0.15),
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(Icons.person_outline, color: Color(0xFF38BDF8), size: 20),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                Text(
+                                  b.renterName ?? 'Renter',
+                                  style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold),
+                                ),
+                                const SizedBox(width: 6),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFF0284C7).withValues(alpha: 0.15),
+                                    borderRadius: BorderRadius.circular(4),
+                                  ),
+                                  child: const Text('RENTER', style: TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: Color(0xFF38BDF8))),
+                                ),
+                              ],
+                            ),
+                            if (b.renterEmail != null || b.renterPhone != null) ...[
+                              const SizedBox(height: 2),
+                              Text(
+                                [b.renterEmail, b.renterPhone].whereType<String>().join(' • '),
+                                style: TextStyle(fontSize: 11, color: AppColors.textMuted),
+                              ),
+                            ],
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                  const Divider(height: 20),
+                  // Owner details
+                  Row(
+                    children: [
+                      Container(
+                        width: 38,
+                        height: 38,
+                        decoration: BoxDecoration(
+                          color: AppColors.primary.withValues(alpha: 0.15),
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(Icons.storefront_outlined, color: AppColors.primaryLight, size: 20),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                Text(
+                                  b.ownerName ?? 'Equipment Owner',
+                                  style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold),
+                                ),
+                                const SizedBox(width: 6),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
+                                  decoration: BoxDecoration(
+                                    color: AppColors.primary.withValues(alpha: 0.15),
+                                    borderRadius: BorderRadius.circular(4),
+                                  ),
+                                  child: const Text('OWNER', style: TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: AppColors.primaryLight)),
+                                ),
+                              ],
+                            ),
+                            if (b.ownerEmail != null || b.ownerPhone != null) ...[
+                              const SizedBox(height: 2),
+                              Text(
+                                [b.ownerEmail, b.ownerPhone].whereType<String>().join(' • '),
+                                style: TextStyle(fontSize: 11, color: AppColors.textMuted),
+                              ),
+                            ],
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 16),
 
             // 2. Visual Lifecycle Timeline (Student 3 Deliverable)
             BookingTimelineWidget(booking: b),
@@ -418,6 +637,22 @@ class _BookingDetailScreenState extends ConsumerState<BookingDetailScreen> {
               ),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildEquipmentPlaceholder() {
+    return Container(
+      width: 72,
+      height: 72,
+      decoration: BoxDecoration(
+        color: AppColors.primary.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: const Icon(
+        Icons.construction_outlined,
+        color: AppColors.primaryLight,
+        size: 32,
       ),
     );
   }

@@ -16,6 +16,18 @@ class BookingModel {
   final String? createdAtUtc;
   final String? updatedAtUtc;
 
+  // Enriched Equipment & Participant details
+  final String? equipmentTitle;
+  final String? equipmentImageUrl;
+  final String? equipmentCategory;
+  final String? equipmentLocation;
+  final String? renterName;
+  final String? renterEmail;
+  final String? renterPhone;
+  final String? ownerName;
+  final String? ownerEmail;
+  final String? ownerPhone;
+
   const BookingModel({
     required this.id,
     required this.equipmentId,
@@ -31,6 +43,16 @@ class BookingModel {
     this.cancellationReason,
     this.createdAtUtc,
     this.updatedAtUtc,
+    this.equipmentTitle,
+    this.equipmentImageUrl,
+    this.equipmentCategory,
+    this.equipmentLocation,
+    this.renterName,
+    this.renterEmail,
+    this.renterPhone,
+    this.ownerName,
+    this.ownerEmail,
+    this.ownerPhone,
   });
 
   /// Duration of rental in days (minimum 1 day)
@@ -77,32 +99,42 @@ class BookingModel {
   }
 
   factory BookingModel.fromJson(Map<String, dynamic> json) {
-    final sDate = DateTime.tryParse(json['startDate']?.toString() ?? '') ?? DateTime.now();
-    final eDate = DateTime.tryParse(json['endDate']?.toString() ?? '') ?? DateTime.now().add(const Duration(days: 3));
-    final totalFee = (json['totalRentalFee'] as num?)?.toDouble() ?? 0.0;
+    final sDate = DateTime.tryParse(json['startDate']?.toString() ?? json['StartDate']?.toString() ?? '') ?? DateTime.now();
+    final eDate = DateTime.tryParse(json['endDate']?.toString() ?? json['EndDate']?.toString() ?? '') ?? DateTime.now().add(const Duration(days: 3));
+    final totalFee = (json['totalRentalFee'] ?? json['TotalRentalFee'] as num?)?.toDouble() ?? 0.0;
     
     // If dailyRate is omitted (e.g., from ActiveBookingSummaryDto), compute estimate
-    double dRate = (json['dailyRate'] as num?)?.toDouble() ?? 0.0;
+    double dRate = (json['dailyRate'] ?? json['DailyRate'] as num?)?.toDouble() ?? 0.0;
     if (dRate <= 0.0) {
       final days = (eDate.difference(sDate).inDays) + 1;
       dRate = days > 0 ? (totalFee / days) : totalFee;
     }
 
     return BookingModel(
-      id: json['id']?.toString() ?? '',
-      equipmentId: json['equipmentId']?.toString() ?? '',
-      renterId: json['renterId']?.toString() ?? '',
-      ownerId: json['ownerId']?.toString() ?? '',
+      id: json['id']?.toString() ?? json['Id']?.toString() ?? '',
+      equipmentId: json['equipmentId']?.toString() ?? json['EquipmentId']?.toString() ?? '',
+      renterId: json['renterId']?.toString() ?? json['RenterId']?.toString() ?? '',
+      ownerId: json['ownerId']?.toString() ?? json['OwnerId']?.toString() ?? '',
       startDate: sDate,
       endDate: eDate,
       dailyRate: dRate,
       totalRentalFee: totalFee,
-      status: json['status']?.toString() ?? 'Requested',
-      pickupVerified: json['pickupVerified'] == true,
-      returnVerified: json['returnVerified'] == true,
-      cancellationReason: json['cancellationReason']?.toString(),
-      createdAtUtc: json['createdAtUtc']?.toString(),
-      updatedAtUtc: json['updatedAtUtc']?.toString(),
+      status: json['status']?.toString() ?? json['Status']?.toString() ?? 'Requested',
+      pickupVerified: json['pickupVerified'] == true || json['PickupVerified'] == true,
+      returnVerified: json['returnVerified'] == true || json['ReturnVerified'] == true,
+      cancellationReason: json['cancellationReason']?.toString() ?? json['CancellationReason']?.toString(),
+      createdAtUtc: json['createdAtUtc']?.toString() ?? json['CreatedAtUtc']?.toString(),
+      updatedAtUtc: json['updatedAtUtc']?.toString() ?? json['UpdatedAtUtc']?.toString(),
+      equipmentTitle: json['equipmentTitle']?.toString() ?? json['EquipmentTitle']?.toString(),
+      equipmentImageUrl: json['equipmentImageUrl']?.toString() ?? json['EquipmentImageUrl']?.toString(),
+      equipmentCategory: json['equipmentCategory']?.toString() ?? json['EquipmentCategory']?.toString(),
+      equipmentLocation: json['equipmentLocation']?.toString() ?? json['EquipmentLocation']?.toString(),
+      renterName: json['renterName']?.toString() ?? json['RenterName']?.toString(),
+      renterEmail: json['renterEmail']?.toString() ?? json['RenterEmail']?.toString(),
+      renterPhone: json['renterPhone']?.toString() ?? json['RenterPhone']?.toString(),
+      ownerName: json['ownerName']?.toString() ?? json['OwnerName']?.toString(),
+      ownerEmail: json['ownerEmail']?.toString() ?? json['OwnerEmail']?.toString(),
+      ownerPhone: json['ownerPhone']?.toString() ?? json['OwnerPhone']?.toString(),
     );
   }
 
@@ -122,6 +154,16 @@ class BookingModel {
       'cancellationReason': cancellationReason,
       'createdAtUtc': createdAtUtc,
       'updatedAtUtc': updatedAtUtc,
+      'equipmentTitle': equipmentTitle,
+      'equipmentImageUrl': equipmentImageUrl,
+      'equipmentCategory': equipmentCategory,
+      'equipmentLocation': equipmentLocation,
+      'renterName': renterName,
+      'renterEmail': renterEmail,
+      'renterPhone': renterPhone,
+      'ownerName': ownerName,
+      'ownerEmail': ownerEmail,
+      'ownerPhone': ownerPhone,
     };
   }
 
@@ -140,6 +182,16 @@ class BookingModel {
     String? cancellationReason,
     String? createdAtUtc,
     String? updatedAtUtc,
+    String? equipmentTitle,
+    String? equipmentImageUrl,
+    String? equipmentCategory,
+    String? equipmentLocation,
+    String? renterName,
+    String? renterEmail,
+    String? renterPhone,
+    String? ownerName,
+    String? ownerEmail,
+    String? ownerPhone,
   }) {
     return BookingModel(
       id: id ?? this.id,
@@ -156,6 +208,16 @@ class BookingModel {
       cancellationReason: cancellationReason ?? this.cancellationReason,
       createdAtUtc: createdAtUtc ?? this.createdAtUtc,
       updatedAtUtc: updatedAtUtc ?? this.updatedAtUtc,
+      equipmentTitle: equipmentTitle ?? this.equipmentTitle,
+      equipmentImageUrl: equipmentImageUrl ?? this.equipmentImageUrl,
+      equipmentCategory: equipmentCategory ?? this.equipmentCategory,
+      equipmentLocation: equipmentLocation ?? this.equipmentLocation,
+      renterName: renterName ?? this.renterName,
+      renterEmail: renterEmail ?? this.renterEmail,
+      renterPhone: renterPhone ?? this.renterPhone,
+      ownerName: ownerName ?? this.ownerName,
+      ownerEmail: ownerEmail ?? this.ownerEmail,
+      ownerPhone: ownerPhone ?? this.ownerPhone,
     );
   }
 }

@@ -28,13 +28,25 @@ class BookingState {
         }
       }
 
-      // 2. Search Query filter (by ID, displayCode, or equipmentId)
+      // 2. Search Query filter (by ID, displayCode, equipment, or renter)
       if (searchQuery.trim().isNotEmpty) {
         final q = searchQuery.trim().toLowerCase();
         final matchesId = b.id.toLowerCase().contains(q);
         final matchesCode = b.displayCode.toLowerCase().contains(q);
         final matchesEq = b.equipmentId.toLowerCase().contains(q);
-        return matchesId || matchesCode || matchesEq;
+        final matchesTitle = b.equipmentTitle?.toLowerCase().contains(q) ?? false;
+        final matchesCat = b.equipmentCategory?.toLowerCase().contains(q) ?? false;
+        final matchesRenter = b.renterName?.toLowerCase().contains(q) ?? false;
+        final matchesRenterEmail = b.renterEmail?.toLowerCase().contains(q) ?? false;
+        final matchesRenterPhone = b.renterPhone?.toLowerCase().contains(q) ?? false;
+        return matchesId ||
+            matchesCode ||
+            matchesEq ||
+            matchesTitle ||
+            matchesCat ||
+            matchesRenter ||
+            matchesRenterEmail ||
+            matchesRenterPhone;
       }
 
       return true;
