@@ -101,7 +101,7 @@ class BookingCard extends StatelessWidget {
                       ),
                     ],
                   ),
-                  StatusBadge(label: booking.status, style: badgeStyle),
+                  StatusBadge(label: displayStatus, style: badgeStyle),
                 ],
               ),
               const SizedBox(height: 10),

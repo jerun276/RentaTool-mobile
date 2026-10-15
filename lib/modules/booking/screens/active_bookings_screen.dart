@@ -13,7 +13,6 @@ import '../../identity/providers/auth_provider.dart';
 import '../../identity/models/user_model.dart';
 import '../../escrow/providers/escrow_provider.dart';
 import '../../escrow/models/escrow_hold_model.dart';
-import '../../escrow/models/damage_claim_model.dart';
 
 class ActiveBookingsScreen extends ConsumerStatefulWidget {
   const ActiveBookingsScreen({super.key});
@@ -58,8 +57,7 @@ class _ActiveBookingsScreenState extends ConsumerState<ActiveBookingsScreen> {
           h.bookingId.toLowerCase() == b.id.toLowerCase() &&
           (h.status == EscrowStatus.disputed || h.rawStatus.toLowerCase() == 'disputed'));
       final hasClaim = escrowState.claims.any((c) =>
-          c.bookingId.toLowerCase() == b.id.toLowerCase() &&
-          c.status != ClaimStatus.rejected);
+          c.bookingId.toLowerCase() == b.id.toLowerCase());
       return b.isDisputed || isHoldDisputed || hasClaim;
     }
 
