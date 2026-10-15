@@ -14,6 +14,7 @@ import '../widgets/booking_timeline_widget.dart';
 import '../widgets/surge_extension_sheet.dart';
 import '../../identity/providers/auth_provider.dart';
 import '../../identity/models/user_model.dart';
+import '../../escrow/models/escrow_hold_model.dart';
 import '../../escrow/providers/escrow_provider.dart';
 import '../../catalog/providers/catalog_provider.dart';
 
@@ -35,6 +36,9 @@ class _BookingDetailScreenState extends ConsumerState<BookingDetailScreen> {
   void initState() {
     super.initState();
     _fetchBooking();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ref.read(escrowProvider.notifier).fetchClaims();
+    });
   }
 
   Future<void> _fetchBooking() async {
@@ -122,7 +126,10 @@ class _BookingDetailScreenState extends ConsumerState<BookingDetailScreen> {
     final dateFormatter = DateFormat('EEEE, MMM dd, yyyy');
 
     final escrowState = ref.watch(escrowProvider);
-    final hold = escrowState.holds.where((h) => h.bookingId == b.id).firstOrNull;
+    final hold = escrowState.holds.where((h) => h.bookingId.toLowerCase() == b.id.toLowerCase()).firstOrNull;
+    final existingClaim = escrowState.claims.where((c) => c.bookingId.toLowerCase() == b.id.toLowerCase()).firstOrNull;
+    final bool isHoldDisputed = hold != null && (hold.status == EscrowStatus.disputed || hold.rawStatus.toLowerCase() == 'disputed');
+    final bool isDisputedOrHasClaim = b.isDisputed || isHoldDisputed || existingClaim != null;
     final estimatedDeposit = (b.dailyRate > 0) ? (b.dailyRate * 3) : 15000.0;
     final depositAmount = (hold != null && hold.depositAmount > 0) ? hold.depositAmount : estimatedDeposit;
 
@@ -133,8 +140,9 @@ class _BookingDetailScreenState extends ConsumerState<BookingDetailScreen> {
     final equipmentCategory = b.equipmentCategory ?? equipmentFromCatalog?.categoryName;
     final equipmentLocation = b.equipmentLocation ?? equipmentFromCatalog?.location;
 
+    final effectiveStatus = isDisputedOrHasClaim ? 'disputed' : b.status.toLowerCase();
     BadgeStyle badgeStyle;
-    switch (b.status.toLowerCase()) {
+    switch (effectiveStatus) {
       case 'active':
         badgeStyle = BadgeStyle.success;
         break;
@@ -146,6 +154,9 @@ class _BookingDetailScreenState extends ConsumerState<BookingDetailScreen> {
         break;
       case 'cancelled':
         badgeStyle = BadgeStyle.error;
+        break;
+      case 'disputed':
+        badgeStyle = BadgeStyle.warning;
         break;
       default:
         badgeStyle = BadgeStyle.warning;
@@ -202,12 +213,12 @@ class _BookingDetailScreenState extends ConsumerState<BookingDetailScreen> {
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        b.status.toUpperCase(),
+                        (isDisputedOrHasClaim ? 'DISPUTED' : b.status).toUpperCase(),
                         style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: AppColors.primaryLight),
                       ),
                     ],
                   ),
-                  StatusBadge(label: b.status, style: badgeStyle),
+                  StatusBadge(label: isDisputedOrHasClaim ? 'Disputed' : b.status, style: badgeStyle),
                 ],
               ),
             ),
@@ -629,13 +640,7 @@ class _BookingDetailScreenState extends ConsumerState<BookingDetailScreen> {
             const SizedBox(height: 12),
 
             // 7. Damage Claim Dispute Link (Only available to Equipment Owner or Admin when not yet disputed)
-            if (b.canDispute && isOwnerOrAdmin)
-              TextButton.icon(
-                icon: const Icon(Icons.report_problem_outlined, size: 18, color: AppColors.warning),
-                label: const Text('File Damage Claim / Escrow Dispute', style: TextStyle(color: AppColors.warning)),
-                onPressed: () => context.push('/escrow/claim-new?bookingId=${b.id}'),
-              ),
-            if (b.isDisputed)
+            if (isDisputedOrHasClaim)
               Container(
                 margin: const EdgeInsets.symmetric(vertical: 4),
                 padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
@@ -644,18 +649,30 @@ class _BookingDetailScreenState extends ConsumerState<BookingDetailScreen> {
                   borderRadius: BorderRadius.circular(10),
                   border: Border.all(color: AppColors.warning.withValues(alpha: 0.3)),
                 ),
-                child: const Row(
+                child: Row(
                   children: [
-                    Icon(Icons.shield_outlined, size: 18, color: AppColors.warning),
-                    SizedBox(width: 10),
+                    const Icon(Icons.shield_outlined, size: 18, color: AppColors.warning),
+                    const SizedBox(width: 10),
                     Expanded(
                       child: Text(
-                        'A damage dispute is active for this booking. Multiple claims cannot be generated.',
-                        style: TextStyle(color: AppColors.warning, fontSize: 13, fontWeight: FontWeight.w500),
+                        existingClaim != null
+                            ? 'A damage claim has been filed for this booking (Status: ${existingClaim.status}). Multiple claims cannot be generated.'
+                            : 'A damage dispute is active for this booking. Multiple claims cannot be generated.',
+                        style: const TextStyle(color: AppColors.warning, fontSize: 13, fontWeight: FontWeight.w500),
                       ),
                     ),
                   ],
                 ),
+              )
+            else if (b.canDispute && isOwnerOrAdmin)
+              TextButton.icon(
+                icon: const Icon(Icons.report_problem_outlined, size: 18, color: AppColors.warning),
+                label: const Text('File Damage Claim / Escrow Dispute', style: TextStyle(color: AppColors.warning)),
+                onPressed: () async {
+                  await context.push('/escrow/claim-new?bookingId=${b.id}');
+                  _fetchBooking();
+                  ref.read(escrowProvider.notifier).fetchClaims();
+                },
               ),
           ],
         ),

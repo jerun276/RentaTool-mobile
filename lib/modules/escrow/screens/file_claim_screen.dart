@@ -114,7 +114,7 @@ class _FileClaimScreenState extends ConsumerState<FileClaimScreen> {
     final claims = ref.watch(escrowProvider).claims;
     final bookingIdText = _bookingIdController.text.trim();
     final existingClaim = bookingIdText.isNotEmpty
-        ? claims.where((c) => c.bookingId == bookingIdText).firstOrNull
+        ? claims.where((c) => c.bookingId.toLowerCase() == bookingIdText.toLowerCase()).firstOrNull
         : null;
 
     return Scaffold(
