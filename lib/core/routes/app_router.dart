@@ -41,10 +41,12 @@ final appRouterProvider = Provider<GoRouter>((ref) {
   final router = _buildRouter();
 
   // Auto-logout: when an authenticated session is dropped (e.g. expired JWT),
-  // send the user straight to the login screen.
+  // send the user straight to the login screen safely on the next frame.
   ref.listen<AuthState>(authProvider, (previous, next) {
     if (previous != null && previous.isAuthenticated && !next.isAuthenticated) {
-      router.go('/login');
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        router.go('/login');
+      });
     }
   });
 
@@ -59,10 +61,12 @@ GoRouter _buildRouter() {
       // Auth Routes (Outside Bottom Nav Shell)
       GoRoute(
         path: '/login',
+        parentNavigatorKey: _rootNavigatorKey,
         builder: (context, state) => const LoginScreen(),
       ),
       GoRoute(
         path: '/register',
+        parentNavigatorKey: _rootNavigatorKey,
         builder: (context, state) => const RegisterScreen(),
       ),
       GoRoute(
@@ -72,6 +76,7 @@ GoRouter _buildRouter() {
       ),
       GoRoute(
         path: '/admin/categories',
+        parentNavigatorKey: _rootNavigatorKey,
         builder: (context, state) => const AdminCategoryScreen(),
       ),
 

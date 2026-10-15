@@ -481,9 +481,6 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
             tooltip: 'Sign Out',
             onPressed: () async {
               await ref.read(authProvider.notifier).logout();
-              if (context.mounted) {
-                context.go('/login');
-              }
             },
           ),
         ],
@@ -543,9 +540,6 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                         ),
                         onPressed: () async {
                           await ref.read(authProvider.notifier).logout();
-                          if (context.mounted) {
-                            context.go('/login');
-                          }
                         },
                         child: const Text('Sign In'),
                       ),
