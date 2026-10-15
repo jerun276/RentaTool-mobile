@@ -6,6 +6,7 @@ import '../models/booking_model.dart';
 
 class BookingCard extends StatelessWidget {
   final BookingModel booking;
+  final bool? isDisputed;
   final VoidCallback? onTap;
   final VoidCallback? onShowQR;
   final VoidCallback? onScanQR;
@@ -13,6 +14,7 @@ class BookingCard extends StatelessWidget {
   const BookingCard({
     super.key,
     required this.booking,
+    this.isDisputed,
     this.onTap,
     this.onShowQR,
     this.onScanQR,
@@ -33,8 +35,11 @@ class BookingCard extends StatelessWidget {
     );
     final dateFormatter = DateFormat('MMM dd, yyyy');
 
+    final bool effectiveDisputed = (isDisputed ?? false) || booking.isDisputed;
+    final String displayStatus = effectiveDisputed ? 'Disputed' : booking.status;
+
     BadgeStyle badgeStyle;
-    switch (booking.status.toLowerCase()) {
+    switch (displayStatus.toLowerCase()) {
       case 'active':
         badgeStyle = BadgeStyle.success;
         break;
@@ -47,12 +52,15 @@ class BookingCard extends StatelessWidget {
       case 'cancelled':
         badgeStyle = BadgeStyle.error;
         break;
+      case 'disputed':
+        badgeStyle = BadgeStyle.warning;
+        break;
       default:
         badgeStyle = BadgeStyle.warning;
     }
 
     final isPending = booking.isRequested;
-    final canUseQR = booking.isConfirmed || booking.isActive;
+    final canUseQR = (booking.isConfirmed || booking.isActive) && !effectiveDisputed;
 
     return Card(
       margin: const EdgeInsets.only(bottom: 14),
