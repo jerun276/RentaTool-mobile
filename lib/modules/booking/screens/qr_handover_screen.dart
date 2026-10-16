@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -8,8 +9,10 @@ import '../../../core/theme/app_colors.dart';
 import '../../../core/widgets/app_button.dart';
 import '../../../core/widgets/error_view.dart';
 import '../../../core/widgets/loading_indicator.dart';
+import '../models/booking_model.dart';
 import '../models/handover_token_model.dart';
 import '../services/booking_service.dart';
+import '../providers/booking_provider.dart';
 
 class QrHandoverScreen extends ConsumerStatefulWidget {
   final String bookingId;
@@ -22,6 +25,7 @@ class QrHandoverScreen extends ConsumerStatefulWidget {
 
 class _QrHandoverScreenState extends ConsumerState<QrHandoverScreen> {
   HandoverTokenModel? _tokenModel;
+  BookingModel? _loadedBooking;
   bool _isLoading = true;
   String? _error;
   String _eventType = 'Pickup';
@@ -31,6 +35,34 @@ class _QrHandoverScreenState extends ConsumerState<QrHandoverScreen> {
   @override
   void initState() {
     super.initState();
+    _initAndGenerate();
+  }
+
+  Future<void> _initAndGenerate() async {
+    final bookings = ref.read(bookingProvider).activeBookings;
+    BookingModel? b;
+    try {
+      b = bookings.firstWhere((item) => item.id == widget.bookingId);
+    } catch (_) {}
+
+    if (b == null) {
+      try {
+        final service = ref.read(bookingServiceProvider);
+        b = await service.getBookingById(widget.bookingId);
+      } catch (_) {}
+    }
+
+    if (mounted && b != null) {
+      setState(() {
+        _loadedBooking = b;
+        if (b!.status.toLowerCase() == 'active' || b.pickupVerified) {
+          _eventType = 'Return';
+        } else {
+          _eventType = 'Pickup';
+        }
+      });
+    }
+
     _generateToken();
   }
 
@@ -111,10 +143,25 @@ class _QrHandoverScreenState extends ConsumerState<QrHandoverScreen> {
   @override
   Widget build(BuildContext context) {
     final isExpired = _secondsRemaining <= 0;
+    final bookings = ref.watch(bookingProvider).activeBookings;
+    bool showPickup = true;
+    bool showReturn = true;
+    
+    BookingModel? booking;
+    try {
+      booking = bookings.firstWhere((b) => b.id == widget.bookingId);
+    } catch (_) {
+      booking = _loadedBooking;
+    }
+
+    if (booking != null) {
+      showPickup = booking.canGeneratePickupToken;
+      showReturn = booking.canGenerateReturnToken;
+    }
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Handover QR Verification'),
+        title: Text(_eventType == 'Return' ? 'Return QR Verification' : 'Handover QR Verification'),
       ),
       body: Center(
         child: SingleChildScrollView(
@@ -130,30 +177,32 @@ class _QrHandoverScreenState extends ConsumerState<QrHandoverScreen> {
                   borderRadius: BorderRadius.circular(30),
                   border: Border.all(color: AppColors.border),
                 ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
+                child: Wrap(
+                  spacing: 8,
+                  alignment: WrapAlignment.center,
                   children: [
-                    ChoiceChip(
-                      label: const Text('Pickup Verification'),
-                      selected: _eventType == 'Pickup',
-                      onSelected: (val) {
-                        if (val && _eventType != 'Pickup') {
-                          setState(() => _eventType = 'Pickup');
-                          _generateToken();
-                        }
-                      },
-                    ),
-                    const SizedBox(width: 8),
-                    ChoiceChip(
-                      label: const Text('Return Verification'),
-                      selected: _eventType == 'Return',
-                      onSelected: (val) {
-                        if (val && _eventType != 'Return') {
-                          setState(() => _eventType = 'Return');
-                          _generateToken();
-                        }
-                      },
-                    ),
+                    if (showPickup)
+                      ChoiceChip(
+                        label: const Text('Pickup Verification'),
+                        selected: _eventType == 'Pickup',
+                        onSelected: (val) {
+                          if (val && _eventType != 'Pickup') {
+                            setState(() => _eventType = 'Pickup');
+                            _generateToken();
+                          }
+                        },
+                      ),
+                    if (showReturn)
+                      ChoiceChip(
+                        label: const Text('Return Verification'),
+                        selected: _eventType == 'Return',
+                        onSelected: (val) {
+                          if (val && _eventType != 'Return') {
+                            setState(() => _eventType = 'Return');
+                            _generateToken();
+                          }
+                        },
+                      ),
                   ],
                 ),
               ),
@@ -217,7 +266,11 @@ class _QrHandoverScreenState extends ConsumerState<QrHandoverScreen> {
                   child: Opacity(
                     opacity: isExpired ? 0.35 : 1.0,
                     child: QrImageView(
-                      data: _tokenModel!.qrPayload,
+                      data: jsonEncode({
+                        'bookingId': widget.bookingId.isNotEmpty ? widget.bookingId : _tokenModel!.bookingId,
+                        'token': _tokenModel!.token,
+                        'eventType': _eventType,
+                      }),
                       version: QrVersions.auto,
                       size: 220.0,
                       eyeStyle: const QrEyeStyle(

@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:dio/dio.dart';
+import '../../identity/providers/auth_provider.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 import '../../../core/services/cloudinary_service.dart';
@@ -33,6 +35,13 @@ class _FileClaimScreenState extends ConsumerState<FileClaimScreen> {
     if (widget.bookingId != null) {
       _bookingIdController.text = widget.bookingId!;
     }
+    final user = ref.read(authProvider).user;
+    if (user != null) {
+      _userIdController.text = user.id;
+    }
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ref.read(escrowProvider.notifier).fetchClaims();
+    });
   }
 
   @override
@@ -77,10 +86,17 @@ class _FileClaimScreenState extends ConsumerState<FileClaimScreen> {
       }
     } catch (e) {
       if (mounted) {
+        String errorMessage = 'Failed to file damage claim. Check booking details.';
+        if (e is DioException && e.response?.data != null) {
+          final data = e.response!.data;
+          if (data is Map && data['error'] != null) {
+            errorMessage = data['error'].toString();
+          }
+        }
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
+          SnackBar(
             backgroundColor: AppColors.error,
-            content: Text('Failed to file damage claim. Check booking details.'),
+            content: Text(errorMessage),
           ),
         );
       }
@@ -95,6 +111,12 @@ class _FileClaimScreenState extends ConsumerState<FileClaimScreen> {
     final theme = Theme.of(context);
     final textPrimary = theme.colorScheme.onSurface;
 
+    final claims = ref.watch(escrowProvider).claims;
+    final bookingIdText = _bookingIdController.text.trim();
+    final existingClaim = bookingIdText.isNotEmpty
+        ? claims.where((c) => c.bookingId.toLowerCase() == bookingIdText.toLowerCase()).firstOrNull
+        : null;
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('File Damage Dispute'),
@@ -106,6 +128,29 @@ class _FileClaimScreenState extends ConsumerState<FileClaimScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
+              if (existingClaim != null) ...[
+                Container(
+                  padding: const EdgeInsets.all(14),
+                  decoration: BoxDecoration(
+                    color: AppColors.error.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(color: AppColors.error.withValues(alpha: 0.3)),
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.shield_outlined, color: AppColors.error, size: 22),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Text(
+                          'A damage claim has already been filed for this booking (Status: ${existingClaim.status}). Duplicate claims cannot be generated.',
+                          style: const TextStyle(fontSize: 12, color: AppColors.error, fontWeight: FontWeight.w600),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 16),
+              ],
               Container(
                 padding: const EdgeInsets.all(14),
                 decoration: BoxDecoration(
@@ -131,7 +176,8 @@ class _FileClaimScreenState extends ConsumerState<FileClaimScreen> {
               AppTextField(
                 controller: _bookingIdController,
                 label: 'Rental Booking ID',
-                hintText: 'e.g. 33333333-3333-3333-3333-333333333301',
+                hintText: 'Select or provide booking ID',
+                readOnly: true,
                 validator: (v) => v == null || v.isEmpty ? 'Booking ID is required' : null,
               ),
               const SizedBox(height: 16),
@@ -139,7 +185,8 @@ class _FileClaimScreenState extends ConsumerState<FileClaimScreen> {
               AppTextField(
                 controller: _userIdController,
                 label: 'Your User ID',
-                hintText: 'e.g. 11111111-1111-1111-1111-111111111101',
+                hintText: 'User ID',
+                readOnly: true,
                 validator: (v) => v == null || v.isEmpty ? 'User ID is required' : null,
               ),
               const SizedBox(height: 16),
@@ -190,9 +237,9 @@ class _FileClaimScreenState extends ConsumerState<FileClaimScreen> {
               const SizedBox(height: 28),
 
               AppButton(
-                text: 'Submit Damage Claim',
+                text: existingClaim != null ? 'Claim Already Filed for Booking' : 'Submit Damage Claim',
                 isLoading: _isSubmitting,
-                onPressed: _handleSubmit,
+                onPressed: existingClaim != null ? null : _handleSubmit,
               ),
             ],
           ),

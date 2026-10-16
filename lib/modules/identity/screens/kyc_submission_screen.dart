@@ -28,6 +28,7 @@ class _KycSubmissionScreenState extends ConsumerState<KycSubmissionScreen> {
   String _kycStatus = 'none'; // 'none', 'Pending', 'Approved', 'Rejected'
   String? _rejectionReason;
   bool _loadingStatus = true;
+  bool _isProcessingImage = false;
 
   @override
   void initState() {
@@ -103,40 +104,51 @@ class _KycSubmissionScreenState extends ConsumerState<KycSubmissionScreen> {
   }
 
   Future<void> _pick(bool isFront, ImageSource source) async {
-    final image = await _picker.pickImage(source: source, imageQuality: 92);
-    if (image == null || !mounted) return;
+    setState(() => _isProcessingImage = true);
+    try {
+      // Pick original image without CPU-heavy pre-compression so camera returns immediately into cropper
+      final image = await _picker.pickImage(source: source);
+      if (image == null || !mounted) {
+        if (mounted) setState(() => _isProcessingImage = false);
+        return;
+      }
 
-    // Enforce standard Sri Lankan NIC card aspect ratio (85.6 mm x 53.98 mm = 1.586)
-    final croppedFile = await ImageCropper().cropImage(
-      sourcePath: image.path,
-      compressQuality: 90,
-      aspectRatio: const CropAspectRatio(ratioX: 85.6, ratioY: 53.98),
-      uiSettings: [
-        AndroidUiSettings(
-          toolbarTitle: isFront ? 'Align & Crop Front of NIC' : 'Align & Crop Back of NIC',
-          toolbarColor: AppColors.primary,
-          toolbarWidgetColor: Colors.white,
-          initAspectRatio: CropAspectRatioPreset.ratio16x9,
-          lockAspectRatio: true,
-          hideBottomControls: false,
-        ),
-        IOSUiSettings(
-          title: isFront ? 'Align & Crop Front of NIC' : 'Align & Crop Back of NIC',
-          aspectRatioLockEnabled: true,
-          resetAspectRatioEnabled: false,
-        ),
-      ],
-    );
+      // Enforce standard Sri Lankan NIC card aspect ratio (85.6 mm x 53.98 mm = 1.586)
+      final croppedFile = await ImageCropper().cropImage(
+        sourcePath: image.path,
+        compressQuality: 90,
+        aspectRatio: const CropAspectRatio(ratioX: 85.6, ratioY: 53.98),
+        uiSettings: [
+          AndroidUiSettings(
+            toolbarTitle: isFront ? 'Align & Crop Front of NIC' : 'Align & Crop Back of NIC',
+            toolbarColor: AppColors.primary,
+            toolbarWidgetColor: Colors.white,
+            initAspectRatio: CropAspectRatioPreset.ratio16x9,
+            lockAspectRatio: true,
+            hideBottomControls: false,
+          ),
+          IOSUiSettings(
+            title: isFront ? 'Align & Crop Front of NIC' : 'Align & Crop Back of NIC',
+            aspectRatioLockEnabled: true,
+            resetAspectRatioEnabled: false,
+          ),
+        ],
+      );
 
-    if (mounted) {
-      final selectedFile = croppedFile != null ? File(croppedFile.path) : File(image.path);
-      setState(() {
-        if (isFront) {
-          _front = selectedFile;
-        } else {
-          _back = selectedFile;
-        }
-      });
+      if (mounted) {
+        final selectedFile = croppedFile != null ? File(croppedFile.path) : File(image.path);
+        setState(() {
+          if (isFront) {
+            _front = selectedFile;
+          } else {
+            _back = selectedFile;
+          }
+        });
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isProcessingImage = false);
+      }
     }
   }
 
@@ -277,13 +289,31 @@ class _KycSubmissionScreenState extends ConsumerState<KycSubmissionScreen> {
       }
     } catch (e) {
       if (mounted) {
-        setState(() => _message = 'Failed to submit document: ${e.toString()}');
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            backgroundColor: AppColors.error,
-            content: Text('Submission failed: $e'),
-          ),
-        );
+        final rawMsg = e.toString().replaceFirst('Exception: ', '').trim();
+        setState(() => _message = rawMsg);
+
+        // If backend already has a pending/approved submission for this user, reflect status
+        if (rawMsg.toLowerCase().contains('pending or approved') ||
+            rawMsg.toLowerCase().contains('already have a kyc submission')) {
+          setState(() => _kycStatus = 'Pending');
+          final user = ref.read(authProvider).user;
+          if (user != null) {
+            await ref.read(tokenStorageServiceProvider).saveKycStatus(
+              user.id,
+              'Pending',
+              documentNumber: number,
+            );
+          }
+        }
+
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              backgroundColor: AppColors.error,
+              content: Text(rawMsg),
+            ),
+          );
+        }
       }
     } finally {
       if (mounted) setState(() => _submitting = false);
@@ -346,225 +376,252 @@ class _KycSubmissionScreenState extends ConsumerState<KycSubmissionScreen> {
 
     return Scaffold(
       appBar: AppBar(title: const Text('Identity Verification (NIC)')),
-      body: _loadingStatus
-          ? const Center(child: CircularProgressIndicator())
-          : SingleChildScrollView(
-              padding: const EdgeInsets.all(24),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  if (isAlreadyVerified) ...[
-                    Container(
-                      padding: const EdgeInsets.all(16),
-                      decoration: BoxDecoration(
-                        color: AppColors.success.withValues(alpha: 0.12),
-                        borderRadius: BorderRadius.circular(10),
-                        border: Border.all(color: AppColors.success.withValues(alpha: 0.4)),
-                      ),
-                      child: const Row(
-                        children: [
-                          Icon(Icons.check_circle_outline, color: AppColors.success, size: 28),
-                          SizedBox(width: 12),
-                          Expanded(
-                            child: Text(
-                              'Your document is verified. You are authorized to rent and receive machinery.',
-                              style: TextStyle(
-                                color: AppColors.success,
-                                fontWeight: FontWeight.w600,
-                                fontSize: 13,
-                              ),
-                            ),
+      body: Stack(
+        children: [
+          _loadingStatus
+              ? const Center(child: CircularProgressIndicator())
+              : SingleChildScrollView(
+                  padding: const EdgeInsets.all(24),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      if (isAlreadyVerified) ...[
+                        Container(
+                          padding: const EdgeInsets.all(16),
+                          decoration: BoxDecoration(
+                            color: AppColors.success.withValues(alpha: 0.12),
+                            borderRadius: BorderRadius.circular(10),
+                            border: Border.all(color: AppColors.success.withValues(alpha: 0.4)),
                           ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 20),
-                  ] else if (isPending) ...[
-                    Container(
-                      padding: const EdgeInsets.all(16),
-                      decoration: BoxDecoration(
-                        color: AppColors.warning.withValues(alpha: 0.12),
-                        borderRadius: BorderRadius.circular(10),
-                        border: Border.all(color: AppColors.warning.withValues(alpha: 0.4)),
-                      ),
-                      child: const Row(
-                        children: [
-                          Icon(Icons.hourglass_top_rounded, color: AppColors.warning, size: 28),
-                          SizedBox(width: 12),
-                          Expanded(
-                            child: Text(
-                              'Document Under Review: Your submission has been received and is currently being inspected by compliance administrators.',
-                              style: TextStyle(
-                                color: AppColors.warning,
-                                fontWeight: FontWeight.w600,
-                                fontSize: 13,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 20),
-                  ] else if (isRejected) ...[
-                    Container(
-                      padding: const EdgeInsets.all(16),
-                      decoration: BoxDecoration(
-                        color: AppColors.error.withValues(alpha: 0.12),
-                        borderRadius: BorderRadius.circular(10),
-                        border: Border.all(color: AppColors.error.withValues(alpha: 0.4)),
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Row(
+                          child: const Row(
                             children: [
-                              Icon(Icons.warning_amber_rounded, color: AppColors.error, size: 24),
-                              SizedBox(width: 8),
-                              Text(
-                                'NIC Re-upload Requested',
-                                style: TextStyle(
-                                  color: AppColors.error,
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 14,
+                              Icon(Icons.check_circle_outline, color: AppColors.success, size: 28),
+                              SizedBox(width: 12),
+                              Expanded(
+                                child: Text(
+                                  'Your document is verified. You are authorized to rent and receive machinery.',
+                                  style: TextStyle(
+                                    color: AppColors.success,
+                                    fontWeight: FontWeight.w600,
+                                    fontSize: 13,
+                                  ),
                                 ),
                               ),
                             ],
                           ),
-                          const SizedBox(height: 6),
-                          Text(
-                            _rejectionReason != null && _rejectionReason!.isNotEmpty
-                                ? 'Admin note: $_rejectionReason\nPlease upload clear, high-quality replacement photographs below.'
-                                : 'Your previous document was declined by compliance. Please review the document requirements and re-upload.',
+                        ),
+                        const SizedBox(height: 20),
+                      ] else if (isPending) ...[
+                        Container(
+                          padding: const EdgeInsets.all(16),
+                          decoration: BoxDecoration(
+                            color: AppColors.warning.withValues(alpha: 0.12),
+                            borderRadius: BorderRadius.circular(10),
+                            border: Border.all(color: AppColors.warning.withValues(alpha: 0.4)),
+                          ),
+                          child: const Row(
+                            children: [
+                              Icon(Icons.hourglass_top_rounded, color: AppColors.warning, size: 28),
+                              SizedBox(width: 12),
+                              Expanded(
+                                child: Text(
+                                  'Document Under Review: Your submission has been received and is currently being inspected by compliance administrators.',
+                                  style: TextStyle(
+                                    color: AppColors.warning,
+                                    fontWeight: FontWeight.w600,
+                                    fontSize: 13,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 20),
+                      ] else if (isRejected) ...[
+                        Container(
+                          padding: const EdgeInsets.all(16),
+                          decoration: BoxDecoration(
+                            color: AppColors.error.withValues(alpha: 0.12),
+                            borderRadius: BorderRadius.circular(10),
+                            border: Border.all(color: AppColors.error.withValues(alpha: 0.4)),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Row(
+                                children: [
+                                  Icon(Icons.warning_amber_rounded, color: AppColors.error, size: 24),
+                                  SizedBox(width: 8),
+                                  Text(
+                                    'NIC Re-upload Requested',
+                                    style: TextStyle(
+                                      color: AppColors.error,
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 14,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 6),
+                              Text(
+                                _rejectionReason != null && _rejectionReason!.isNotEmpty
+                                    ? 'Admin note: $_rejectionReason\nPlease upload clear, high-quality replacement photographs below.'
+                                    : 'Your previous document was declined by compliance. Please review the document requirements and re-upload.',
+                                style: TextStyle(
+                                  color: AppColors.textPrimary,
+                                  fontSize: 12,
+                                  height: 1.3,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 20),
+                      ] else ...[
+                        Container(
+                          padding: const EdgeInsets.all(14),
+                          decoration: BoxDecoration(
+                            color: AppColors.primary.withValues(alpha: 0.1),
+                            borderRadius: BorderRadius.circular(10),
+                            border: Border.all(color: AppColors.primary.withValues(alpha: 0.3)),
+                          ),
+                          child: Row(
+                            children: [
+                              const Icon(Icons.security_outlined, color: AppColors.primaryLight, size: 24),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Text(
+                                  'Renter Verification Rule: You must submit and validate a valid Sri Lankan NIC or Driving Licence before you can rent and receive equipment.',
+                                  style: TextStyle(color: AppColors.textPrimary, fontSize: 13),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 20),
+                      ],
+
+                      // Document Type selector
+                      IgnorePointer(
+                        ignoring: isPending || isAlreadyVerified,
+                        child: Opacity(
+                          opacity: (isPending || isAlreadyVerified) ? 0.7 : 1.0,
+                          child: DropdownButtonFormField<String>(
+                            value: _documentType,
+                            decoration: const InputDecoration(labelText: 'Document type'),
+                            items: const [
+                              DropdownMenuItem(value: 'NIC', child: Text('National Identity Card (NIC)')),
+                              DropdownMenuItem(value: 'DrivingLicense', child: Text('Driving Licence')),
+                            ],
+                            onChanged: (value) => setState(() => _documentType = value!),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+
+                      // Document Number
+                      IgnorePointer(
+                        ignoring: isPending || isAlreadyVerified,
+                        child: Opacity(
+                          opacity: (isPending || isAlreadyVerified) ? 0.7 : 1.0,
+                          child: AppTextField(
+                            controller: _number,
+                            label: _documentType == 'NIC' ? 'NIC Number' : 'Driving Licence Number',
+                            hintText: _documentType == 'NIC' ? '198842109923 or 884210992V' : 'e.g. B1234567',
+                            prefixIcon: const Icon(Icons.credit_card_outlined, size: 18),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 22),
+
+                      // Image Cards
+                      if (!isPending && !isAlreadyVerified) ...[
+                        _imageCard(label: 'Front Image', isFront: true, image: _front, requiredImage: true),
+                        const SizedBox(height: 12),
+                        _imageCard(label: 'Back Image', isFront: false, image: _back, requiredImage: _documentType == 'NIC'),
+                      ] else ...[
+                        Container(
+                          padding: const EdgeInsets.all(14),
+                          decoration: BoxDecoration(
+                            color: AppColors.surfaceLight,
+                            borderRadius: BorderRadius.circular(10),
+                            border: Border.all(color: AppColors.border),
+                          ),
+                          child: Row(
+                            children: [
+                              Icon(Icons.photo_library_outlined, color: AppColors.textMuted, size: 24),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Text(
+                                  isAlreadyVerified
+                                      ? 'Front & Back photographs verified and archived in compliance vault.'
+                                      : 'Photographs uploaded and queued for administrative inspection.',
+                                  style: TextStyle(color: AppColors.textSecondary, fontSize: 12),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+
+                      if (_message != null)
+                        Padding(
+                          padding: const EdgeInsets.only(top: 14),
+                          child: Text(
+                            _message!,
                             style: TextStyle(
-                              color: AppColors.textPrimary,
-                              fontSize: 12,
-                              height: 1.3,
+                              color: _message!.contains('verified') || _message!.contains('validated')
+                                  ? AppColors.success
+                                  : AppColors.error,
+                              fontSize: 13,
+                              fontWeight: FontWeight.w600,
                             ),
                           ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 20),
-                  ] else ...[
-                    Container(
-                      padding: const EdgeInsets.all(14),
-                      decoration: BoxDecoration(
-                        color: AppColors.primary.withValues(alpha: 0.1),
-                        borderRadius: BorderRadius.circular(10),
-                        border: Border.all(color: AppColors.primary.withValues(alpha: 0.3)),
-                      ),
-                      child: Row(
-                        children: [
-                          const Icon(Icons.security_outlined, color: AppColors.primaryLight, size: 24),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: Text(
-                              'Renter Verification Rule: You must submit and validate a valid Sri Lankan NIC or Driving Licence before you can rent and receive equipment.',
-                              style: TextStyle(color: AppColors.textPrimary, fontSize: 13),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 20),
-                  ],
+                        ),
+                      const SizedBox(height: 20),
 
-                  // Document Type selector
-                  IgnorePointer(
-                    ignoring: isPending || isAlreadyVerified,
-                    child: Opacity(
-                      opacity: (isPending || isAlreadyVerified) ? 0.7 : 1.0,
-                      child: DropdownButtonFormField<String>(
-                        value: _documentType,
-                        decoration: const InputDecoration(labelText: 'Document type'),
-                        items: const [
-                          DropdownMenuItem(value: 'NIC', child: Text('National Identity Card (NIC)')),
-                          DropdownMenuItem(value: 'DrivingLicense', child: Text('Driving Licence')),
-                        ],
-                        onChanged: (value) => setState(() => _documentType = value!),
+                      AppButton(
+                        text: isAlreadyVerified
+                            ? 'Identity Verified ✓'
+                            : (isPending
+                                ? 'Under Administrative Review ⏳'
+                                : (isRejected ? 'Re-submit NIC Document' : 'Submit & Validate Document')),
+                        isLoading: _submitting,
+                        icon: isAlreadyVerified
+                            ? Icons.check_circle
+                            : (isPending
+                                ? Icons.hourglass_top_rounded
+                                : (isRejected ? Icons.replay_outlined : Icons.verified_outlined)),
+                        onPressed: (isAlreadyVerified || isPending) ? null : _submit,
                       ),
-                    ),
+                    ],
                   ),
-                  const SizedBox(height: 16),
-
-                  // Document Number
-                  IgnorePointer(
-                    ignoring: isPending || isAlreadyVerified,
-                    child: Opacity(
-                      opacity: (isPending || isAlreadyVerified) ? 0.7 : 1.0,
-                      child: AppTextField(
-                        controller: _number,
-                        label: _documentType == 'NIC' ? 'NIC Number' : 'Driving Licence Number',
-                        hintText: _documentType == 'NIC' ? '198842109923 or 884210992V' : 'e.g. B1234567',
-                        prefixIcon: const Icon(Icons.credit_card_outlined, size: 18),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 22),
-
-                  // Image Cards
-                  if (!isPending && !isAlreadyVerified) ...[
-                    _imageCard(label: 'Front Image', isFront: true, image: _front, requiredImage: true),
-                    const SizedBox(height: 12),
-                    _imageCard(label: 'Back Image', isFront: false, image: _back, requiredImage: _documentType == 'NIC'),
-                  ] else ...[
-                    Container(
-                      padding: const EdgeInsets.all(14),
-                      decoration: BoxDecoration(
-                        color: AppColors.surfaceLight,
-                        borderRadius: BorderRadius.circular(10),
-                        border: Border.all(color: AppColors.border),
-                      ),
-                      child: Row(
-                        children: [
-                          Icon(Icons.photo_library_outlined, color: AppColors.textMuted, size: 24),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: Text(
-                              isAlreadyVerified
-                                  ? 'Front & Back photographs verified and archived in compliance vault.'
-                                  : 'Photographs uploaded and queued for administrative inspection.',
-                              style: TextStyle(color: AppColors.textSecondary, fontSize: 12),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-
-                  if (_message != null)
-                    Padding(
-                      padding: const EdgeInsets.only(top: 14),
-                      child: Text(
-                        _message!,
+                ),
+          if (_isProcessingImage)
+            Positioned.fill(
+              child: Container(
+                color: Colors.black.withValues(alpha: 0.9),
+                child: const Center(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      CircularProgressIndicator(color: Colors.white),
+                      SizedBox(height: 18),
+                      Text(
+                        'Aligning with crop preview...',
                         style: TextStyle(
-                          color: _message!.contains('verified') || _message!.contains('validated')
-                              ? AppColors.success
-                              : AppColors.error,
-                          fontSize: 13,
+                          color: Colors.white,
+                          fontSize: 14,
                           fontWeight: FontWeight.w600,
                         ),
                       ),
-                    ),
-                  const SizedBox(height: 20),
-
-                  AppButton(
-                    text: isAlreadyVerified
-                        ? 'Identity Verified ✓'
-                        : (isPending
-                            ? 'Under Administrative Review ⏳'
-                            : (isRejected ? 'Re-submit NIC Document' : 'Submit & Validate Document')),
-                    isLoading: _submitting,
-                    icon: isAlreadyVerified
-                        ? Icons.check_circle
-                        : (isPending
-                            ? Icons.hourglass_top_rounded
-                            : (isRejected ? Icons.replay_outlined : Icons.verified_outlined)),
-                    onPressed: (isAlreadyVerified || isPending) ? null : _submit,
+                    ],
                   ),
-                ],
+                ),
               ),
             ),
+        ],
+      ),
     );
   }
 }

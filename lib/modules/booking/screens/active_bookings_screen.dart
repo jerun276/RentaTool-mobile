@@ -8,8 +8,11 @@ import '../../../core/widgets/error_view.dart';
 import '../../../core/widgets/loading_indicator.dart';
 import '../providers/booking_provider.dart';
 import '../widgets/booking_card.dart';
+import '../models/booking_model.dart';
 import '../../identity/providers/auth_provider.dart';
 import '../../identity/models/user_model.dart';
+import '../../escrow/providers/escrow_provider.dart';
+import '../../escrow/models/escrow_hold_model.dart';
 
 class ActiveBookingsScreen extends ConsumerStatefulWidget {
   const ActiveBookingsScreen({super.key});
@@ -20,6 +23,14 @@ class ActiveBookingsScreen extends ConsumerStatefulWidget {
 
 class _ActiveBookingsScreenState extends ConsumerState<ActiveBookingsScreen> {
   final _searchController = TextEditingController();
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ref.read(escrowProvider.notifier).fetchClaims();
+    });
+  }
 
   @override
   void dispose() {
@@ -34,11 +45,62 @@ class _ActiveBookingsScreenState extends ConsumerState<ActiveBookingsScreen> {
     final isDark = theme.brightness == Brightness.dark;
     final bookingState = ref.watch(bookingProvider);
     final notifier = ref.read(bookingProvider.notifier);
-    final filtered = bookingState.filteredBookings;
     final authState = ref.watch(authProvider);
     final currentUser = authState.user;
     final isOwner = currentUser?.role == UserRole.owner;
     final isRenter = currentUser?.role == UserRole.renter;
+    final isAdmin = currentUser?.role == UserRole.admin;
+    final escrowState = ref.watch(escrowProvider);
+
+    bool checkIsDisputed(BookingModel b) {
+      final isHoldDisputed = escrowState.holds.any((h) =>
+          h.bookingId.toLowerCase() == b.id.toLowerCase() &&
+          (h.status == EscrowStatus.disputed || h.rawStatus.toLowerCase() == 'disputed'));
+      final hasClaim = escrowState.claims.any((c) =>
+          c.bookingId.toLowerCase() == b.id.toLowerCase());
+      return b.isDisputed || isHoldDisputed || hasClaim;
+    }
+
+    final userActiveBookings = isAdmin
+        ? bookingState.activeBookings
+        : bookingState.activeBookings.where((b) => b.renterId == currentUser?.id || b.ownerId == currentUser?.id).toList();
+
+    final filtered = userActiveBookings.where((b) {
+      // 1. Status Filter
+      if (bookingState.selectedFilter != 'All') {
+        final filterLower = bookingState.selectedFilter.toLowerCase();
+        if (filterLower == 'disputed') {
+          if (!checkIsDisputed(b)) return false;
+        } else if (filterLower == 'active') {
+          if (!b.isActive || checkIsDisputed(b)) return false;
+        } else {
+          if (b.status.toLowerCase() != filterLower) return false;
+        }
+      }
+
+      // 2. Search Query filter (by ID, displayCode, equipment, or renter)
+      if (bookingState.searchQuery.trim().isNotEmpty) {
+        final q = bookingState.searchQuery.trim().toLowerCase();
+        final matchesId = b.id.toLowerCase().contains(q);
+        final matchesCode = b.displayCode.toLowerCase().contains(q);
+        final matchesEq = b.equipmentId.toLowerCase().contains(q);
+        final matchesTitle = b.equipmentTitle?.toLowerCase().contains(q) ?? false;
+        final matchesCat = b.equipmentCategory?.toLowerCase().contains(q) ?? false;
+        final matchesRenter = b.renterName?.toLowerCase().contains(q) ?? false;
+        final matchesRenterEmail = b.renterEmail?.toLowerCase().contains(q) ?? false;
+        final matchesRenterPhone = b.renterPhone?.toLowerCase().contains(q) ?? false;
+        return matchesId ||
+            matchesCode ||
+            matchesEq ||
+            matchesTitle ||
+            matchesCat ||
+            matchesRenter ||
+            matchesRenterEmail ||
+            matchesRenterPhone;
+      }
+
+      return true;
+    }).toList();
 
     return Scaffold(
       appBar: AppBar(
@@ -49,29 +111,14 @@ class _ActiveBookingsScreenState extends ConsumerState<ActiveBookingsScreen> {
         ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.map_outlined, size: 22),
-            tooltip: 'Interactive Radius Map',
-            onPressed: () => context.push('/bookings/map'),
-          ),
-          IconButton(
-            icon: const Icon(Icons.qr_code_scanner, size: 22),
-            tooltip: 'Scan Handover QR',
-            onPressed: () => context.push('/bookings/scan'),
-          ),
-          IconButton(
             icon: const Icon(Icons.refresh, size: 20),
             tooltip: 'Refresh',
-            onPressed: () => notifier.fetchActiveBookings(),
+            onPressed: () {
+              notifier.fetchActiveBookings();
+              ref.read(escrowProvider.notifier).fetchClaims();
+            },
           ),
         ],
-      ),
-      floatingActionButton: FloatingActionButton.extended(
-        heroTag: 'map_radius_fab',
-        backgroundColor: AppColors.primary,
-        foregroundColor: Colors.white,
-        icon: const Icon(Icons.radar),
-        label: const Text('Nearby Map Search', style: TextStyle(fontWeight: FontWeight.bold)),
-        onPressed: () => context.push('/bookings/map'),
       ),
       body: Column(
         children: [
@@ -177,7 +224,7 @@ class _ActiveBookingsScreenState extends ConsumerState<ActiveBookingsScreen> {
                 SingleChildScrollView(
                   scrollDirection: Axis.horizontal,
                   child: Row(
-                    children: ['All', 'Confirmed', 'Active', 'Completed'].map((filter) {
+                    children: ['All', 'Requested', 'Confirmed', 'Active', 'Completed', 'Disputed'].map((filter) {
                       final isSelected = bookingState.selectedFilter == filter;
                       return Padding(
                         padding: const EdgeInsets.only(right: 8.0),
@@ -199,11 +246,11 @@ class _ActiveBookingsScreenState extends ConsumerState<ActiveBookingsScreen> {
           Expanded(
             child: Builder(
               builder: (context) {
-                if (bookingState.isLoading && bookingState.activeBookings.isEmpty) {
+                if (bookingState.isLoading && userActiveBookings.isEmpty) {
                   return const LoadingIndicator(message: 'Loading active rental reservations...');
                 }
 
-                if (bookingState.errorMessage != null && bookingState.activeBookings.isEmpty) {
+                if (bookingState.errorMessage != null && userActiveBookings.isEmpty) {
                   return ErrorView(
                     message: bookingState.errorMessage!,
                     onRetry: () => notifier.fetchActiveBookings(),
@@ -220,7 +267,7 @@ class _ActiveBookingsScreenState extends ConsumerState<ActiveBookingsScreen> {
                           Icon(Icons.calendar_today_outlined, size: 48, color: AppColors.textMuted),
                           const SizedBox(height: 16),
                           Text(
-                            bookingState.activeBookings.isEmpty
+                            userActiveBookings.isEmpty
                                 ? (isOwner
                                     ? 'No Fleet Dispatches Found'
                                     : (isRenter
@@ -235,7 +282,7 @@ class _ActiveBookingsScreenState extends ConsumerState<ActiveBookingsScreen> {
                           ),
                           const SizedBox(height: 8),
                           Text(
-                            bookingState.activeBookings.isEmpty
+                            userActiveBookings.isEmpty
                                 ? (isOwner
                                     ? 'No contractors have currently reserved your machinery. List more equipment or check back soon.'
                                     : 'Browse the equipment catalog or locate nearby machinery on the interactive map.')
@@ -252,19 +299,13 @@ class _ActiveBookingsScreenState extends ConsumerState<ActiveBookingsScreen> {
                                   icon: const Icon(Icons.add, size: 18),
                                   label: const Text('Add Machinery'),
                                   onPressed: () => context.push('/catalog/add'),
-                                )
+                                  )
                               else
                                 ElevatedButton.icon(
                                   icon: const Icon(Icons.search, size: 18),
                                   label: const Text('Browse Catalog'),
                                   onPressed: () => context.go('/catalog'),
                                 ),
-                              const SizedBox(width: 12),
-                              OutlinedButton.icon(
-                                icon: const Icon(Icons.map, size: 18),
-                                label: const Text('Radius Map'),
-                                onPressed: () => context.push('/bookings/map'),
-                              ),
                             ],
                           ),
                         ],
@@ -276,19 +317,40 @@ class _ActiveBookingsScreenState extends ConsumerState<ActiveBookingsScreen> {
                 return RefreshIndicator(
                   color: AppColors.primaryLight,
                   backgroundColor: isDark ? AppColors.darkSurface : AppColors.lightSurface,
-                  onRefresh: () => notifier.fetchActiveBookings(),
+                  onRefresh: () async {
+                    await Future.wait([
+                      notifier.fetchActiveBookings(),
+                      ref.read(escrowProvider.notifier).fetchClaims(),
+                    ]);
+                  },
                   child: ListView.builder(
                     key: ValueKey('bookings_list_${isDark ? 'dark' : 'light'}'),
                     padding: const EdgeInsets.all(16),
                     itemCount: filtered.length,
                     itemBuilder: (context, index) {
                       final item = filtered[index];
+                      final isPickup = item.status.toLowerCase() == 'confirmed';
+                      final isReturn = item.status.toLowerCase() == 'active';
+                      final bool isItemOwner = (currentUser != null && currentUser.id == item.ownerId) || isOwner;
+                      final bool isItemRenter = (currentUser != null && currentUser.id == item.renterId) || isRenter;
+                      final bool isAdmin = currentUser?.role == UserRole.admin;
+
+                      final bool canUseQR = isPickup || isReturn;
+
+                      // Owner always shows QR (Pickup when Confirmed, Return when Active).
+                      // Renter always scans QR (Pickup when Confirmed, Return when Active).
+                      final bool canShow = canUseQR && (isItemOwner || isAdmin);
+                      final bool canScan = canUseQR && (isItemRenter || isAdmin);
+
+                      final bool isDisputed = checkIsDisputed(item);
+
                       return BookingCard(
                         key: ValueKey('${item.id}_${isDark ? 'dark' : 'light'}'),
                         booking: item,
+                        isDisputed: isDisputed,
                         onTap: () => context.push('/bookings/detail/${item.id}'),
-                        onShowQR: () => context.push('/bookings/qr/${item.id}'),
-                        onScanQR: () => context.push('/bookings/scan'),
+                        onShowQR: canShow && !isDisputed ? () => context.push('/bookings/qr/${item.id}') : null,
+                        onScanQR: canScan && !isDisputed ? () => context.push('/bookings/scan?bookingId=${item.id}') : null,
                       );
                     },
                   ),

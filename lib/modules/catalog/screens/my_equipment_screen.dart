@@ -92,7 +92,12 @@ class _MyEquipmentScreenState extends ConsumerState<MyEquipmentScreen> {
           IconButton(
             icon: const Icon(Icons.add, size: 24),
             tooltip: 'Add Machinery',
-            onPressed: () => context.push('/catalog/add'),
+            onPressed: () async {
+              final created = await context.push<bool>('/catalog/add');
+              if (created == true) {
+                ref.read(catalogProvider.notifier).fetchEquipment(isRefresh: true);
+              }
+            },
           ),
           IconButton(
             icon: const Icon(Icons.refresh_rounded, size: 22),
@@ -407,7 +412,10 @@ class _MyEquipmentScreenState extends ConsumerState<MyEquipmentScreen> {
       color: isDark ? AppColors.darkSurface : AppColors.lightSurface,
       clipBehavior: Clip.antiAlias,
       child: InkWell(
-        onTap: () => context.push('/catalog/detail/${equipment.id}'),
+        onTap: () async {
+          await context.push('/catalog/${equipment.id}');
+          ref.read(catalogProvider.notifier).fetchEquipment(isRefresh: true);
+        },
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -547,7 +555,24 @@ class _MyEquipmentScreenState extends ConsumerState<MyEquipmentScreen> {
                     children: [
                       Expanded(
                         child: OutlinedButton.icon(
-                          icon: const Icon(Icons.history, size: 15),
+                          icon: const Icon(Icons.edit_outlined, size: 14),
+                          label: const Text('Edit'),
+                          style: OutlinedButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(vertical: 8),
+                            textStyle: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold),
+                          ),
+                          onPressed: () async {
+                            final updated = await context.push<bool>('/catalog/edit/${equipment.id}', extra: equipment);
+                            if (updated == true) {
+                              ref.read(catalogProvider.notifier).fetchEquipment(isRefresh: true);
+                            }
+                          },
+                        ),
+                      ),
+                      const SizedBox(width: 6),
+                      Expanded(
+                        child: OutlinedButton.icon(
+                          icon: const Icon(Icons.history, size: 14),
                           label: const Text('History'),
                           style: OutlinedButton.styleFrom(
                             padding: const EdgeInsets.symmetric(vertical: 8),
@@ -556,10 +581,10 @@ class _MyEquipmentScreenState extends ConsumerState<MyEquipmentScreen> {
                           onPressed: () => context.push('/catalog/history/${equipment.id}'),
                         ),
                       ),
-                      const SizedBox(width: 8),
+                      const SizedBox(width: 6),
                       Expanded(
                         child: ElevatedButton.icon(
-                          icon: const Icon(Icons.fact_check_outlined, size: 15),
+                          icon: const Icon(Icons.fact_check_outlined, size: 14),
                           label: const Text('Inspect'),
                           style: ElevatedButton.styleFrom(
                             backgroundColor: AppColors.primary,

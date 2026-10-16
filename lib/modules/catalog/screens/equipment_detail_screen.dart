@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
@@ -11,10 +12,12 @@ import '../../../core/widgets/loading_indicator.dart';
 import '../../../core/widgets/status_badge.dart';
 import '../models/equipment_model.dart';
 import '../services/catalog_service.dart';
+import '../providers/catalog_provider.dart';
 import '../widgets/batch_availability_dialog.dart';
 import '../widgets/wear_progress_bar.dart';
 import '../../identity/providers/auth_provider.dart';
 import '../../identity/models/user_model.dart';
+import '../../identity/services/identity_service.dart';
 
 class EquipmentDetailScreen extends ConsumerStatefulWidget {
   final String equipmentId;
@@ -45,8 +48,45 @@ class _EquipmentDetailScreenState extends ConsumerState<EquipmentDetailScreen> {
     try {
       final service = ref.read(catalogServiceProvider);
       final item = await service.getEquipmentById(widget.equipmentId);
+
+      Map<String, dynamic>? ownerProfile;
+      if (item.ownerId.isNotEmpty && (item.ownerName.isEmpty || item.ownerPhoneNumber == null)) {
+        try {
+          final identityService = ref.read(identityServiceProvider);
+          ownerProfile = await identityService.getPublicProfile(item.ownerId);
+        } catch (_) {}
+      }
+
       setState(() {
-        _equipment = item;
+        if (ownerProfile != null && ownerProfile.isNotEmpty) {
+          _equipment = EquipmentModel(
+            id: item.id,
+            ownerId: item.ownerId,
+            ownerName: (ownerProfile['name']?.toString() ?? item.ownerName).isNotEmpty
+                ? (ownerProfile['name']?.toString() ?? item.ownerName)
+                : 'Equipment Owner',
+            ownerPhoneNumber: ownerProfile['phoneNumber']?.toString() ?? item.ownerPhoneNumber,
+            ownerIsVerified: (ownerProfile['isVerified'] == true) || item.ownerIsVerified,
+            ownerTrustScore: (ownerProfile['trustScore'] as num?)?.toInt() ?? item.ownerTrustScore,
+            ownerMemberSinceUtc: ownerProfile['memberSinceUtc']?.toString() ?? item.ownerMemberSinceUtc,
+            ownerProfilePhotoUrl: ownerProfile['profilePhotoUrl']?.toString() ?? item.ownerProfilePhotoUrl,
+            title: item.title,
+            description: item.description,
+            categoryId: item.categoryId,
+            categoryName: item.categoryName,
+            dailyRate: item.dailyRate,
+            replacementValue: item.replacementValue,
+            status: item.status,
+            location: item.location,
+            totalRentalDaysAccumulated: item.totalRentalDaysAccumulated,
+            requiresMaintenanceCheck: item.requiresMaintenanceCheck,
+            lastMaintenanceDateUtc: item.lastMaintenanceDateUtc,
+            specificationsJson: item.specificationsJson,
+            images: item.images,
+          );
+        } else {
+          _equipment = item;
+        }
         _isLoading = false;
       });
     } catch (e) {
@@ -106,6 +146,14 @@ class _EquipmentDetailScreenState extends ConsumerState<EquipmentDetailScreen> {
         title: Text(eq.title),
         actions: [
           IconButton(
+            icon: const Icon(Icons.refresh_rounded, size: 22),
+            tooltip: 'Refresh',
+            onPressed: () async {
+              await _fetchDetail();
+              ref.read(catalogProvider.notifier).fetchEquipment(isRefresh: true);
+            },
+          ),
+          IconButton(
             icon: const Icon(Icons.history_outlined, size: 22),
             tooltip: 'Maintenance History',
             onPressed: () => context.push('/catalog/history/${eq.id}'),
@@ -117,9 +165,15 @@ class _EquipmentDetailScreenState extends ConsumerState<EquipmentDetailScreen> {
           ),
         ],
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(20.0),
-        child: Column(
+      body: RefreshIndicator(
+        onRefresh: () async {
+          await _fetchDetail();
+          ref.read(catalogProvider.notifier).fetchEquipment(isRefresh: true);
+        },
+        child: SingleChildScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          padding: const EdgeInsets.all(20.0),
+          child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             // Image Preview Container
@@ -235,8 +289,26 @@ class _EquipmentDetailScreenState extends ConsumerState<EquipmentDetailScreen> {
                 const SizedBox(width: 12),
                 Icon(Icons.location_on_outlined, size: 16, color: textMuted),
                 const SizedBox(width: 4),
-                Text(eq.location, style: TextStyle(color: textSecondary, fontSize: 13)),
+                Expanded(
+                  child: Text(
+                    eq.location,
+                    style: TextStyle(color: textSecondary, fontSize: 13),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
               ],
+            ),
+            const SizedBox(height: 18),
+
+            // Equipment Owner & Trust Profile Card (Key trust signals for renter)
+            _buildOwnerTrustCard(
+              context,
+              eq,
+              isDark: isDark,
+              textPrimary: textPrimary,
+              textSecondary: textSecondary,
+              textMuted: textMuted,
             ),
             const SizedBox(height: 20),
 
@@ -491,6 +563,19 @@ class _EquipmentDetailScreenState extends ConsumerState<EquipmentDetailScreen> {
             // Action Buttons (Tailored for Owner vs Renter)
             if (isAssetOwner) ...[
               AppButton(
+                text: 'Edit Machinery Details',
+                variant: AppButtonVariant.secondary,
+                icon: Icons.edit_outlined,
+                onPressed: () async {
+                  final updated = await context.push<bool>('/catalog/edit/${eq.id}', extra: eq);
+                  if (updated == true) {
+                    await _fetchDetail();
+                    ref.read(catalogProvider.notifier).fetchEquipment(isRefresh: true);
+                  }
+                },
+              ),
+              const SizedBox(height: 10),
+              AppButton(
                 text: 'Log Pre-Dispatch Inspection',
                 variant: AppButtonVariant.primary,
                 icon: Icons.document_scanner_outlined,
@@ -574,12 +659,359 @@ class _EquipmentDetailScreenState extends ConsumerState<EquipmentDetailScreen> {
           ],
         ),
       ),
+      ),
     );
   }
 
   Widget _fallbackCenterIcon() {
     return Center(
       child: Icon(Icons.precision_manufacturing_outlined, size: 80, color: AppColors.textMuted),
+    );
+  }
+
+  Widget _buildOwnerTrustCard(
+    BuildContext context,
+    EquipmentModel eq, {
+    required bool isDark,
+    required Color textPrimary,
+    required Color textSecondary,
+    required Color textMuted,
+  }) {
+    final ownerName = eq.ownerName.trim().isNotEmpty ? eq.ownerName.trim() : 'Equipment Owner';
+    final hasPhone = eq.ownerPhoneNumber != null && eq.ownerPhoneNumber!.trim().isNotEmpty;
+    final trustScore = eq.ownerTrustScore > 0 ? eq.ownerTrustScore : 50;
+
+    Color trustColor;
+    String trustLabel;
+    if (trustScore >= 80) {
+      trustColor = const Color(0xFF10B981);
+      trustLabel = 'High Trust';
+    } else if (trustScore >= 50) {
+      trustColor = const Color(0xFFF59E0B);
+      trustLabel = 'Good Standing';
+    } else {
+      trustColor = const Color(0xFFEF4444);
+      trustLabel = 'Building Trust';
+    }
+
+    String memberSinceText = 'Verified Community Member';
+    if (eq.ownerMemberSinceUtc != null && eq.ownerMemberSinceUtc!.isNotEmpty) {
+      try {
+        final parsed = DateTime.parse(eq.ownerMemberSinceUtc!);
+        memberSinceText = 'Member since ${DateFormat('MMM yyyy').format(parsed)}';
+      } catch (_) {}
+    }
+
+    final initials = ownerName
+        .split(' ')
+        .where((part) => part.isNotEmpty)
+        .map((part) => part[0].toUpperCase())
+        .take(2)
+        .join();
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: isDark ? AppColors.darkSurface : AppColors.lightSurface,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: eq.ownerIsVerified
+              ? const Color(0xFF10B981).withValues(alpha: 0.35)
+              : (isDark ? AppColors.darkBorder : AppColors.lightBorder),
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Expanded(
+                child: Row(
+                  children: [
+                    Icon(
+                      eq.ownerIsVerified ? Icons.verified_user : Icons.person_pin_outlined,
+                      size: 14,
+                      color: eq.ownerIsVerified ? const Color(0xFF10B981) : AppColors.textMuted,
+                    ),
+                    const SizedBox(width: 6),
+                    Expanded(
+                      child: Text(
+                        'EQUIPMENT OWNER & TRUST PROFILE',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontSize: 10,
+                          fontWeight: FontWeight.bold,
+                          letterSpacing: 0.8,
+                          color: AppColors.textMuted,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              if (eq.ownerIsVerified) ...[
+                const SizedBox(width: 8),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF10B981).withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(color: const Color(0xFF10B981).withValues(alpha: 0.3)),
+                  ),
+                  child: const Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.check_circle_rounded, size: 12, color: Color(0xFF10B981)),
+                      SizedBox(width: 4),
+                      Text(
+                        'NIC Verified',
+                        style: TextStyle(
+                          fontSize: 10,
+                          fontWeight: FontWeight.bold,
+                          color: Color(0xFF10B981),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ],
+          ),
+          const SizedBox(height: 14),
+
+          // Owner Profile Row
+          Row(
+            children: [
+              // Avatar with verified badge overlay
+              Stack(
+                children: [
+                  CircleAvatar(
+                    radius: 26,
+                    backgroundColor: isDark ? const Color(0xFF1E293B) : const Color(0xFFE2E8F0),
+                    backgroundImage: (eq.ownerProfilePhotoUrl != null && eq.ownerProfilePhotoUrl!.isNotEmpty)
+                        ? NetworkImage(eq.ownerProfilePhotoUrl!)
+                        : null,
+                    child: (eq.ownerProfilePhotoUrl == null || eq.ownerProfilePhotoUrl!.isEmpty)
+                        ? Text(
+                            initials.isNotEmpty ? initials : 'EO',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                              color: isDark ? AppColors.primaryLight : AppColors.primaryDark,
+                            ),
+                          )
+                        : null,
+                  ),
+                  if (eq.ownerIsVerified)
+                    Positioned(
+                      bottom: 0,
+                      right: 0,
+                      child: Container(
+                        padding: const EdgeInsets.all(2),
+                        decoration: BoxDecoration(
+                          color: isDark ? AppColors.darkSurface : Colors.white,
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(
+                          Icons.verified,
+                          size: 16,
+                          color: Color(0xFF10B981),
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+              const SizedBox(width: 14),
+
+              // Name & Trust info
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      ownerName,
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        color: textPrimary,
+                      ),
+                    ),
+                    const SizedBox(height: 3),
+                    Text(
+                      memberSinceText,
+                      style: TextStyle(fontSize: 11, color: textSecondary),
+                    ),
+                    const SizedBox(height: 6),
+                    Row(
+                      children: [
+                        // Trust score badge
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: trustColor.withValues(alpha: 0.12),
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(Icons.shield, size: 11, color: trustColor),
+                              const SizedBox(width: 4),
+                              Text(
+                                '$trustScore/100 ($trustLabel)',
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w700,
+                                  color: trustColor,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+
+              // Contact Button
+              if (hasPhone)
+                IconButton.filledTonal(
+                  icon: const Icon(Icons.phone_outlined, size: 18),
+                  tooltip: 'Contact Owner',
+                  style: IconButton.styleFrom(
+                    backgroundColor: const Color(0xFF10B981).withValues(alpha: 0.15),
+                    foregroundColor: const Color(0xFF10B981),
+                  ),
+                  onPressed: () => _showContactOwnerSheet(context, ownerName, eq.ownerPhoneNumber!),
+                ),
+            ],
+          ),
+
+          const SizedBox(height: 14),
+          const Divider(height: 1),
+          const SizedBox(height: 10),
+
+          // Trust and Escrow guarantee footer
+          Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: isDark ? const Color(0xFF0F172A) : const Color(0xFFF8FAFC),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Row(
+              children: [
+                const Icon(Icons.security, size: 16, color: Color(0xFF10B981)),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    'Protected by RentaTool Escrow: Your security deposit is locked and only released upon certified return inspection.',
+                    style: TextStyle(fontSize: 11, color: textSecondary, height: 1.3),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showContactOwnerSheet(BuildContext context, String ownerName, String phone) {
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (ctx) {
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.all(20.0),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Row(
+                  children: [
+                    const CircleAvatar(
+                      backgroundColor: Color(0x2610B981),
+                      child: Icon(Icons.phone, color: Color(0xFF10B981)),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Contact $ownerName',
+                            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            'Equipment Owner / Fleet Manager',
+                            style: TextStyle(fontSize: 12, color: AppColors.textMuted),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 20),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  decoration: BoxDecoration(
+                    color: Theme.of(ctx).brightness == Brightness.dark
+                        ? const Color(0xFF1E293B)
+                        : const Color(0xFFF1F5F9),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        phone,
+                        style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, letterSpacing: 0.5),
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.copy_rounded, size: 20),
+                        tooltip: 'Copy Number',
+                        onPressed: () {
+                          Clipboard.setData(ClipboardData(text: phone));
+                          Navigator.pop(ctx);
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('Phone number copied to clipboard.'),
+                              behavior: SnackBarBehavior.floating,
+                              duration: Duration(seconds: 2),
+                            ),
+                          );
+                        },
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 16),
+                AppButton(
+                  text: 'Copy Phone Number',
+                  icon: Icons.copy,
+                  onPressed: () {
+                    Clipboard.setData(ClipboardData(text: phone));
+                    Navigator.pop(ctx);
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Phone number copied to clipboard.'),
+                        behavior: SnackBarBehavior.floating,
+                        duration: Duration(seconds: 2),
+                      ),
+                    );
+                  },
+                ),
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 }

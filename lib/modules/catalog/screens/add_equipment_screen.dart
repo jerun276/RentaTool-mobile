@@ -15,7 +15,8 @@ import '../providers/catalog_provider.dart';
 import '../services/catalog_service.dart';
 
 class AddEquipmentScreen extends ConsumerStatefulWidget {
-  const AddEquipmentScreen({super.key});
+  final EquipmentModel? equipmentToEdit;
+  const AddEquipmentScreen({super.key, this.equipmentToEdit});
 
   @override
   ConsumerState<AddEquipmentScreen> createState() => _AddEquipmentScreenState();
@@ -47,9 +48,28 @@ class _AddEquipmentScreenState extends ConsumerState<AddEquipmentScreen> {
 
   final _picker = ImagePicker();
   final List<_AddEquipmentPhoto> _photos = [];
+  final List<ToolImageModel> _existingPhotos = [];
 
   String? _selectedCategoryId;
   bool _isSubmitting = false;
+  bool _isSpecsInitialized = false;
+
+  bool get isEditing => widget.equipmentToEdit != null;
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.equipmentToEdit != null) {
+      final eq = widget.equipmentToEdit!;
+      _titleController.text = eq.title;
+      _descController.text = eq.description;
+      _dailyRateController.text = eq.dailyRate.toStringAsFixed(0);
+      _replacementValController.text = eq.replacementValue.toStringAsFixed(0);
+      _locationController.text = eq.location;
+      _selectedCategoryId = eq.categoryId;
+      _existingPhotos.addAll(eq.images);
+    }
+  }
 
   @override
   void dispose() {
@@ -75,6 +95,32 @@ class _AddEquipmentScreenState extends ConsumerState<AddEquipmentScreen> {
         _dynamicControllers.putIfAbsent(field.key, () => TextEditingController());
       }
     }
+
+    if (widget.equipmentToEdit != null && !_isSpecsInitialized) {
+      _isSpecsInitialized = true;
+      try {
+        final rawSpecs = jsonDecode(widget.equipmentToEdit!.specificationsJson);
+        if (rawSpecs is Map) {
+          for (final field in category.specificationSchema) {
+            final val = rawSpecs[field.label] ?? rawSpecs[field.key];
+            if (val != null) {
+              final strVal = val.toString().trim();
+              if (field.fieldType == 'select') {
+                if (field.options.contains(strVal)) {
+                  _dynamicDropdownValues[field.key] = strVal;
+                }
+              } else {
+                String cleanVal = strVal;
+                if (field.unit.isNotEmpty && cleanVal.toLowerCase().endsWith(field.unit.toLowerCase())) {
+                  cleanVal = cleanVal.substring(0, cleanVal.length - field.unit.length).trim();
+                }
+                _dynamicControllers[field.key]?.text = cleanVal;
+              }
+            }
+          }
+        }
+      } catch (_) {}
+    }
   }
 
   void _onCategoryChanged(CategoryModel category) {
@@ -85,6 +131,7 @@ class _AddEquipmentScreenState extends ConsumerState<AddEquipmentScreen> {
       }
       _dynamicControllers.clear();
       _dynamicDropdownValues.clear();
+      _isSpecsInitialized = false;
       _initCategorySpecs(category);
     });
   }
@@ -260,7 +307,7 @@ class _AddEquipmentScreenState extends ConsumerState<AddEquipmentScreen> {
       final specsJson = jsonEncode(specsMap);
 
       final cloudinary = ref.read(cloudinaryServiceProvider);
-      final toolImages = await Future.wait(_photos.map((p) async {
+      final newUploadedImages = await Future.wait(_photos.map((p) async {
         final uploadedUrl = await cloudinary.uploadImage(
           p.path,
           folder: 'rentatool/equipment',
@@ -272,32 +319,69 @@ class _AddEquipmentScreenState extends ConsumerState<AddEquipmentScreen> {
         );
       }));
 
-      await service.createEquipment(
-        title: _titleController.text.trim(),
-        description: _descController.text.trim(),
-        categoryId: _selectedCategoryId!,
-        dailyRate: dailyRate,
-        replacementValue: replacementValue,
-        location: _locationController.text.trim(),
-        specificationsJson: specsJson,
-        images: toolImages,
-      );
-
-      ref.read(catalogProvider.notifier).fetchEquipment();
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Equipment listing published successfully to catalog.'),
-            backgroundColor: AppColors.success,
-          ),
+      final allImages = [..._existingPhotos, ...newUploadedImages];
+      if (allImages.isNotEmpty && !allImages.any((img) => img.isPrimary)) {
+        allImages[0] = ToolImageModel(
+          imageUrl: allImages[0].imageUrl,
+          angle: allImages[0].angle,
+          isPrimary: true,
         );
-        context.pop();
+      }
+
+      if (isEditing) {
+        await service.updateEquipment(
+          id: widget.equipmentToEdit!.id,
+          title: _titleController.text.trim(),
+          description: _descController.text.trim(),
+          categoryId: _selectedCategoryId!,
+          dailyRate: dailyRate,
+          replacementValue: replacementValue,
+          location: _locationController.text.trim(),
+          specificationsJson: specsJson,
+          images: allImages,
+        );
+
+        ref.invalidate(equipmentDetailProvider(widget.equipmentToEdit!.id));
+        ref.read(catalogProvider.notifier).fetchEquipment(isRefresh: true);
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Equipment listing updated successfully.'),
+              backgroundColor: AppColors.success,
+            ),
+          );
+          context.pop(true);
+        }
+      } else {
+        await service.createEquipment(
+          title: _titleController.text.trim(),
+          description: _descController.text.trim(),
+          categoryId: _selectedCategoryId!,
+          dailyRate: dailyRate,
+          replacementValue: replacementValue,
+          location: _locationController.text.trim(),
+          specificationsJson: specsJson,
+          images: allImages,
+        );
+
+        ref.read(catalogProvider.notifier).fetchEquipment(isRefresh: true);
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Equipment listing published successfully to catalog.'),
+              backgroundColor: AppColors.success,
+            ),
+          );
+          context.pop(true);
+        }
       }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Failed to publish listing. Please check inputs and server connection.'),
+          SnackBar(
+            content: Text(isEditing
+                ? 'Failed to update listing. Please check inputs and server connection.'
+                : 'Failed to publish listing. Please check inputs and server connection.'),
             backgroundColor: AppColors.error,
           ),
         );
@@ -325,7 +409,7 @@ class _AddEquipmentScreenState extends ConsumerState<AddEquipmentScreen> {
     }
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Add Machinery Listing')),
+      appBar: AppBar(title: Text(isEditing ? 'Edit Machinery Listing' : 'Add Machinery Listing')),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(20.0),
         child: Form(
@@ -543,6 +627,75 @@ class _AddEquipmentScreenState extends ConsumerState<AddEquipmentScreen> {
               ),
               const SizedBox(height: 12),
 
+              if (_existingPhotos.isNotEmpty) ...[
+                Text(
+                  'CURRENT LISTING PHOTOS (TAP ✕ TO REMOVE)',
+                  style: TextStyle(
+                    fontSize: 10,
+                    fontWeight: FontWeight.bold,
+                    letterSpacing: 0.5,
+                    color: AppColors.textMuted,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                SizedBox(
+                  height: 90,
+                  child: ListView.builder(
+                    scrollDirection: Axis.horizontal,
+                    itemCount: _existingPhotos.length,
+                    itemBuilder: (context, idx) {
+                      final img = _existingPhotos[idx];
+                      return Container(
+                        width: 90,
+                        margin: const EdgeInsets.only(right: 8),
+                        decoration: BoxDecoration(
+                          color: AppColors.surfaceLight,
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: img.isPrimary ? AppColors.primaryLight : AppColors.border),
+                        ),
+                        clipBehavior: Clip.antiAlias,
+                        child: Stack(
+                          fit: StackFit.expand,
+                          children: [
+                            Image.network(img.imageUrl, fit: BoxFit.cover),
+                            Positioned(
+                              top: 2,
+                              right: 2,
+                              child: InkWell(
+                                onTap: () => setState(() => _existingPhotos.removeAt(idx)),
+                                child: Container(
+                                  padding: const EdgeInsets.all(2),
+                                  decoration: const BoxDecoration(
+                                    color: Colors.black87,
+                                    shape: BoxShape.circle,
+                                  ),
+                                  child: const Icon(Icons.close, size: 14, color: Colors.white),
+                                ),
+                              ),
+                            ),
+                            Positioned(
+                              bottom: 0,
+                              left: 0,
+                              right: 0,
+                              child: Container(
+                                color: const Color(0xCC000000),
+                                padding: const EdgeInsets.symmetric(vertical: 2),
+                                child: Text(
+                                  img.angle,
+                                  textAlign: TextAlign.center,
+                                  style: const TextStyle(fontSize: 8, fontWeight: FontWeight.bold, color: Colors.white),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      );
+                    },
+                  ),
+                ),
+                const SizedBox(height: 12),
+              ],
+
               if (_photos.isNotEmpty)
                 SizedBox(
                   height: 110,
@@ -603,11 +756,11 @@ class _AddEquipmentScreenState extends ConsumerState<AddEquipmentScreen> {
                 ),
               const SizedBox(height: 32),
 
-              // Publish Button
+              // Publish / Save Button
               AppButton(
-                text: 'Publish Machinery Listing',
+                text: isEditing ? 'Save Changes' : 'Publish Machinery Listing',
                 isLoading: _isSubmitting,
-                icon: Icons.publish,
+                icon: isEditing ? Icons.save_outlined : Icons.publish,
                 onPressed: _handleSubmit,
               ),
               const SizedBox(height: 24),
