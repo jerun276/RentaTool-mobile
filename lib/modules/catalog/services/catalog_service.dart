@@ -107,6 +107,11 @@ class CatalogService {
     return EquipmentModel.fromJson(response.data as Map<String, dynamic>);
   }
 
+  /// Deletes an equipment listing (Owner or Admin only)
+  Future<void> deleteEquipment(String id) async {
+    await _dio.delete('${ApiConstants.equipment}/$id');
+  }
+
   /// Records pre/post-rental condition inspection with multi-angle photographic evidence
   Future<InspectionLogModel> createInspectionLog({
     required String equipmentId,

@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -163,6 +164,12 @@ class _EquipmentDetailScreenState extends ConsumerState<EquipmentDetailScreen> {
             tooltip: 'Condition Inspection',
             onPressed: () => context.push('/catalog/inspection/${eq.id}'),
           ),
+          if (isAssetOwner)
+            IconButton(
+              icon: const Icon(Icons.delete_outline, color: AppColors.error, size: 22),
+              tooltip: 'Delete Equipment',
+              onPressed: () => _confirmDeleteEquipment(eq),
+            ),
         ],
       ),
       body: RefreshIndicator(
@@ -619,6 +626,13 @@ class _EquipmentDetailScreenState extends ConsumerState<EquipmentDetailScreen> {
                 variant: AppButtonVariant.primary,
                 icon: Icons.document_scanner_outlined,
                 onPressed: () => context.push('/catalog/inspection/${eq.id}'),
+              ),
+              const SizedBox(height: 10),
+              AppButton(
+                text: 'Delete Equipment Listing',
+                variant: AppButtonVariant.destructive,
+                icon: Icons.delete_outline,
+                onPressed: () => _confirmDeleteEquipment(eq),
               ),
             ] else ...[
               AppButton(
@@ -1098,5 +1112,92 @@ class _EquipmentDetailScreenState extends ConsumerState<EquipmentDetailScreen> {
         );
       },
     );
+  }
+
+  Future<void> _confirmDeleteEquipment(EquipmentModel eq) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: AppColors.surfaceElevated,
+        title: const Row(
+          children: [
+            Icon(Icons.warning_amber_rounded, color: AppColors.error),
+            SizedBox(width: 8),
+            Text('Delete Equipment?'),
+          ],
+        ),
+        content: Text(
+          'Are you sure you want to permanently delete "${eq.title}"?\n\nThis will remove the listing from the catalog. This action cannot be undone.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.error,
+              foregroundColor: Colors.white,
+            ),
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true || !mounted) return;
+
+    try {
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (_) => const Center(child: CircularProgressIndicator()),
+      );
+
+      await ref.read(catalogProvider.notifier).deleteEquipment(eq.id);
+
+      if (!mounted) return;
+      Navigator.of(context, rootNavigator: true).pop(); // Close loading dialog
+      ref.invalidate(equipmentDetailProvider(eq.id));
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Equipment listing deleted successfully.'),
+          backgroundColor: AppColors.success,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+      context.pop(true);
+    } catch (e) {
+      if (!mounted) return;
+      Navigator.of(context, rootNavigator: true).pop(); // Close loading dialog
+      String errorMessage = 'Failed to delete equipment.';
+      if (e is DioException) {
+        final resData = e.response?.data;
+        if (resData is Map && resData['message'] != null) {
+          errorMessage = resData['message'].toString();
+        }
+      }
+      showDialog(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          backgroundColor: AppColors.surfaceElevated,
+          title: const Row(
+            children: [
+              Icon(Icons.error_outline, color: AppColors.error),
+              SizedBox(width: 8),
+              Text('Cannot Delete Equipment'),
+            ],
+          ),
+          content: Text(errorMessage),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('OK'),
+            ),
+          ],
+        ),
+      );
+    }
   }
 }
