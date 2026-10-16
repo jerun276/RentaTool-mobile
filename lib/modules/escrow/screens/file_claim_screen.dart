@@ -104,7 +104,9 @@ class _FileClaimScreenState extends ConsumerState<FileClaimScreen> {
 
       await service.fileClaim(
         bookingId: _bookingIdController.text.trim(),
-        filedByUserId: _userIdController.text.trim(),
+        filedByUserId: _userIdController.text.trim().isNotEmpty
+            ? _userIdController.text.trim()
+            : (ref.read(authProvider).user?.id ?? ''),
         damageDescription: _descController.text.trim(),
         evidencePhotos: evidencePhotos,
         claimAmount: enteredAmount,
@@ -235,11 +237,15 @@ class _FileClaimScreenState extends ConsumerState<FileClaimScreen> {
                       const SizedBox(height: 6),
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Text(
-                            'Equipment Replacement Value (Liability Cap):',
-                            style: TextStyle(fontSize: 12, color: Colors.grey),
+                          const Expanded(
+                            child: Text(
+                              'Equipment Replacement Value (Liability Cap):',
+                              style: TextStyle(fontSize: 12, color: Colors.grey),
+                            ),
                           ),
+                          const SizedBox(width: 8),
                           Text(
                             'LKR ${_equipmentReplacementValue!.toStringAsFixed(2)}',
                             style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: AppColors.primary),
@@ -261,14 +267,7 @@ class _FileClaimScreenState extends ConsumerState<FileClaimScreen> {
               ),
               const SizedBox(height: 16),
 
-              AppTextField(
-                controller: _userIdController,
-                label: 'Your User ID',
-                hintText: 'User ID',
-                readOnly: true,
-                validator: (v) => v == null || v.isEmpty ? 'User ID is required' : null,
-              ),
-              const SizedBox(height: 16),
+
 
               AppTextField(
                 controller: _claimAmountController,
