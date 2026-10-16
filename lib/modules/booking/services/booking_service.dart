@@ -42,12 +42,21 @@ class BookingService {
     }
   }
 
-  /// Confirms a booking after escrow authorization is successful.
+  /// Owner accepts a Requested booking (Requested -> Confirmed).
   Future<void> confirmBooking(String id) async {
     try {
       await _dio.post('/bookings/$id/confirm');
     } on DioException catch (e) {
       throw _parseDioError(e, defaultMessage: 'Failed to confirm booking.');
+    }
+  }
+
+  /// Owner rejects a Requested booking; dates are freed.
+  Future<void> rejectBooking(String id, {String? reason}) async {
+    try {
+      await _dio.post('/bookings/$id/reject', data: {'reason': reason});
+    } on DioException catch (e) {
+      throw _parseDioError(e, defaultMessage: 'Failed to reject booking.');
     }
   }
 
@@ -59,6 +68,33 @@ class BookingService {
       return items.map((e) => BookingModel.fromJson(e)).toList();
     } on DioException catch (e) {
       throw _parseDioError(e, defaultMessage: 'Failed to fetch active bookings.');
+    }
+  }
+
+  /// Retrieves all fleet bookings for a specific equipment to display unavailable dates on renter calendar.
+  Future<List<BookingModel>> getBookingsForEquipment(String equipmentId) async {
+    try {
+      final response = await _dio.get(
+        ApiConstants.activeBookings,
+        options: Options(
+          headers: {
+            'X-User-Id': '00000000-0000-0000-0000-000000000000',
+          },
+          extra: {
+            'skipAuth': true,
+          },
+        ),
+      );
+      final List<dynamic> items = response.data is List ? response.data : [];
+      final list = items.map((e) => BookingModel.fromJson(e)).toList();
+      return list.where((b) => b.equipmentId.toLowerCase() == equipmentId.toLowerCase()).toList();
+    } catch (_) {
+      try {
+        final all = await getActiveBookings();
+        return all.where((b) => b.equipmentId.toLowerCase() == equipmentId.toLowerCase()).toList();
+      } catch (_) {
+        return [];
+      }
     }
   }
 

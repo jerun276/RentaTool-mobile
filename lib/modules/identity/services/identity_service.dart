@@ -34,6 +34,17 @@ class IdentityService {
     return AuthResponse.fromJson(response.data);
   }
 
+  Future<AuthResponse> refreshToken(String token) async {
+    final response = await _dio.post(
+      ApiConstants.refreshToken,
+      data: {
+        'refreshToken': token.trim(),
+      },
+      options: Options(extra: {'skipAuth': true}),
+    );
+    return AuthResponse.fromJson(response.data);
+  }
+
   Future<AuthResponse> register({
     required String name,
     required String email,
@@ -81,31 +92,55 @@ class IdentityService {
     return TrustScoreModel.fromJson(response.data);
   }
 
+  Future<Map<String, dynamic>> getPublicProfile(String userId) async {
+    final response = await _dio.get('${ApiConstants.userById(userId)}/public-profile');
+    return response.data is Map<String, dynamic> ? response.data as Map<String, dynamic> : {};
+  }
+
   Future<void> submitKyc({
     required String documentNumber,
     required String documentType,
     String? frontImagePath,
     String? backImagePath,
   }) async {
-    String frontUrl = 'https://res.cloudinary.com/rentatool-demo/image/upload/v1/kyc/front.jpg';
+    if (frontImagePath == null || frontImagePath.isEmpty) {
+      throw Exception('Front photo of your identification document is required.');
+    }
+    final frontUrl = await _cloudinary.uploadImage(frontImagePath, folder: 'rentatool/kyc');
     String? backUrl;
 
-    if (frontImagePath != null && frontImagePath.isNotEmpty) {
-      frontUrl = await _cloudinary.uploadImage(frontImagePath, folder: 'rentatool/kyc');
-    }
     if (backImagePath != null && backImagePath.isNotEmpty) {
       backUrl = await _cloudinary.uploadImage(backImagePath, folder: 'rentatool/kyc');
     }
 
-    await _dio.post(
-      ApiConstants.kycSubmission,
-      data: {
-        'documentType': documentType,
-        'documentNumber': documentNumber,
-        'frontImageUrl': frontUrl,
-        if (backUrl != null) 'backImageUrl': backUrl,
-      },
-    );
+    try {
+      await _dio.post(
+        ApiConstants.kycSubmission,
+        data: {
+          'documentType': documentType,
+          'documentNumber': documentNumber,
+          'frontImageUrl': frontUrl,
+          if (backUrl != null) 'backImageUrl': backUrl,
+        },
+      );
+    } on DioException catch (e) {
+      String message = 'Failed to submit document.';
+      if (e.response?.data is Map) {
+        final data = e.response!.data as Map<String, dynamic>;
+        if (data['message'] != null && data['message'].toString().isNotEmpty) {
+          message = data['message'].toString();
+        } else if (data['detail'] != null && data['detail'].toString().isNotEmpty) {
+          message = data['detail'].toString();
+        } else if (data['title'] != null && data['title'].toString().isNotEmpty) {
+          message = data['title'].toString();
+        }
+      } else if (e.response?.statusCode == 409) {
+        message = 'This document number is already registered, or your account already has an active verification.';
+      } else if (e.message != null && e.message!.isNotEmpty) {
+        message = e.message!;
+      }
+      throw Exception(message);
+    }
   }
 
   /// Updates KYC approval state in the authorised verification workflow.

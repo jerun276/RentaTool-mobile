@@ -47,6 +47,8 @@ class EscrowHoldModel {
   final String rawStatus;
   final String? heldAtUtc;
   final String? settledAtUtc;
+  final String? equipmentId;
+  final String? equipmentTitle;
 
   const EscrowHoldModel({
     required this.id,
@@ -57,6 +59,8 @@ class EscrowHoldModel {
     required this.rawStatus,
     this.heldAtUtc,
     this.settledAtUtc,
+    this.equipmentId,
+    this.equipmentTitle,
   });
 
   factory EscrowHoldModel.fromJson(Map<String, dynamic> json) {
@@ -74,6 +78,8 @@ class EscrowHoldModel {
       rawStatus: rawStatus,
       heldAtUtc: json['heldAtUtc']?.toString(),
       settledAtUtc: json['settledAtUtc']?.toString(),
+      equipmentId: (json['equipmentId'] ?? json['EquipmentId'])?.toString(),
+      equipmentTitle: (json['equipmentTitle'] ?? json['EquipmentTitle'])?.toString(),
     );
   }
 
@@ -85,5 +91,7 @@ class EscrowHoldModel {
         'status': rawStatus,
         'heldAtUtc': heldAtUtc,
         'settledAtUtc': settledAtUtc,
+        if (equipmentId != null) 'equipmentId': equipmentId,
+        if (equipmentTitle != null) 'equipmentTitle': equipmentTitle,
       };
 }

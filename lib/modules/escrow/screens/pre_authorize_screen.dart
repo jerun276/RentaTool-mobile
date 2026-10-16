@@ -81,9 +81,9 @@ class _PreAuthorizeScreenState extends ConsumerState<PreAuthorizeScreen> {
       setState(() {
         _renterIdCtrl.text = booking.renterId;
         _ownerIdCtrl.text = booking.ownerId;
-        // Optionally calculate deposit amount if you want to default it
       });
 
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           backgroundColor: AppColors.success,
@@ -91,6 +91,7 @@ class _PreAuthorizeScreenState extends ConsumerState<PreAuthorizeScreen> {
         ),
       );
     } catch (e) {
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           backgroundColor: AppColors.error,

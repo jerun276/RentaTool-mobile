@@ -73,6 +73,7 @@ class ApiConstants {
   // --- Auth & Identity Endpoints (Component 1) ---
   static const String register = '/auth/register';
   static const String login = '/auth/login';
+  static const String refreshToken = '/auth/refresh';
   static const String kycSubmission = '/users/kyc';
   static const String kycSubmissions = '/users/kyc-submissions';
   static String trustScore(String userId) => '/users/$userId/trust-score';

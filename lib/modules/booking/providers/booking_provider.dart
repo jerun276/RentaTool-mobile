@@ -17,9 +17,10 @@ class BookingState {
     this.errorMessage,
   });
 
-  /// Computed list based on active filter chip and search query
+  /// Computed list based on active filter chip and search query,
+  /// ordered stably by date (newest first) so items do not jump around when status changes.
   List<BookingModel> get filteredBookings {
-    return activeBookings.where((b) {
+    final list = activeBookings.where((b) {
       // 1. Status Filter
       if (selectedFilter != 'All') {
         if (b.status.toLowerCase() != selectedFilter.toLowerCase()) {
@@ -27,17 +28,38 @@ class BookingState {
         }
       }
 
-      // 2. Search Query filter (by ID, displayCode, or equipmentId)
+      // 2. Search Query filter (by ID, displayCode, equipment, or renter)
       if (searchQuery.trim().isNotEmpty) {
         final q = searchQuery.trim().toLowerCase();
         final matchesId = b.id.toLowerCase().contains(q);
         final matchesCode = b.displayCode.toLowerCase().contains(q);
         final matchesEq = b.equipmentId.toLowerCase().contains(q);
-        return matchesId || matchesCode || matchesEq;
+        final matchesTitle = b.equipmentTitle?.toLowerCase().contains(q) ?? false;
+        final matchesCat = b.equipmentCategory?.toLowerCase().contains(q) ?? false;
+        final matchesRenter = b.renterName?.toLowerCase().contains(q) ?? false;
+        final matchesRenterEmail = b.renterEmail?.toLowerCase().contains(q) ?? false;
+        final matchesRenterPhone = b.renterPhone?.toLowerCase().contains(q) ?? false;
+        return matchesId ||
+            matchesCode ||
+            matchesEq ||
+            matchesTitle ||
+            matchesCat ||
+            matchesRenter ||
+            matchesRenterEmail ||
+            matchesRenterPhone;
       }
 
       return true;
     }).toList();
+
+    list.sort((a, b) {
+      final aDate = DateTime.tryParse(a.createdAtUtc ?? '') ?? a.startDate;
+      final bDate = DateTime.tryParse(b.createdAtUtc ?? '') ?? b.startDate;
+      final cmp = bDate.compareTo(aDate);
+      if (cmp != 0) return cmp;
+      return b.startDate.compareTo(a.startDate);
+    });
+    return list;
   }
 
   BookingState copyWith({
