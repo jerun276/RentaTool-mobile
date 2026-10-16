@@ -507,7 +507,7 @@ class _KycSubmissionScreenState extends ConsumerState<KycSubmissionScreen> {
                         child: Opacity(
                           opacity: (isPending || isAlreadyVerified) ? 0.7 : 1.0,
                           child: DropdownButtonFormField<String>(
-                            value: _documentType,
+                            initialValue: _documentType,
                             decoration: const InputDecoration(labelText: 'Document type'),
                             items: const [
                               DropdownMenuItem(value: 'NIC', child: Text('National Identity Card (NIC)')),

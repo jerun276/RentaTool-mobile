@@ -485,7 +485,7 @@ class _QrScannerScreenState extends ConsumerState<QrScannerScreen> {
                     if (widget.bookingId == null) ...[
                       if (activeBookings.isNotEmpty) ...[
                         DropdownButtonFormField<String>(
-                          value: activeBookings.any((b) => b.id == _bookingIdController.text)
+                          initialValue: activeBookings.any((b) => b.id == _bookingIdController.text)
                               ? _bookingIdController.text
                               : null,
                           decoration: InputDecoration(
