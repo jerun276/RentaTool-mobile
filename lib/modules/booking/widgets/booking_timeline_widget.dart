@@ -43,7 +43,7 @@ class BookingTimelineWidget extends StatelessWidget {
               if (isCancelled)
                 const Text('CANCELLED', style: TextStyle(color: AppColors.error, fontSize: 10, fontWeight: FontWeight.bold))
               else if (isDisputed)
-                const Text('DISPUTED', style: TextStyle(color: AppColors.warning, fontSize: 10, fontWeight: FontWeight.bold)),
+                const Text('DISPUTE IN REVIEW', style: TextStyle(color: AppColors.warning, fontSize: 10, fontWeight: FontWeight.bold)),
             ],
           ),
           const SizedBox(height: 16),

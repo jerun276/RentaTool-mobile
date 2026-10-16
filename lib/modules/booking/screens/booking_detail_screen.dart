@@ -140,7 +140,7 @@ class _BookingDetailScreenState extends ConsumerState<BookingDetailScreen> {
     final equipmentCategory = b.equipmentCategory ?? equipmentFromCatalog?.categoryName;
     final equipmentLocation = b.equipmentLocation ?? equipmentFromCatalog?.location;
 
-    final effectiveStatus = isDisputedOrHasClaim ? 'disputed' : b.status.toLowerCase();
+    final effectiveStatus = isDisputedOrHasClaim ? 'dispute in review' : b.status.toLowerCase();
     BadgeStyle badgeStyle;
     switch (effectiveStatus) {
       case 'active':
@@ -156,6 +156,7 @@ class _BookingDetailScreenState extends ConsumerState<BookingDetailScreen> {
         badgeStyle = BadgeStyle.error;
         break;
       case 'disputed':
+      case 'dispute in review':
         badgeStyle = BadgeStyle.warning;
         break;
       default:
@@ -213,12 +214,12 @@ class _BookingDetailScreenState extends ConsumerState<BookingDetailScreen> {
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        (isDisputedOrHasClaim ? 'DISPUTED' : b.status).toUpperCase(),
+                        (isDisputedOrHasClaim ? 'DISPUTE IN REVIEW' : b.status).toUpperCase(),
                         style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: AppColors.primaryLight),
                       ),
                     ],
                   ),
-                  StatusBadge(label: isDisputedOrHasClaim ? 'Disputed' : b.status, style: badgeStyle),
+                  StatusBadge(label: isDisputedOrHasClaim ? 'Dispute in Review' : b.status, style: badgeStyle),
                 ],
               ),
             ),

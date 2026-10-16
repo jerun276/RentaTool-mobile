@@ -36,7 +36,7 @@ class BookingCard extends StatelessWidget {
     final dateFormatter = DateFormat('MMM dd, yyyy');
 
     final bool effectiveDisputed = (isDisputed ?? false) || booking.isDisputed;
-    final String displayStatus = effectiveDisputed ? 'Disputed' : booking.status;
+    final String displayStatus = effectiveDisputed ? 'Dispute in Review' : booking.status;
 
     BadgeStyle badgeStyle;
     switch (displayStatus.toLowerCase()) {
@@ -53,6 +53,7 @@ class BookingCard extends StatelessWidget {
         badgeStyle = BadgeStyle.error;
         break;
       case 'disputed':
+      case 'dispute in review':
         badgeStyle = BadgeStyle.warning;
         break;
       default:
