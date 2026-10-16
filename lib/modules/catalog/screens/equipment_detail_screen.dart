@@ -176,11 +176,11 @@ class _EquipmentDetailScreenState extends ConsumerState<EquipmentDetailScreen> {
           child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // Image Preview Container
+            // Image Preview Container (Full uncropped tool view with tap-to-zoom)
             Container(
-              height: 220,
+              height: 260,
               decoration: BoxDecoration(
-                color: isDark ? AppColors.darkSurfaceLight : AppColors.lightSurfaceLight,
+                color: isDark ? const Color(0xFF0F172A) : const Color(0xFFF1F5F9),
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(color: isDark ? AppColors.darkBorder : AppColors.lightBorder),
               ),
@@ -188,13 +188,22 @@ class _EquipmentDetailScreenState extends ConsumerState<EquipmentDetailScreen> {
               child: Stack(
                 fit: StackFit.expand,
                 children: [
-                  if (eq.images.isNotEmpty)
-                    Image.network(
-                      eq.images[_selectedPhotoIdx.clamp(0, eq.images.length - 1)].imageUrl,
-                      fit: BoxFit.cover,
-                      errorBuilder: (_, __, ___) => _fallbackCenterIcon(),
-                    )
-                  else
+                  if (eq.images.isNotEmpty) ...[
+                    GestureDetector(
+                      onTap: () => _showFullImage(
+                        context,
+                        eq.images[_selectedPhotoIdx.clamp(0, eq.images.length - 1)].imageUrl,
+                      ),
+                      child: Padding(
+                        padding: const EdgeInsets.all(8.0),
+                        child: Image.network(
+                          eq.images[_selectedPhotoIdx.clamp(0, eq.images.length - 1)].imageUrl,
+                          fit: BoxFit.contain,
+                          errorBuilder: (_, __, ___) => _fallbackCenterIcon(),
+                        ),
+                      ),
+                    ),
+                  ] else
                     _fallbackCenterIcon(),
                   // Top Status Badge
                   Positioned(
@@ -219,6 +228,36 @@ class _EquipmentDetailScreenState extends ConsumerState<EquipmentDetailScreen> {
                         child: Text(
                           'ANGLE: ${eq.images[_selectedPhotoIdx.clamp(0, eq.images.length - 1)].angle.toUpperCase()}',
                           style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold),
+                        ),
+                      ),
+                    ),
+                  // Full Screen / Zoom button
+                  if (eq.images.isNotEmpty)
+                    Positioned(
+                      bottom: 12,
+                      right: 12,
+                      child: GestureDetector(
+                        onTap: () => _showFullImage(
+                          context,
+                          eq.images[_selectedPhotoIdx.clamp(0, eq.images.length - 1)].imageUrl,
+                        ),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: const Color(0xCC000000),
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                          child: const Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(Icons.fullscreen, color: Colors.white, size: 14),
+                              SizedBox(width: 4),
+                              Text(
+                                'FULL VIEW',
+                                style: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold),
+                              ),
+                            ],
+                          ),
                         ),
                       ),
                     ),
@@ -666,6 +705,52 @@ class _EquipmentDetailScreenState extends ConsumerState<EquipmentDetailScreen> {
   Widget _fallbackCenterIcon() {
     return Center(
       child: Icon(Icons.precision_manufacturing_outlined, size: 80, color: AppColors.textMuted),
+    );
+  }
+
+  void _showFullImage(BuildContext context, String url) {
+    if (url.isEmpty) return;
+    showDialog(
+      context: context,
+      builder: (ctx) => Dialog(
+        backgroundColor: Colors.black,
+        insetPadding: EdgeInsets.zero,
+        child: Stack(
+          children: [
+            Center(
+              child: InteractiveViewer(
+                panEnabled: true,
+                minScale: 0.8,
+                maxScale: 4.0,
+                child: Image.network(
+                  url,
+                  fit: BoxFit.contain,
+                  errorBuilder: (_, __, ___) => const Icon(
+                    Icons.broken_image,
+                    color: Colors.white54,
+                    size: 48,
+                  ),
+                ),
+              ),
+            ),
+            Positioned(
+              top: 40,
+              right: 16,
+              child: Container(
+                decoration: const BoxDecoration(
+                  color: Color(0x99000000),
+                  shape: BoxShape.circle,
+                ),
+                child: IconButton(
+                  icon: const Icon(Icons.close, color: Colors.white, size: 24),
+                  tooltip: 'Close full view',
+                  onPressed: () => Navigator.of(ctx).pop(),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 
