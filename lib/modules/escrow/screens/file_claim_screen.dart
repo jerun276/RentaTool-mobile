@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:dio/dio.dart';
 import '../../identity/providers/auth_provider.dart';
+import '../../booking/services/booking_service.dart';
+import '../../catalog/services/catalog_service.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 import '../../../core/services/cloudinary_service.dart';
@@ -26,14 +28,19 @@ class _FileClaimScreenState extends ConsumerState<FileClaimScreen> {
   final _bookingIdController = TextEditingController();
   final _userIdController = TextEditingController();
   final _descController = TextEditingController();
+  final _claimAmountController = TextEditingController();
   bool _isSubmitting = false;
   XFile? _selectedImage;
+
+  double? _equipmentReplacementValue;
+  String? _equipmentTitle;
 
   @override
   void initState() {
     super.initState();
     if (widget.bookingId != null) {
       _bookingIdController.text = widget.bookingId!;
+      _loadEquipmentDetails(widget.bookingId!);
     }
     final user = ref.read(authProvider).user;
     if (user != null) {
@@ -44,11 +51,37 @@ class _FileClaimScreenState extends ConsumerState<FileClaimScreen> {
     });
   }
 
+  Future<void> _loadEquipmentDetails(String bookingId) async {
+    try {
+      final bookingService = ref.read(bookingServiceProvider);
+      final booking = await bookingService.getBookingById(bookingId);
+      if (booking.equipmentId.isNotEmpty) {
+        final catalogService = ref.read(catalogServiceProvider);
+        final eq = await catalogService.getEquipmentById(booking.equipmentId);
+        if (mounted) {
+          setState(() {
+            _equipmentReplacementValue = eq.replacementValue;
+            _equipmentTitle = eq.title;
+          });
+        }
+      } else if (booking.equipmentTitle != null) {
+        if (mounted) {
+          setState(() {
+            _equipmentTitle = booking.equipmentTitle;
+          });
+        }
+      }
+    } catch (e) {
+      debugPrint('Notice loading equipment for claim: $e');
+    }
+  }
+
   @override
   void dispose() {
     _bookingIdController.dispose();
     _userIdController.dispose();
     _descController.dispose();
+    _claimAmountController.dispose();
     super.dispose();
   }
 
@@ -67,11 +100,14 @@ class _FileClaimScreenState extends ConsumerState<FileClaimScreen> {
         evidencePhotos = [uploadedUrl];
       }
 
+      final enteredAmount = double.tryParse(_claimAmountController.text.trim().replaceAll(',', ''));
+
       await service.fileClaim(
         bookingId: _bookingIdController.text.trim(),
         filedByUserId: _userIdController.text.trim(),
         damageDescription: _descController.text.trim(),
         evidencePhotos: evidencePhotos,
+        claimAmount: enteredAmount,
       );
 
       ref.read(escrowProvider.notifier).fetchClaims();
@@ -173,6 +209,49 @@ class _FileClaimScreenState extends ConsumerState<FileClaimScreen> {
               ),
               const SizedBox(height: 20),
 
+              if (_equipmentReplacementValue != null && _equipmentReplacementValue! > 0) ...[
+                Container(
+                  padding: const EdgeInsets.all(14),
+                  decoration: BoxDecoration(
+                    color: AppColors.primary.withValues(alpha: 0.08),
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(color: AppColors.primary.withValues(alpha: 0.25)),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          const Icon(Icons.build_circle_outlined, color: AppColors.primary, size: 20),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              _equipmentTitle ?? 'Equipment Asset',
+                              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 6),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          const Text(
+                            'Equipment Replacement Value (Liability Cap):',
+                            style: TextStyle(fontSize: 12, color: Colors.grey),
+                          ),
+                          Text(
+                            'LKR ${_equipmentReplacementValue!.toStringAsFixed(2)}',
+                            style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: AppColors.primary),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 16),
+              ],
+
               AppTextField(
                 controller: _bookingIdController,
                 label: 'Rental Booking ID',
@@ -188,6 +267,31 @@ class _FileClaimScreenState extends ConsumerState<FileClaimScreen> {
                 hintText: 'User ID',
                 readOnly: true,
                 validator: (v) => v == null || v.isEmpty ? 'User ID is required' : null,
+              ),
+              const SizedBox(height: 16),
+
+              AppTextField(
+                controller: _claimAmountController,
+                label: 'Claimed Compensation / Repair Cost (LKR)',
+                hintText: _equipmentReplacementValue != null
+                    ? 'Max LKR ${_equipmentReplacementValue!.toStringAsFixed(0)}'
+                    : 'e.g. 15000',
+                keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                validator: (v) {
+                  if (v == null || v.trim().isEmpty) {
+                    return 'Claim amount is required';
+                  }
+                  final amount = double.tryParse(v.trim().replaceAll(',', ''));
+                  if (amount == null || amount <= 0) {
+                    return 'Enter a valid amount greater than 0';
+                  }
+                  if (_equipmentReplacementValue != null &&
+                      _equipmentReplacementValue! > 0 &&
+                      amount > _equipmentReplacementValue!) {
+                    return 'Claim amount cannot exceed replacement value (LKR ${_equipmentReplacementValue!.toStringAsFixed(0)})';
+                  }
+                  return null;
+                },
               ),
               const SizedBox(height: 16),
 

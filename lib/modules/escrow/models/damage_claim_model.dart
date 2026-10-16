@@ -82,6 +82,9 @@ class DamageClaimModel {
 
   final String? equipmentTitle;
   final List<String>? pickupPhotos;
+  final double? claimAmount;
+  final double? replacementValue;
+  final double? escrowHeld;
 
   const DamageClaimModel({
     required this.claimId,
@@ -99,6 +102,9 @@ class DamageClaimModel {
     this.createdAtUtc,
     this.equipmentTitle,
     this.pickupPhotos,
+    this.claimAmount,
+    this.replacementValue,
+    this.escrowHeld,
   });
 
   factory DamageClaimModel.fromJson(Map<String, dynamic> json) {
@@ -125,6 +131,9 @@ class DamageClaimModel {
       pickupPhotos: (json['pickupPhotos'] as List<dynamic>?)
           ?.map((e) => e.toString())
           .toList(),
+      claimAmount: (json['claimAmount'] ?? json['proposedDeduction'] as num?)?.toDouble(),
+      replacementValue: (json['replacementValue'] as num?)?.toDouble(),
+      escrowHeld: (json['escrowHeld'] as num?)?.toDouble(),
     );
   }
 

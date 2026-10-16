@@ -100,6 +100,7 @@ class EscrowService {
     required String filedByUserId,
     required String damageDescription,
     List<String> evidencePhotos = const [],
+    double? claimAmount,
   }) async {
     try {
       final res = await _dio.post('/claims', data: {
@@ -107,6 +108,7 @@ class EscrowService {
         'filedByUserId': filedByUserId,
         'damageDescription': damageDescription,
         'evidencePhotos': evidencePhotos,
+        if (claimAmount != null && claimAmount > 0) 'claimAmount': claimAmount,
       });
       if (res.data != null && res.data is Map<String, dynamic>) {
         return DamageClaimModel.fromJson(res.data as Map<String, dynamic>);
