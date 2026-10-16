@@ -1,0 +1,150 @@
+
+
+========================================
+=== Identity COMPONENT TEST OUTPUT ===
+========================================
+
+00:00 +0: loading C:/Users/ASUS/Desktop/Rental/RentaTool-mobile/test/modules/identity/identity_complete_unit_test.dart
+00:00 +0: [1] UserRole - fromString and displayName TC-UR-01 [Normal]  fromString("renter") returns UserRole.renter
+00:00 +1: [1] UserRole - fromString and displayName TC-UR-02 [Normal]  fromString("owner") returns UserRole.owner
+00:00 +2: [1] UserRole - fromString and displayName TC-UR-03 [Normal]  fromString("admin") returns UserRole.admin
+00:00 +3: [1] UserRole - fromString and displayName TC-UR-04 [Invalid] fromString("unknown") defaults to renter
+00:00 +4: [1] UserRole - fromString and displayName TC-UR-05 [Edge]    fromString is case-insensitive (OWNER)
+00:00 +5: [1] UserRole - fromString and displayName TC-UR-06 [Normal]  displayName for each role is correct
+00:00 +6: [2] UserModel - fromJson, toJson, copyWith, defaults TC-UM-01 [Normal]  fromJson deserializes all fields correctly
+00:00 +7: [2] UserModel - fromJson, toJson, copyWith, defaults TC-UM-02 [Edge]    fromJson uses "userId" key as fallback for id
+00:00 +8: [2] UserModel - fromJson, toJson, copyWith, defaults TC-UM-03 [Edge]    fromJson sets safe defaults for missing fields
+00:00 +9: [2] UserModel - fromJson, toJson, copyWith, defaults TC-UM-04 [Normal]  toJson serializes all fields correctly
+00:00 +10: [2] UserModel - fromJson, toJson, copyWith, defaults TC-UM-05 [Normal]  copyWith updates name and phoneNumber only
+00:00 +11: [2] UserModel - fromJson, toJson, copyWith, defaults TC-UM-06 [Normal]  copyWith updates isVerified
+00:00 +12: [2] UserModel - fromJson, toJson, copyWith, defaults TC-UM-07 [Edge]    copyWith with no args returns identical copy
+00:00 +13: [3] AuthResponse - fromJson TC-AR-01 [Normal]  fromJson parses all token fields correctly
+00:00 +14: [3] AuthResponse - fromJson TC-AR-02 [Edge]    fromJson applies safe defaults for missing fields
+00:00 +15: [3] AuthResponse - fromJson TC-AR-03 [Normal]  refreshToken is nullable and optional
+00:00 +16: [4] KycSubmissionModel - fromJson, toJson, defaults TC-KYC-01 [Normal]  fromJson parses all fields correctly
+00:00 +17: [4] KycSubmissionModel - fromJson, toJson, defaults TC-KYC-02 [Edge]    fromJson defaults documentType to NIC and status to Pending
+00:00 +18: [4] KycSubmissionModel - fromJson, toJson, defaults TC-KYC-03 [Normal]  toJson only exposes documentType and documentNumber
+00:00 +19: [4] KycSubmissionModel - fromJson, toJson, defaults TC-KYC-04 [Edge]    backImageUrl and rejectionReason are nullable
+00:00 +20: [5] TrustScoreModel - fromJson and ledger entries TC-TS-01 [Normal]  fromJson parses score, tier and userId correctly
+00:00 +21: [5] TrustScoreModel - fromJson and ledger entries TC-TS-02 [Normal]  fromJson parses nested ledger history entries
+00:00 +22: [5] TrustScoreModel - fromJson and ledger entries TC-TS-03 [Edge]    fromJson uses "trustScore" key as fallback for score
+00:00 +23: [5] TrustScoreModel - fromJson and ledger entries TC-TS-04 [Edge]    fromJson returns empty ledger when history is null
+00:00 +24: [5] TrustScoreModel - fromJson and ledger entries TC-TS-05 [Edge]    fromJson sets default tier "Tier B" when missing
+00:00 +25: [6] AuthNotifier - session, login, register, logout TC-AN-01 [Normal]  initial state is unauthenticated, not loading
+00:00 +26: [6] AuthNotifier - session, login, register, logout TC-AN-02 [Normal]  login success sets authenticated state
+00:00 +27: [6] AuthNotifier - session, login, register, logout TC-AN-03 [Failure] login failure sets errorMessage
+00:00 +28: [6] AuthNotifier - session, login, register, logout TC-AN-04 [Normal]  logout clears session state
+00:00 +29: [6] AuthNotifier - session, login, register, logout TC-AN-05 [Normal]  register success sets authenticated state
+00:00 +30: [6] AuthNotifier - session, login, register, logout TC-AN-06 [Failure] register failure sets errorMessage
+00:00 +31: [6] AuthNotifier - session, login, register, logout TC-AN-07 [Normal]  setVerified updates isVerified on current user
+00:00 +32: All tests passed!
+
+
+========================================
+=== Catalog COMPONENT TEST OUTPUT ===
+========================================
+
+00:00 +0: loading C:/Users/ASUS/Desktop/Rental/RentaTool-mobile/test/modules/catalog/catalog_complete_unit_test.dart
+00:00 +0: [1] ToolImageModel TC-TIM-01 fromJson(String) creates model from URL
+00:00 +1: [1] ToolImageModel TC-TIM-02 fromJson(Map) parses all fields
+00:00 +2: [1] ToolImageModel TC-TIM-03 fromJson(unknown type) returns empty fallback
+00:00 +3: [1] ToolImageModel TC-TIM-04 toJson serializes correctly
+00:00 +4: [2] EquipmentModel TC-EM-01 fromJson deserializes all fields
+00:00 +5: [2] EquipmentModel TC-EM-02 images list parses all entries
+00:00 +6: [2] EquipmentModel TC-EM-03 primaryImageUrl returns isPrimary=true image
+00:00 +7: [2] EquipmentModel TC-EM-04 primaryImageUrl falls back to first image
+00:00 +8: [2] EquipmentModel TC-EM-05 primaryImageUrl returns empty string when no images
+00:00 +9: [2] EquipmentModel TC-EM-06 isWearLimitReached is false at 59 days
+00:00 +10: [2] EquipmentModel TC-EM-07 isWearLimitReached is true at exactly 60 days
+00:00 +11: [2] EquipmentModel TC-EM-08 isWearLocked when requiresMaintenanceCheck=true
+00:00 +12: [2] EquipmentModel TC-EM-09 isWearLocked when status is UnderMaintenance
+00:00 +13: [2] EquipmentModel TC-EM-10 daysUntilLockout calculates correctly
+00:00 +14: [2] EquipmentModel TC-EM-11 daysUntilLockout clamps to 0 when exceeded
+00:00 +15: [2] EquipmentModel TC-EM-12 fromJson empty map uses safe defaults
+00:00 +16: [2] EquipmentModel TC-EM-13 fromJson filters out images with empty URLs
+00:00 +17: [3] BatchAvailabilityResultModel TC-BAT-01 fromJson parses totals
+00:00 +18: [3] BatchAvailabilityResultModel TC-BAT-02 fromJson parses availableItems
+00:00 +19: [3] BatchAvailabilityResultModel TC-BAT-03 fromJson parses lockedOutItems
+00:00 +20: [3] BatchAvailabilityResultModel TC-BAT-04 hasLockouts true when totalLockedOut > 0
+00:00 +21: [3] BatchAvailabilityResultModel TC-BAT-05 hasLockouts false when totalLockedOut = 0
+00:00 +22: [3] BatchAvailabilityResultModel TC-BAT-06 fromJson empty map returns zeros
+00:00 +23: All tests passed!
+
+
+========================================
+=== Booking COMPONENT TEST OUTPUT ===
+========================================
+
+00:00 +0: loading C:/Users/ASUS/Desktop/Rental/RentaTool-mobile/test/modules/booking/booking_complete_unit_test.dart
+00:00 +0: [1] BookingModel TC-BK-01 fromJson deserializes all fields
+00:00 +1: [1] BookingModel TC-BK-02 durationInDays calculates for 5-day booking
+00:00 +2: [1] BookingModel TC-BK-03 durationInDays minimum 1 for same-day booking
+00:00 +3: [1] BookingModel TC-BK-04 isConfirmed true when status=Confirmed
+00:00 +4: [1] BookingModel TC-BK-05 isActive true when status=Active
+00:00 +5: [1] BookingModel TC-BK-06 isCancelled true when status=Cancelled
+00:00 +6: [1] BookingModel TC-BK-07 canGeneratePickupToken true for Confirmed + not verified
+00:00 +7: [1] BookingModel TC-BK-08 canGeneratePickupToken false when pickupVerified=true
+00:00 +8: [1] BookingModel TC-BK-09 canGenerateReturnToken true for Active + not verified
+00:00 +9: [1] BookingModel TC-BK-10 canExtendSchedule true for Confirmed and Active
+00:00 +10: [1] BookingModel TC-BK-11 canExtendSchedule false for Completed/Cancelled
+00:00 +11: [1] BookingModel TC-BK-12 displayCode format BKG- prefix
+00:00 +12: [1] BookingModel TC-BK-13 displayCode returns BKG-UNKNOWN for empty id
+00:00 +13: [1] BookingModel TC-BK-14 dailyRate computed from totalFee/days when missing
+00:00 +14: [1] BookingModel TC-BK-15 copyWith updates status only
+00:00 +15: [2] HandoverTokenModel TC-HT-01 fromJson parses all fields
+00:00 +16: [2] HandoverTokenModel TC-HT-02 isExpired false for future token
+00:00 +17: [2] HandoverTokenModel TC-HT-03 isExpired true for past token
+00:00 +18: [2] HandoverTokenModel TC-HT-04 remainingSeconds clamps to 0 when expired
+00:00 +19: [2] HandoverTokenModel TC-HT-05 formattedRemainingTime has MM:SS format
+00:00 +20: [2] HandoverTokenModel TC-HT-06 qrPayload falls back to token value
+00:00 +21: [3] VerifyHandoverRequestModel TC-VHR-01 eventTypeInt=1 for Pickup
+00:00 +22: [3] VerifyHandoverRequestModel TC-VHR-02 eventTypeInt=2 for Return
+00:00 +23: [3] VerifyHandoverRequestModel TC-VHR-03 toJson includes GPS and eventType int
+00:00 +24: [3] VerifyHandoverRequestModel TC-VHR-04 toJson uses empty string for null optional fields
+00:00 +25: [4] HandoverVerificationResponseModel TC-HVR-01 fromJson parses all fields
+00:00 +26: [4] HandoverVerificationResponseModel TC-HVR-02 isSuccess false when backend returns false
+00:00 +27: [4] HandoverVerificationResponseModel TC-HVR-03 fromJson safe defaults for empty map
+00:00 +28: [5] ExtendScheduleResponseModel TC-EXT-01 fromJson parses all surge pricing fields
+00:00 +29: [5] ExtendScheduleResponseModel TC-EXT-02 hasSurge true when surgeMultiplier > 1.0
+00:00 +30: [5] ExtendScheduleResponseModel TC-EXT-03 hasSurge false at standard rate
+00:00 +31: [5] ExtendScheduleResponseModel TC-EXT-04 surgePercentageString returns +25% for 1.25
+00:00 +32: [5] ExtendScheduleResponseModel TC-EXT-05 surgePercentageString returns Standard Rate at 1.0
+00:00 +33: [5] ExtendScheduleResponseModel TC-EXT-06 fromJson safe defaults for empty map
+00:00 +34: All tests passed!
+
+
+========================================
+=== Escrow COMPONENT TEST OUTPUT ===
+========================================
+
+00:00 +0: loading C:/Users/ASUS/Desktop/Rental/RentaTool-mobile/test/modules/escrow/escrow_complete_unit_test.dart
+00:00 +0: [1] EscrowStatus TC-ES-01 fromString held
+00:00 +1: [1] EscrowStatus TC-ES-02 fromString disbursed
+00:00 +2: [1] EscrowStatus TC-ES-03 fromString refunded
+00:00 +3: [1] EscrowStatus TC-ES-04 fromString disputed
+00:00 +4: [1] EscrowStatus TC-ES-05 fromString unknown for xyz
+00:00 +5: [1] EscrowStatus TC-ES-06 fromString null returns unknown
+00:00 +6: [1] EscrowStatus TC-ES-07 displayLabel correct for each status
+00:00 +7: [2] EscrowHoldModel TC-EH-01 fromJson parses all fields
+00:00 +8: [2] EscrowHoldModel TC-EH-02 fromJson uses escrowId as fallback
+00:00 +9: [2] EscrowHoldModel TC-EH-03 fromJson uses capital S Status key
+00:00 +10: [2] EscrowHoldModel TC-EH-04 toJson serializes correctly
+00:00 +11: [2] EscrowHoldModel TC-EH-05 fromJson safe defaults for empty map
+00:00 +12: [3] ClaimStatus TC-CS-01 fromString maps all known statuses
+00:00 +13: [3] ClaimStatus TC-CS-02 fromString handles underAIEvaluation
+00:00 +14: [3] ClaimStatus TC-CS-03 fromString unknown for random
+00:00 +15: [3] ClaimStatus TC-CS-04 displayLabel correct
+00:00 +16: [3] ClaimStatus TC-CS-05 isTerminal true for rejected and settled
+00:00 +17: [3] ClaimStatus TC-CS-06 isTerminal false for active statuses
+00:00 +18: [3] ClaimStatus TC-CS-07 canAdjudicate true for filed/underAI/pending
+00:00 +19: [3] ClaimStatus TC-CS-08 canPayout true for approved and revised
+00:00 +20: [3] ClaimStatus TC-CS-09 canPayout false for filed or settled
+00:00 +21: [4] DamageClaimModel TC-DC-01 fromJson parses all fields
+00:00 +22: [4] DamageClaimModel TC-DC-02 fromJson parses evidencePhotos list
+00:00 +23: [4] DamageClaimModel TC-DC-03 fromJson uses id as fallback for claimId
+00:00 +24: [4] DamageClaimModel TC-DC-04 fromJson returns empty evidencePhotos when null
+00:00 +25: [4] DamageClaimModel TC-DC-05 finalDeduction is nullable
+00:00 +26: [4] DamageClaimModel TC-DC-06 toJson serializes correctly
+00:00 +27: [5] PayoutClaimResponse TC-PCR-01 fromJson parses all payout fields
+00:00 +28: [5] PayoutClaimResponse TC-PCR-02 fromJson safe defaults for empty map
+00:00 +29: All tests passed!

@@ -146,27 +146,27 @@ agents.md
 # ==============================================================================
 # Testing & Coverage
 # ==============================================================================
-coverage/
-test/**/coverage/
-.test_coverage/
-*.lcov
+# coverage/
+# test/**/coverage/
+# .test_coverage/
+# *.lcov
 
 # Local test run output and downloaded driver
-chromedriver.exe
-Comprehensive_Test_Output.txt
-all_modules_test_output.txt
-all_tests_combined_output.txt
-all_tests_output.txt
-e2e_output*.txt
-flutter_test_output.txt
-full_test_output.txt
-integration_test_output*.txt
-login_register_test_output.txt
-nfr_mobile_*.txt
-test_output_identity.txt
-test_reports/raw_output.txt
-unit_test_output.pdf
-unit_test_output.txt
+# chromedriver.exe
+# Comprehensive_Test_Output.txt
+# all_modules_test_output.txt
+# all_tests_combined_output.txt
+# all_tests_output.txt
+# e2e_output*.txt
+# flutter_test_output.txt
+# full_test_output.txt
+# integration_test_output*.txt
+# login_register_test_output.txt
+# nfr_mobile_*.txt
+# test_output_identity.txt
+# test_reports/raw_output.txt
+# unit_test_output.pdf
+# unit_test_output.txt
 
 # ==============================================================================
 # OS & Miscellaneous

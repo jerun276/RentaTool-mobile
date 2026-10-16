@@ -1,0 +1,14 @@
+Flutter Android integration test — first attempt
+Test: XPLAT-01 mobile reads the shared seeded catalog from the API
+Result: Failed after the UI assertions, during screenshot capture.
+
+Exact runner error:
+Bad state: Call convertFlutterSurfaceToImage() before taking a screenshot
+
+Relevant stack:
+#0 _IOCallbackManager.takeScreenshot (package:integration_test/src/_callback_io.dart:88:7)
+#1 IntegrationTestWidgetsFlutterBinding.takeScreenshot (package:integration_test/integration_test.dart:190:61)
+#2 main.<anonymous closure> (integration_test/catalog_live_api_test.dart:34:19)
+
+Correction: Call binding.convertFlutterSurfaceToImage() before takeScreenshot.
+Retest output: integration_test_output_flutter_xplat01.txt (All tests passed!).

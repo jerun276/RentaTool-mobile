@@ -1,0 +1,97 @@
+﻿00:00 +0: loading C:/Users/ASUS/Desktop/Rental/RentaTool-mobile/test/modules/identity/identity_complete_unit_test.dart
+flutter : ../../../AppData/Local/Temp/flutter_tools.86544456/flutter_test_listener.602f179e/listener.dart:21:21: 
+Error: Undefined name 'main'.
+At line:1 char:57
++ ... st_reports; flutter test test/modules/identity/identity_complete_unit ...
++                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (../../../AppDat...ed name 'main'.:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+  await Future(test.main);
+                    ^^^^
+00:00 +0 -1: loading C:/Users/ASUS/Desktop/Rental/RentaTool-mobile/test/modules/catalog/catalog_complete_unit_test.dart [E]
+  Failed to load "C:/Users/ASUS/Desktop/Rental/RentaTool-mobile/test/modules/catalog/catalog_complete_unit_test.dart":
+  Compilation failed for testPath=C:/Users/ASUS/Desktop/Rental/RentaTool-mobile/test/modules/catalog/catalog_complete_unit_test.dart: ../../../AppData/Local/Temp/flutter_tools.86544456/flutter_test_listener.602f179e/listener.dart:21:21: Error: Undefined name 'main'.
+    await Future(test.main);
+                      ^^^^
+  .
+00:00 +0 -2: loading C:/Users/ASUS/Desktop/Rental/RentaTool-mobile/test/modules/identity/identity_complete_unit_test.dart [E]
+  Error: The Dart compiler exited unexpectedly.
+  package:flutter_tools/src/base/common.dart 34:3  throwToolExit
+  package:flutter_tools/src/compile.dart 1024:11   DefaultResidentCompiler._compile.<fn>
+  dart:async/zone_root.dart 48:47                  _rootRunUnary
+  dart:async/zone.dart 816:35                      _CustomZone.runUnary
+  dart:async/future_impl.dart 948:45               Future._propagateToListeners.handleValueCallback
+  dart:async/future_impl.dart 977:13               Future._propagateToListeners
+  dart:async/future_impl.dart 862:9                Future._propagateToListeners
+  dart:async/future_impl.dart 720:5                Future._completeWithValue
+  dart:async/future_impl.dart 804:7                Future._asyncCompleteWithValue.<fn>
+  dart:async/zone_root.dart 35:13                  _rootRun
+  dart:async/zone.dart 810:35                      _CustomZone.run
+  dart:async/zone.dart 702:7                       _CustomZone.runGuarded
+  dart:async/zone.dart 743:23                      _CustomZone.bindCallbackGuarded.<fn>
+  dart:async/schedule_microtask.dart 40:35         _microtaskLoop
+  dart:async/schedule_microtask.dart 49:5          _startMicrotaskLoop
+  dart:isolate-patch/isolate_patch.dart 127:13     _runPendingImmediateCallback
+  dart:isolate-patch/isolate_patch.dart 193:5      _RawReceivePort._handleMessage
+  
+00:00 +0 -2: C:/Users/ASUS/Desktop/Rental/RentaTool-mobile/test/modules/identity/identity_complete_unit_test.dart: [1] UserRole - fromString and displayName TC-UR-01 [Normal]  fromString("renter") returns UserRole.renter
+00:00 +1 -2: C:/Users/ASUS/Desktop/Rental/RentaTool-mobile/test/modules/identity/identity_complete_unit_test.dart: [1] UserRole - fromString and displayName TC-UR-02 [Normal]  fromString("owner") returns UserRole.owner
+00:00 +2 -2: C:/Users/ASUS/Desktop/Rental/RentaTool-mobile/test/modules/identity/identity_complete_unit_test.dart: [1] UserRole - fromString and displayName TC-UR-03 [Normal]  fromString("admin") returns UserRole.admin
+00:00 +3 -2: C:/Users/ASUS/Desktop/Rental/RentaTool-mobile/test/modules/identity/identity_complete_unit_test.dart: [1] UserRole - fromString and displayName TC-UR-04 [Invalid] fromString("unknown") defaults to renter
+00:00 +4 -2: C:/Users/ASUS/Desktop/Rental/RentaTool-mobile/test/modules/identity/identity_complete_unit_test.dart: [1] UserRole - fromString and displayName TC-UR-05 [Edge]    fromString is case-insensitive (OWNER)
+00:00 +5 -2: C:/Users/ASUS/Desktop/Rental/RentaTool-mobile/test/modules/identity/identity_complete_unit_test.dart: [1] UserRole - fromString and displayName TC-UR-06 [Normal]  displayName for each role is correct
+00:00 +6 -2: C:/Users/ASUS/Desktop/Rental/RentaTool-mobile/test/modules/identity/identity_complete_unit_test.dart: [2] UserModel - fromJson, toJson, copyWith, defaults TC-UM-01 [Normal]  fromJson deserializes all fields correctly
+00:00 +7 -2: C:/Users/ASUS/Desktop/Rental/RentaTool-mobile/test/modules/identity/identity_complete_unit_test.dart: [2] UserModel - fromJson, toJson, copyWith, defaults TC-UM-02 [Edge]    fromJson uses "userId" key as fallback for id
+00:00 +8 -2: C:/Users/ASUS/Desktop/Rental/RentaTool-mobile/test/modules/identity/identity_complete_unit_test.dart: [2] UserModel - fromJson, toJson, copyWith, defaults TC-UM-03 [Edge]    fromJson sets safe defaults for missing fields
+00:00 +9 -2: C:/Users/ASUS/Desktop/Rental/RentaTool-mobile/test/modules/identity/identity_complete_unit_test.dart: [2] UserModel - fromJson, toJson, copyWith, defaults TC-UM-04 [Normal]  toJson serializes all fields correctly
+00:00 +10 -2: C:/Users/ASUS/Desktop/Rental/RentaTool-mobile/test/modules/identity/identity_complete_unit_test.dart: [2] UserModel - fromJson, toJson, copyWith, defaults TC-UM-05 [Normal]  copyWith updates name and phoneNumber only
+00:00 +11 -2: C:/Users/ASUS/Desktop/Rental/RentaTool-mobile/test/modules/identity/identity_complete_unit_test.dart: [2] UserModel - fromJson, toJson, copyWith, defaults TC-UM-06 [Normal]  copyWith updates isVerified
+00:00 +12 -2: C:/Users/ASUS/Desktop/Rental/RentaTool-mobile/test/modules/identity/identity_complete_unit_test.dart: [2] UserModel - fromJson, toJson, copyWith, defaults TC-UM-07 [Edge]    copyWith with no args returns identical copy
+00:00 +13 -2: C:/Users/ASUS/Desktop/Rental/RentaTool-mobile/test/modules/identity/identity_complete_unit_test.dart: [3] AuthResponse - fromJson TC-AR-01 [Normal]  fromJson parses all token fields correctly
+00:00 +14 -2: C:/Users/ASUS/Desktop/Rental/RentaTool-mobile/test/modules/identity/identity_complete_unit_test.dart: [3] AuthResponse - fromJson TC-AR-02 [Edge]    fromJson applies safe defaults for missing fields
+00:00 +15 -2: C:/Users/ASUS/Desktop/Rental/RentaTool-mobile/test/modules/identity/identity_complete_unit_test.dart: [3] AuthResponse - fromJson TC-AR-03 [Normal]  refreshToken is nullable and optional
+00:00 +16 -2: C:/Users/ASUS/Desktop/Rental/RentaTool-mobile/test/modules/identity/identity_complete_unit_test.dart: [4] KycSubmissionModel - fromJson, toJson, defaults TC-KYC-01 [Normal]  fromJson parses all fields correctly
+00:00 +17 -2: C:/Users/ASUS/Desktop/Rental/RentaTool-mobile/test/modules/identity/identity_complete_unit_test.dart: [4] KycSubmissionModel - fromJson, toJson, defaults TC-KYC-02 [Edge]    fromJson defaults documentType to NIC and status to Pending
+00:00 +18 -2: C:/Users/ASUS/Desktop/Rental/RentaTool-mobile/test/modules/identity/identity_complete_unit_test.dart: [4] KycSubmissionModel - fromJson, toJson, defaults TC-KYC-03 [Normal]  toJson only exposes documentType and documentNumber
+00:00 +19 -2: C:/Users/ASUS/Desktop/Rental/RentaTool-mobile/test/modules/identity/identity_complete_unit_test.dart: [4] KycSubmissionModel - fromJson, toJson, defaults TC-KYC-04 [Edge]    backImageUrl and rejectionReason are nullable
+00:00 +20 -2: C:/Users/ASUS/Desktop/Rental/RentaTool-mobile/test/modules/identity/identity_complete_unit_test.dart: [5] TrustScoreModel - fromJson and ledger entries TC-TS-01 [Normal]  fromJson parses score, tier and userId correctly
+00:00 +21 -2: C:/Users/ASUS/Desktop/Rental/RentaTool-mobile/test/modules/identity/identity_complete_unit_test.dart: [5] TrustScoreModel - fromJson and ledger entries TC-TS-02 [Normal]  fromJson parses nested ledger history entries
+00:00 +22 -2: C:/Users/ASUS/Desktop/Rental/RentaTool-mobile/test/modules/identity/identity_complete_unit_test.dart: [5] TrustScoreModel - fromJson and ledger entries TC-TS-03 [Edge]    fromJson uses "trustScore" key as fallback for score
+00:00 +23 -2: C:/Users/ASUS/Desktop/Rental/RentaTool-mobile/test/modules/identity/identity_complete_unit_test.dart: [5] TrustScoreModel - fromJson and ledger entries TC-TS-04 [Edge]    fromJson returns empty ledger when history is null
+00:00 +24 -2: C:/Users/ASUS/Desktop/Rental/RentaTool-mobile/test/modules/identity/identity_complete_unit_test.dart: [5] TrustScoreModel - fromJson and ledger entries TC-TS-05 [Edge]    fromJson sets default tier "Tier B" when missing
+00:00 +25 -2: C:/Users/ASUS/Desktop/Rental/RentaTool-mobile/test/modules/identity/identity_complete_unit_test.dart: [6] AuthNotifier - session, login, register, logout TC-AN-01 [Normal]  initial state is unauthenticated, not loading
+00:00 +26 -2: C:/Users/ASUS/Desktop/Rental/RentaTool-mobile/test/modules/identity/identity_complete_unit_test.dart: [6] AuthNotifier - session, login, register, logout TC-AN-02 [Normal]  login success sets authenticated state
+00:00 +27 -2: C:/Users/ASUS/Desktop/Rental/RentaTool-mobile/test/modules/identity/identity_complete_unit_test.dart: [6] AuthNotifier - session, login, register, logout TC-AN-03 [Failure] login failure sets errorMessage
+00:00 +28 -2: C:/Users/ASUS/Desktop/Rental/RentaTool-mobile/test/modules/identity/identity_complete_unit_test.dart: [6] AuthNotifier - session, login, register, logout TC-AN-04 [Normal]  logout clears session state
+00:00 +29 -2: C:/Users/ASUS/Desktop/Rental/RentaTool-mobile/test/modules/identity/identity_complete_unit_test.dart: [6] AuthNotifier - session, login, register, logout TC-AN-05 [Normal]  register success sets authenticated state
+00:00 +30 -2: C:/Users/ASUS/Desktop/Rental/RentaTool-mobile/test/modules/identity/identity_complete_unit_test.dart: [6] AuthNotifier - session, login, register, logout TC-AN-06 [Failure] register failure sets errorMessage
+00:00 +31 -2: C:/Users/ASUS/Desktop/Rental/RentaTool-mobile/test/modules/identity/identity_complete_unit_test.dart: [6] AuthNotifier - session, login, register, logout TC-AN-07 [Normal]  setVerified updates isVerified on current user
+../../../AppData/Local/Temp/flutter_tools.86544456/flutter_test_listener.e3c92190/listener.dart:21:21: Error: 
+Undefined name 'main'.
+  await Future(test.main);
+                    ^^^^
+00:00 +32 -3: loading C:/Users/ASUS/Desktop/Rental/RentaTool-mobile/test/modules/booking/booking_complete_unit_test.dart [E]
+  Failed to load "C:/Users/ASUS/Desktop/Rental/RentaTool-mobile/test/modules/booking/booking_complete_unit_test.dart":
+  Compilation failed for testPath=C:/Users/ASUS/Desktop/Rental/RentaTool-mobile/test/modules/booking/booking_complete_unit_test.dart: ../../../AppData/Local/Temp/flutter_tools.86544456/flutter_test_listener.e3c92190/listener.dart:21:21: Error: Undefined name 'main'.
+    await Future(test.main);
+                      ^^^^
+  .
+../../../AppData/Local/Temp/flutter_tools.86544456/flutter_test_listener.4958621a/listener.dart:21:21: Error: 
+Undefined name 'main'.
+  await Future(test.main);
+                    ^^^^
+00:01 +32 -4: loading C:/Users/ASUS/Desktop/Rental/RentaTool-mobile/test/modules/escrow/escrow_complete_unit_test.dart [E]
+  Failed to load "C:/Users/ASUS/Desktop/Rental/RentaTool-mobile/test/modules/escrow/escrow_complete_unit_test.dart":
+  Compilation failed for testPath=C:/Users/ASUS/Desktop/Rental/RentaTool-mobile/test/modules/escrow/escrow_complete_unit_test.dart: ../../../AppData/Local/Temp/flutter_tools.86544456/flutter_test_listener.4958621a/listener.dart:21:21: Error: Undefined name 'main'.
+    await Future(test.main);
+                      ^^^^
+  .
+00:01 +32 -4: Some tests failed.
+
+Failing tests:
+  C:/Users/ASUS/Desktop/Rental/RentaTool-mobile/test/modules/booking/booking_complete_unit_test.dart: loading C:/Users/ASUS/Desktop/Rental/RentaTool-mobile/test/modules/booking/booking_complete_unit_test.dart
+  C:/Users/ASUS/Desktop/Rental/RentaTool-mobile/test/modules/catalog/catalog_complete_unit_test.dart: loading C:/Users/ASUS/Desktop/Rental/RentaTool-mobile/test/modules/catalog/catalog_complete_unit_test.dart
+  C:/Users/ASUS/Desktop/Rental/RentaTool-mobile/test/modules/escrow/escrow_complete_unit_test.dart: loading C:/Users/ASUS/Desktop/Rental/RentaTool-mobile/test/modules/escrow/escrow_complete_unit_test.dart
+  C:/Users/ASUS/Desktop/Rental/RentaTool-mobile/test/modules/identity/identity_complete_unit_test.dart: loading C:/Users/ASUS/Desktop/Rental/RentaTool-mobile/test/modules/identity/identity_complete_unit_test.dart
+
