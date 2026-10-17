@@ -76,14 +76,18 @@ For local development, start PostgreSQL from `../RentaTool` with `docker compose
 
 ## 🧪 Testing & Code Quality
 
-Execute static analysis and the automated test suite before committing:
+Comprehensive test commands (unit, widget, integration, and Playwright UI tests) are detailed in [TESTING_COMMANDS.md](TESTING_COMMANDS.md).
 
 ```bash
 # 1. Analyze code for lints or compilation warnings
 dart analyze
 
-# 2. Run unit and widget test suite
+# 2. Run unit and widget test suite (33 tests)
 flutter test
+
+# 3. Run Playwright Automated Visual UI Tests (Headed Chrome Mode)
+# Terminal 1: flutter run -d web-server --web-port 8080
+# Terminal 2: cd playwright_tests && npx playwright test --headed
 ```
 
 ### Test Coverage
@@ -92,6 +96,7 @@ flutter test
 - `test/modules/catalog/catalog_test.dart`: Verifies Equipment, wear calculation, and inspection models.
 - `test/modules/booking/booking_test.dart`: Verifies Booking lifecycle, handover token models, and status helpers.
 - `test/modules/escrow/escrow_test.dart`: Verifies Escrow hold amounts, damage claim models, and status flags.
+- `playwright_tests/tests/demo.spec.js`: 6 E2E UI automation test cases with multi-device responsive viewports and screenshot evidence.
 
 ---
 

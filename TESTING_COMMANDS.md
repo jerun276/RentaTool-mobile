@@ -6,7 +6,7 @@ This document lists all commands to run Flutter mobile unit/widget tests, Flutte
 
 ## 1. Flutter Unit & Widget Tests
 
-Run all commands from the repository root: `c:\Users\jerun\OneDrive\Desktop\SEF\SEF_Project\RentaTool-mobile`.
+Run all commands from your local repository root folder (`RentaTool-mobile`).
 
 ### Run All Mobile Unit & Widget Tests
 Executes all 33 Flutter tests verifying state management, models, Riverpod providers, and UI widgets:
@@ -33,17 +33,16 @@ Playwright automates end-to-end browser user journeys against the running RentaT
 - **TC-06**: Interactive Visual Smoke & Keyboard Input Flow
 
 ### Step 1: Start the Web Server
-In **Terminal 1**, start Flutter web server:
+In **Terminal 1**, from the `RentaTool-mobile` directory:
 ```powershell
-cd c:\Users\jerun\OneDrive\Desktop\SEF\SEF_Project\RentaTool-mobile
 flutter run -d web-server --web-port 8080
 ```
 *(Leave this running at `http://localhost:8080`)*
 
 ### Step 2: Run Playwright Tests
-In **Terminal 2**, navigate to the Playwright directory:
+In **Terminal 2**, navigate into the `playwright_tests` directory:
 ```powershell
-cd c:\Users\jerun\OneDrive\Desktop\SEF\SEF_Project\RentaTool-mobile\playwright_tests
+cd playwright_tests
 ```
 
 Run any of the following modes:
