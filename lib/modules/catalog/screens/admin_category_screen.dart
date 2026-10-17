@@ -461,9 +461,6 @@ class _CreateCategoryBottomSheetState extends ConsumerState<_CreateCategoryBotto
   @override
   void initState() {
     super.initState();
-    // Start with 2 sample field templates
-    _addField(label: 'Model / Variant', key: 'modelVariant', fieldType: 'text', isRequired: false);
-    _addField(label: 'Operating Capacity', key: 'operatingCapacity', unit: 'kg', fieldType: 'number', isRequired: true);
   }
 
   @override

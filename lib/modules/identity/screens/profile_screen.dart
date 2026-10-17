@@ -481,9 +481,6 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
             tooltip: 'Sign Out',
             onPressed: () async {
               await ref.read(authProvider.notifier).logout();
-              if (context.mounted) {
-                context.go('/login');
-              }
             },
           ),
         ],
@@ -543,9 +540,6 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                         ),
                         onPressed: () async {
                           await ref.read(authProvider.notifier).logout();
-                          if (context.mounted) {
-                            context.go('/login');
-                          }
                         },
                         child: const Text('Sign In'),
                       ),
@@ -1210,14 +1204,6 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                       title: 'Browse Machinery Catalog',
                       subtitle: 'Reserve heavy equipment, power tools & power generators',
                       onTap: () => context.go('/catalog'),
-                    ),
-                    const SizedBox(height: 10),
-                    _profileActionTile(
-                      icon: Icons.radar,
-                      iconColor: const Color(0xFF10B981),
-                      title: 'Nearby Machinery Map',
-                      subtitle: 'Find equipment within your target radius in Sri Lanka',
-                      onTap: () => context.push('/bookings/map'),
                     ),
                     const SizedBox(height: 10),
                     _profileActionTile(

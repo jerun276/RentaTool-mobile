@@ -157,9 +157,38 @@ class AuthNotifier extends StateNotifier<AuthState> {
       );
       return true;
     } catch (e) {
+      String message = 'Failed to connect to authentication server.';
+      if (e is DioException) {
+        if (e.response?.data != null) {
+          final data = e.response!.data;
+          if (data is Map && data['message'] != null) {
+            message = data['message'].toString();
+          } else if (data is Map && data['error'] != null) {
+            message = data['error'].toString();
+          } else if (data is String && data.trim().isNotEmpty) {
+            message = data.trim();
+          }
+        }
+
+        if (message == 'Failed to connect to authentication server.') {
+          if (e.response?.statusCode == 401) {
+            message = 'Invalid email or password.';
+          } else if (e.response?.statusCode == 403) {
+            message = 'Account is suspended or access denied.';
+          } else if (e.type == DioExceptionType.connectionTimeout ||
+              e.type == DioExceptionType.receiveTimeout ||
+              e.type == DioExceptionType.sendTimeout ||
+              e.type == DioExceptionType.connectionError) {
+            message = 'Unable to connect to server. Please check your internet connection.';
+          }
+        }
+      } else if (e.toString().contains('Invalid')) {
+        message = 'Invalid email or password.';
+      }
+
       state = state.copyWith(
         isLoading: false,
-        errorMessage: _loginErrorMessage(e),
+        errorMessage: message,
       );
       return false;
     }

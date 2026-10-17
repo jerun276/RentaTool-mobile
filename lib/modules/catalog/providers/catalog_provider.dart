@@ -133,6 +133,13 @@ class CatalogNotifier extends StateNotifier<CatalogState> {
     state = state.copyWith(selectedStatus: status);
     fetchEquipment();
   }
+
+  Future<void> deleteEquipment(String id) async {
+    await _service.deleteEquipment(id);
+    state = state.copyWith(
+      items: state.items.where((e) => e.id != id).toList(),
+    );
+  }
 }
 
 final catalogProvider = StateNotifierProvider<CatalogNotifier, CatalogState>((ref) {

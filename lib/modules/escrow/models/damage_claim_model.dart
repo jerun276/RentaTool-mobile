@@ -80,6 +80,12 @@ class DamageClaimModel {
   final String? adjudicatedAtUtc;
   final String? createdAtUtc;
 
+  final String? equipmentTitle;
+  final List<String>? pickupPhotos;
+  final double? claimAmount;
+  final double? replacementValue;
+  final double? escrowHeld;
+
   const DamageClaimModel({
     required this.claimId,
     required this.bookingId,
@@ -94,6 +100,11 @@ class DamageClaimModel {
     this.adjudicatedByUserId,
     this.adjudicatedAtUtc,
     this.createdAtUtc,
+    this.equipmentTitle,
+    this.pickupPhotos,
+    this.claimAmount,
+    this.replacementValue,
+    this.escrowHeld,
   });
 
   factory DamageClaimModel.fromJson(Map<String, dynamic> json) {
@@ -116,6 +127,13 @@ class DamageClaimModel {
       adjudicatedByUserId: json['adjudicatedByUserId']?.toString(),
       adjudicatedAtUtc: json['adjudicatedAtUtc']?.toString(),
       createdAtUtc: json['createdAtUtc']?.toString(),
+      equipmentTitle: json['equipmentTitle']?.toString(),
+      pickupPhotos: (json['pickupPhotos'] as List<dynamic>?)
+          ?.map((e) => e.toString())
+          .toList(),
+      claimAmount: (json['claimAmount'] ?? json['proposedDeduction'] as num?)?.toDouble(),
+      replacementValue: (json['replacementValue'] as num?)?.toDouble(),
+      escrowHeld: (json['escrowHeld'] as num?)?.toDouble(),
     );
   }
 
@@ -129,6 +147,8 @@ class DamageClaimModel {
         'finalDeduction': finalDeduction,
         'status': rawStatus,
         'adjudicationNotes': adjudicationNotes,
+        if (equipmentTitle != null) 'equipmentTitle': equipmentTitle,
+        if (pickupPhotos != null) 'pickupPhotos': pickupPhotos,
       };
 }
 

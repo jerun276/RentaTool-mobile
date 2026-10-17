@@ -14,6 +14,9 @@ import '../widgets/booking_timeline_widget.dart';
 import '../widgets/surge_extension_sheet.dart';
 import '../../identity/providers/auth_provider.dart';
 import '../../identity/models/user_model.dart';
+import '../../escrow/models/escrow_hold_model.dart';
+import '../../escrow/providers/escrow_provider.dart';
+import '../../catalog/providers/catalog_provider.dart';
 
 class BookingDetailScreen extends ConsumerStatefulWidget {
   final String bookingId;
@@ -33,6 +36,9 @@ class _BookingDetailScreenState extends ConsumerState<BookingDetailScreen> {
   void initState() {
     super.initState();
     _fetchBooking();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ref.read(escrowProvider.notifier).fetchClaims();
+    });
   }
 
   Future<void> _fetchBooking() async {
@@ -62,6 +68,36 @@ class _BookingDetailScreenState extends ConsumerState<BookingDetailScreen> {
     });
   }
 
+  bool _isActing = false;
+
+  Future<void> _respond({required bool accept}) async {
+    setState(() => _isActing = true);
+    try {
+      final service = ref.read(bookingServiceProvider);
+      if (accept) {
+        await service.confirmBooking(widget.bookingId);
+      } else {
+        await service.rejectBooking(widget.bookingId);
+      }
+      await _fetchBooking();
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          backgroundColor: accept ? AppColors.success : AppColors.warning,
+          content: Text(accept ? 'Booking accepted. Renter can now collect via QR.' : 'Booking rejected. Dates are free again.'),
+        ));
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          backgroundColor: AppColors.error,
+          content: Text(e.toString().replaceFirst('Exception: ', '')),
+        ));
+      }
+    } finally {
+      if (mounted) setState(() => _isActing = false);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     if (_isLoading) {
@@ -81,12 +117,32 @@ class _BookingDetailScreenState extends ConsumerState<BookingDetailScreen> {
     final b = _booking!;
     final authState = ref.watch(authProvider);
     final currentUser = authState.user;
-    final isOwnerOrAdmin = currentUser?.role == UserRole.owner || currentUser?.role == UserRole.admin;
+    final isOwner = (currentUser != null && currentUser.id == b.ownerId) || currentUser?.role == UserRole.owner;
+    final isRenter = (currentUser != null && currentUser.id == b.renterId) || currentUser?.role == UserRole.renter;
+    final isAdmin = currentUser?.role == UserRole.admin;
+    final isOwnerOrAdmin = isOwner || isAdmin;
+    final canExtendSchedule = b.canExtendSchedule && (isRenter || isAdmin) && !isOwner;
     final currencyFormatter = NumberFormat.currency(locale: 'en_LK', symbol: 'LKR ', decimalDigits: 0);
     final dateFormatter = DateFormat('EEEE, MMM dd, yyyy');
 
+    final escrowState = ref.watch(escrowProvider);
+    final hold = escrowState.holds.where((h) => h.bookingId.toLowerCase() == b.id.toLowerCase()).firstOrNull;
+    final existingClaim = escrowState.claims.where((c) => c.bookingId.toLowerCase() == b.id.toLowerCase()).firstOrNull;
+    final bool isHoldDisputed = hold != null && (hold.status == EscrowStatus.disputed || hold.rawStatus.toLowerCase() == 'disputed');
+    final bool isDisputedOrHasClaim = b.isDisputed || isHoldDisputed || existingClaim != null;
+    final estimatedDeposit = (b.dailyRate > 0) ? (b.dailyRate * 3) : 15000.0;
+    final depositAmount = (hold != null && hold.depositAmount > 0) ? hold.depositAmount : estimatedDeposit;
+
+    final catalogState = ref.watch(catalogProvider);
+    final equipmentFromCatalog = catalogState.items.where((e) => e.id == b.equipmentId).firstOrNull;
+    final equipmentTitle = b.equipmentTitle ?? equipmentFromCatalog?.title ?? 'Equipment #${b.equipmentId.length >= 8 ? b.equipmentId.substring(0, 8) : b.equipmentId}';
+    final equipmentImage = b.equipmentImageUrl ?? equipmentFromCatalog?.primaryImageUrl;
+    final equipmentCategory = b.equipmentCategory ?? equipmentFromCatalog?.categoryName;
+    final equipmentLocation = b.equipmentLocation ?? equipmentFromCatalog?.location;
+
+    final effectiveStatus = isDisputedOrHasClaim ? 'dispute in review' : b.status.toLowerCase();
     BadgeStyle badgeStyle;
-    switch (b.status.toLowerCase()) {
+    switch (effectiveStatus) {
       case 'active':
         badgeStyle = BadgeStyle.success;
         break;
@@ -99,19 +155,33 @@ class _BookingDetailScreenState extends ConsumerState<BookingDetailScreen> {
       case 'cancelled':
         badgeStyle = BadgeStyle.error;
         break;
+      case 'disputed':
+      case 'dispute in review':
+        badgeStyle = BadgeStyle.warning;
+        break;
       default:
         badgeStyle = BadgeStyle.warning;
     }
+
+    final bool isPickup = b.status.toLowerCase() == 'confirmed';
+    final bool isReturn = b.status.toLowerCase() == 'active';
+    final bool canUseQR = isPickup || isReturn;
+
+    // Owner always shows QR (Pickup when Confirmed, Return when Active).
+    // Renter always scans QR (Pickup when Confirmed, Return when Active).
+    final bool canShowQR = canUseQR && (isOwner || isAdmin);
+    final bool canScanQR = canUseQR && (isRenter || isAdmin);
 
     return Scaffold(
       appBar: AppBar(
         title: Text(b.displayCode),
         actions: [
-          IconButton(
-            icon: const Icon(Icons.qr_code, size: 20),
-            tooltip: 'Show Handover QR',
-            onPressed: () => context.push('/bookings/qr/${b.id}'),
-          ),
+          if (canShowQR)
+            IconButton(
+              icon: const Icon(Icons.qr_code, size: 20),
+              tooltip: isReturn ? 'Show Return QR' : 'Show Handover QR',
+              onPressed: () => context.push('/bookings/qr/${b.id}'),
+            ),
           IconButton(
             icon: const Icon(Icons.refresh, size: 20),
             tooltip: 'Refresh',
@@ -144,16 +214,227 @@ class _BookingDetailScreenState extends ConsumerState<BookingDetailScreen> {
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        b.status.toUpperCase(),
+                        (isDisputedOrHasClaim ? 'DISPUTE IN REVIEW' : b.status).toUpperCase(),
                         style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: AppColors.primaryLight),
                       ),
                     ],
                   ),
-                  StatusBadge(label: b.status, style: badgeStyle),
+                  StatusBadge(label: isDisputedOrHasClaim ? 'Dispute in Review' : b.status, style: badgeStyle),
                 ],
               ),
             ),
-            const SizedBox(height: 20),
+            const SizedBox(height: 16),
+
+            // 1b. Equipment Dossier Card
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: AppColors.surface,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: AppColors.border),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        'EQUIPMENT SPECIFICATION',
+                        style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: AppColors.textMuted),
+                      ),
+                      if (equipmentCategory != null)
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: AppColors.primary.withValues(alpha: 0.12),
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                          child: Text(
+                            equipmentCategory,
+                            style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: AppColors.primaryLight),
+                          ),
+                        ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(10),
+                        child: (equipmentImage != null && equipmentImage.isNotEmpty)
+                            ? Image.network(
+                                equipmentImage,
+                                width: 72,
+                                height: 72,
+                                fit: BoxFit.cover,
+                                errorBuilder: (_, __, ___) => _buildEquipmentPlaceholder(),
+                              )
+                            : _buildEquipmentPlaceholder(),
+                      ),
+                      const SizedBox(width: 14),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              equipmentTitle,
+                              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                            ),
+                            const SizedBox(height: 4),
+                            if (equipmentLocation != null && equipmentLocation.isNotEmpty) ...[
+                              Row(
+                                children: [
+                                  const Icon(Icons.location_on_outlined, size: 14, color: AppColors.primaryLight),
+                                  const SizedBox(width: 4),
+                                  Expanded(
+                                    child: Text(
+                                      equipmentLocation,
+                                      style: TextStyle(fontSize: 12, color: AppColors.textMuted),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 6),
+                            ],
+                            InkWell(
+                              onTap: () => context.push('/equipment/${b.equipmentId}'),
+                              child: const Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Text(
+                                    'View Full Equipment Listing',
+                                    style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: AppColors.primaryLight),
+                                  ),
+                                  SizedBox(width: 4),
+                                  Icon(Icons.arrow_forward_ios, size: 10, color: AppColors.primaryLight),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 16),
+
+            // 1c. Rental Parties (Renter & Owner) Dossier Card
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: AppColors.surface,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: AppColors.border),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'RENTAL PARTIES & CONTACT DOSSIER',
+                    style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: AppColors.textMuted),
+                  ),
+                  const SizedBox(height: 12),
+                  // Renter details
+                  Row(
+                    children: [
+                      Container(
+                        width: 38,
+                        height: 38,
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF0284C7).withValues(alpha: 0.15),
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(Icons.person_outline, color: Color(0xFF38BDF8), size: 20),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                Text(
+                                  b.renterName ?? 'Renter',
+                                  style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold),
+                                ),
+                                const SizedBox(width: 6),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFF0284C7).withValues(alpha: 0.15),
+                                    borderRadius: BorderRadius.circular(4),
+                                  ),
+                                  child: const Text('RENTER', style: TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: Color(0xFF38BDF8))),
+                                ),
+                              ],
+                            ),
+                            if (b.renterEmail != null || b.renterPhone != null) ...[
+                              const SizedBox(height: 2),
+                              Text(
+                                [b.renterEmail, b.renterPhone].whereType<String>().join(' • '),
+                                style: TextStyle(fontSize: 11, color: AppColors.textMuted),
+                              ),
+                            ],
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                  const Divider(height: 20),
+                  // Owner details
+                  Row(
+                    children: [
+                      Container(
+                        width: 38,
+                        height: 38,
+                        decoration: BoxDecoration(
+                          color: AppColors.primary.withValues(alpha: 0.15),
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(Icons.storefront_outlined, color: AppColors.primaryLight, size: 20),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                Text(
+                                  b.ownerName ?? 'Equipment Owner',
+                                  style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold),
+                                ),
+                                const SizedBox(width: 6),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
+                                  decoration: BoxDecoration(
+                                    color: AppColors.primary.withValues(alpha: 0.15),
+                                    borderRadius: BorderRadius.circular(4),
+                                  ),
+                                  child: const Text('OWNER', style: TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: AppColors.primaryLight)),
+                                ),
+                              ],
+                            ),
+                            if (b.ownerEmail != null || b.ownerPhone != null) ...[
+                              const SizedBox(height: 2),
+                              Text(
+                                [b.ownerEmail, b.ownerPhone].whereType<String>().join(' • '),
+                                style: TextStyle(fontSize: 11, color: AppColors.textMuted),
+                              ),
+                            ],
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 16),
 
             // 2. Visual Lifecycle Timeline (Student 3 Deliverable)
             BookingTimelineWidget(booking: b),
@@ -234,11 +515,12 @@ class _BookingDetailScreenState extends ConsumerState<BookingDetailScreen> {
                           ),
                         ],
                       ),
-                      OutlinedButton.icon(
-                        icon: const Icon(Icons.shield_outlined, size: 16),
-                        label: const Text('Escrow Ledger'),
-                        onPressed: () => context.push('/escrow'),
-                      ),
+                      if (!b.isRequested && !b.isCancelled)
+                        OutlinedButton.icon(
+                          icon: const Icon(Icons.shield_outlined, size: 16),
+                          label: const Text('Escrow Ledger'),
+                          onPressed: () => context.push('/escrow'),
+                        ),
                     ],
                   ),
                   if (b.dailyRate > 0) ...[
@@ -251,48 +533,86 @@ class _BookingDetailScreenState extends ConsumerState<BookingDetailScreen> {
                       ],
                     ),
                   ],
+                  const Divider(height: 16),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(Icons.shield_outlined, size: 14, color: Color(0xFF10B981)),
+                          const SizedBox(width: 4),
+                          Text('Refundable Security Deposit', style: TextStyle(fontSize: 11, color: AppColors.textMuted)),
+                        ],
+                      ),
+                      Text(
+                        currencyFormatter.format(depositAmount),
+                        style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Color(0xFF10B981)),
+                      ),
+                    ],
+                  ),
                 ],
               ),
             ),
             const SizedBox(height: 24),
 
+            // 4b. Owner Accept / Reject for pending requests
+            if (b.isRequested && currentUser != null && currentUser.id == b.ownerId) ...[
+              Row(
+                children: [
+                  Expanded(
+                    child: AppButton(
+                      text: 'Accept Request',
+                      icon: Icons.check_circle_outline,
+                      onPressed: _isActing ? null : () => _respond(accept: true),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: AppButton(
+                      text: 'Reject',
+                      variant: AppButtonVariant.outline,
+                      icon: Icons.cancel_outlined,
+                      onPressed: _isActing ? null : () => _respond(accept: false),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+            ] else if (b.isRequested) ...[
+              Padding(
+                padding: const EdgeInsets.only(bottom: 16),
+                child: Text(
+                  'Waiting for the owner to accept your request.',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(fontSize: 12, color: AppColors.textMuted),
+                ),
+              ),
+            ],
+
             // 5. Handover QR Action Buttons
             if (['confirmed', 'active'].contains(b.status.toLowerCase())) ...[
-              Builder(
-                builder: (context) {
-                  final bool isPickup = b.status.toLowerCase() == 'confirmed';
-                  final bool isReturn = b.status.toLowerCase() == 'active';
-                  final bool isOwner = currentUser?.role == UserRole.owner;
-                  final bool isRenter = currentUser?.role == UserRole.renter;
-                  final bool isAdmin = currentUser?.role == UserRole.admin;
-
-                  // For Pickup: Owner generates (shows), Renter scans.
-                  // For Return: Renter generates (shows), Owner scans.
-                  final bool canShowQR = isAdmin || (isOwner && isPickup) || (isRenter && isReturn);
-                  final bool canScanQR = isAdmin || (isRenter && isPickup) || (isOwner && isReturn);
-
-                  if (!canShowQR && !canScanQR) return const SizedBox.shrink();
-
-                  return Column(
-                    children: [
-                      Row(
-                        children: [
-                          if (canShowQR)
-                            Expanded(
-                              child: AppButton(
-                                text: 'Show Handover QR',
-                                icon: Icons.qr_code,
-                                fontSize: 12,
-                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 12),
-                                onPressed: () => context.push('/bookings/qr/${b.id}'),
-                              ),
+              if (canShowQR || canScanQR)
+                Column(
+                  children: [
+                    Row(
+                      children: [
+                        if (canShowQR)
+                          Expanded(
+                            child: AppButton(
+                              text: isReturn ? 'Show Return QR' : 'Show Handover QR',
+                              icon: Icons.qr_code,
+                              fontSize: 12,
+                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 12),
+                              onPressed: () => context.push('/bookings/qr/${b.id}'),
                             ),
+                          ),
                           if (canShowQR && canScanQR)
                             const SizedBox(width: 8),
                           if (canScanQR)
                             Expanded(
                               child: AppButton(
-                                text: 'Scan Handover QR',
+                                text: isReturn ? 'Scan Return QR' : 'Scan Handover QR',
                                 variant: AppButtonVariant.outline,
                                 icon: Icons.qr_code_scanner,
                                 fontSize: 12,
@@ -304,13 +624,11 @@ class _BookingDetailScreenState extends ConsumerState<BookingDetailScreen> {
                       ),
                       const SizedBox(height: 12),
                     ],
-                  );
-                },
-              ),
+                  ),
             ],
 
-            // 6. Dynamic Surge Schedule Extension
-            if (b.canExtendSchedule)
+            // 6. Dynamic Surge Schedule Extension (Only available to Renter or Admin)
+            if (canExtendSchedule)
               OutlinedButton.icon(
                 icon: const Icon(Icons.calendar_month, size: 18),
                 label: const Text('Extend Schedule (Dynamic Surge Preview)'),
@@ -322,15 +640,59 @@ class _BookingDetailScreenState extends ConsumerState<BookingDetailScreen> {
               ),
             const SizedBox(height: 12),
 
-            // 7. Damage Claim Dispute Link (Only available to Equipment Owner or Admin)
-            if (b.canDispute && isOwnerOrAdmin)
+            // 7. Damage Claim Dispute Link (Only available to Equipment Owner or Admin when not yet disputed)
+            if (isDisputedOrHasClaim)
+              Container(
+                margin: const EdgeInsets.symmetric(vertical: 4),
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                decoration: BoxDecoration(
+                  color: AppColors.warning.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(color: AppColors.warning.withValues(alpha: 0.3)),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(Icons.shield_outlined, size: 18, color: AppColors.warning),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Text(
+                        existingClaim != null
+                            ? 'A damage claim has been filed for this booking (Status: ${existingClaim.status}). Multiple claims cannot be generated.'
+                            : 'A damage dispute is active for this booking. Multiple claims cannot be generated.',
+                        style: const TextStyle(color: AppColors.warning, fontSize: 13, fontWeight: FontWeight.w500),
+                      ),
+                    ),
+                  ],
+                ),
+              )
+            else if (b.canDispute && isOwnerOrAdmin)
               TextButton.icon(
                 icon: const Icon(Icons.report_problem_outlined, size: 18, color: AppColors.warning),
                 label: const Text('File Damage Claim / Escrow Dispute', style: TextStyle(color: AppColors.warning)),
-                onPressed: () => context.push('/escrow/claim-new?bookingId=${b.id}'),
+                onPressed: () async {
+                  await context.push('/escrow/claim-new?bookingId=${b.id}');
+                  _fetchBooking();
+                  ref.read(escrowProvider.notifier).fetchClaims();
+                },
               ),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildEquipmentPlaceholder() {
+    return Container(
+      width: 72,
+      height: 72,
+      decoration: BoxDecoration(
+        color: AppColors.primary.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: const Icon(
+        Icons.construction_outlined,
+        color: AppColors.primaryLight,
+        size: 32,
       ),
     );
   }

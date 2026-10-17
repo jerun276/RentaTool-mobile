@@ -1,3 +1,4 @@
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -92,7 +93,12 @@ class _MyEquipmentScreenState extends ConsumerState<MyEquipmentScreen> {
           IconButton(
             icon: const Icon(Icons.add, size: 24),
             tooltip: 'Add Machinery',
-            onPressed: () => context.push('/catalog/add'),
+            onPressed: () async {
+              final created = await context.push<bool>('/catalog/add');
+              if (created == true) {
+                ref.read(catalogProvider.notifier).fetchEquipment(isRefresh: true);
+              }
+            },
           ),
           IconButton(
             icon: const Icon(Icons.refresh_rounded, size: 22),
@@ -407,7 +413,10 @@ class _MyEquipmentScreenState extends ConsumerState<MyEquipmentScreen> {
       color: isDark ? AppColors.darkSurface : AppColors.lightSurface,
       clipBehavior: Clip.antiAlias,
       child: InkWell(
-        onTap: () => context.push('/catalog/detail/${equipment.id}'),
+        onTap: () async {
+          await context.push('/catalog/${equipment.id}');
+          ref.read(catalogProvider.notifier).fetchEquipment(isRefresh: true);
+        },
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -547,7 +556,24 @@ class _MyEquipmentScreenState extends ConsumerState<MyEquipmentScreen> {
                     children: [
                       Expanded(
                         child: OutlinedButton.icon(
-                          icon: const Icon(Icons.history, size: 15),
+                          icon: const Icon(Icons.edit_outlined, size: 14),
+                          label: const Text('Edit'),
+                          style: OutlinedButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(vertical: 8),
+                            textStyle: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold),
+                          ),
+                          onPressed: () async {
+                            final updated = await context.push<bool>('/catalog/edit/${equipment.id}', extra: equipment);
+                            if (updated == true) {
+                              ref.read(catalogProvider.notifier).fetchEquipment(isRefresh: true);
+                            }
+                          },
+                        ),
+                      ),
+                      const SizedBox(width: 6),
+                      Expanded(
+                        child: OutlinedButton.icon(
+                          icon: const Icon(Icons.history, size: 14),
                           label: const Text('History'),
                           style: OutlinedButton.styleFrom(
                             padding: const EdgeInsets.symmetric(vertical: 8),
@@ -556,10 +582,10 @@ class _MyEquipmentScreenState extends ConsumerState<MyEquipmentScreen> {
                           onPressed: () => context.push('/catalog/history/${equipment.id}'),
                         ),
                       ),
-                      const SizedBox(width: 8),
+                      const SizedBox(width: 6),
                       Expanded(
                         child: ElevatedButton.icon(
-                          icon: const Icon(Icons.fact_check_outlined, size: 15),
+                          icon: const Icon(Icons.fact_check_outlined, size: 14),
                           label: const Text('Inspect'),
                           style: ElevatedButton.styleFrom(
                             backgroundColor: AppColors.primary,
@@ -569,6 +595,14 @@ class _MyEquipmentScreenState extends ConsumerState<MyEquipmentScreen> {
                           ),
                           onPressed: () => context.push('/catalog/inspection/${equipment.id}'),
                         ),
+                      ),
+                      const SizedBox(width: 4),
+                      IconButton(
+                        icon: const Icon(Icons.delete_outline, color: AppColors.error, size: 20),
+                        tooltip: 'Delete Equipment',
+                        padding: const EdgeInsets.all(6),
+                        constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
+                        onPressed: () => _confirmDeleteEquipment(equipment),
                       ),
                     ],
                   ),
@@ -592,5 +626,91 @@ class _MyEquipmentScreenState extends ConsumerState<MyEquipmentScreen> {
         ],
       ),
     );
+  }
+
+  Future<void> _confirmDeleteEquipment(EquipmentModel equipment) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: AppColors.surfaceElevated,
+        title: const Row(
+          children: [
+            Icon(Icons.warning_amber_rounded, color: AppColors.error),
+            SizedBox(width: 8),
+            Text('Delete Equipment?'),
+          ],
+        ),
+        content: Text(
+          'Are you sure you want to permanently delete "${equipment.title}"?\n\nThis will remove the listing from the catalog. This action cannot be undone.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.error,
+              foregroundColor: Colors.white,
+            ),
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true || !mounted) return;
+
+    try {
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (_) => const Center(child: CircularProgressIndicator()),
+      );
+
+      await ref.read(catalogProvider.notifier).deleteEquipment(equipment.id);
+
+      if (!mounted) return;
+      Navigator.of(context, rootNavigator: true).pop(); // Close loading dialog
+      ref.invalidate(equipmentDetailProvider(equipment.id));
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Equipment listing deleted successfully.'),
+          backgroundColor: AppColors.success,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      Navigator.of(context, rootNavigator: true).pop(); // Close loading dialog
+      String errorMessage = 'Failed to delete equipment.';
+      if (e is DioException) {
+        final resData = e.response?.data;
+        if (resData is Map && resData['message'] != null) {
+          errorMessage = resData['message'].toString();
+        }
+      }
+      showDialog(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          backgroundColor: AppColors.surfaceElevated,
+          title: const Row(
+            children: [
+              Icon(Icons.error_outline, color: AppColors.error),
+              SizedBox(width: 8),
+              Text('Cannot Delete Equipment'),
+            ],
+          ),
+          content: Text(errorMessage),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('OK'),
+            ),
+          ],
+        ),
+      );
+    }
   }
 }
