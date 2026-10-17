@@ -149,6 +149,11 @@ coverage/
 test/**/coverage/
 .test_coverage/
 *.lcov
+test-results/
+**/test-results/
+**/playwright-report/
+**/.last-run.json
+**/node_modules/
 
 # ==============================================================================
 # OS & Miscellaneous
